@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <!-- Theme Made By www.w3schools.com - No Copyright -->
+  <title>Bootstrap Theme Simply Me</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+  <link href="https://fonts.googleapis.com/css?family=Montserrat" rel="stylesheet">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+
+
+  <style>
+  body {
+      font: 20px Montserrat, sans-serif;
+      line-height: 1.8;
+      color: #f5f6f7;
+  }
+  p {font-size: 16px;}
+  .margin {
+    margin-bottom: 45px;
+    color: white;
+  }
+  .title {
+    color:white;
+    size: 5;
+  }
+  .bg-1 { 
+      background-color: darkred; /* Green */
+      color: #ffffff;
+  }
+  .bg-2 { 
+      background-color: darkblue /* Dark Blue */
+      color: black;
+  }
+  .bg-3 { 
+      background-color: darkblue; /* White */
+      color: white;
+  }
+  .bg-4 { 
+      background-color: darkgray; /* Black Gray */
+      color: #fff;
+  }
+  .container-fluid {
+      padding-top: 70px;
+      padding-bottom: 70px;
+  }
+  .navbar {
+      padding-top: 15px;
+      padding-bottom: 15px;
+      border: 0;
+      border-radius: 0;
+      margin-bottom: 0;
+      font-size: 12px;
+      letter-spacing: 5px;
+  }
+  .navbar-nav  li a:hover {
+      color: blue !important;
+  }
+  .i-am-centered { 
+    margin: 0 auto; max-width: 1000px;
+  }
+
+  ol {
+    margin: 0 auto;
+    size: 4;
+    color: white;
+  }
+  * { box-sizing: border-box; }
+body {
+  font: 16px Arial; 
+}
+.autocomplete {
+  /*the container must be positioned relative:*/
+  position: relative;
+  display: inline-block;
+}
+input {
+  border: 1px solid transparent;
+  background-color: #f1f1f1;
+  padding: 10px;
+  font-size: 16px;
+}
+input[type=text] {
+  background-color: #f1f1f1;
+  width: 100%;
+}
+input[type=submit] {
+  background-color: DodgerBlue;
+  color: #fff;
+}
+.autocomplete-items {
+  position: absolute;
+  border: 1px solid #d4d4d4;
+  border-bottom: none;
+  border-top: none;
+  z-index: 99;
+  /*position the autocomplete items to be the same width as the container:*/
+  top: 100%;
+  left: 58px;
+  right: -62px;
+}
+.autocomplete-items div {
+  padding: 10px;
+  cursor: pointer;
+  background-color: #fff; 
+  border-bottom: 1px solid #d4d4d4; 
+}
+.autocomplete-items div:hover {
+  /*when hovering an item:*/
+  background-color: #e9e9e9; 
+}
+.autocomplete-active {
+  /*when navigating through the items using the arrow keys:*/
+  background-color: DodgerBlue !important; 
+  color: #ffffff; 
+}
+
+
+  </style>
+</head>
+<body>
+
+<!-- Navbar -->
+<nav class="navbar navbar-default">
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#myNavbar">
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>                        
+      </button>
+    </div>
+    <div class="collapse navbar-collapse" id="myNavbar">
+      <ul class="nav navbar-nav navbar-right">
+        <li><a href="#about">ABOUT</a></li>
+        <li><a href="#try">TRYIT</a></li>
+        <li><a href="#how">HOW</a></li>
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<!-- First Container -->
+<div id="about" class="container-fluid bg-1">
+  <div class="text-center">
+    <h3 class="margin">About Save 2.0</h3>
+    <img src="MLB.png" style="display:inline" alt="MLB" width="350" height="200">
+    <h1><font size = "4.5" color="white">A pitcher is credited with a save if he enters the game with his team leading and meets all four of the following conditions:</font></h1>
+  </div>
+  <h4>
+  <ol type="A" style="padding-left:200px;">
+    <li>He is the finishing pitcher in a game won by his team</li>
+    <li>He is not the winning pitcher</li>
+    <li>He is credited with at least ⅓ of an inning pitched; and</li>
+    <li>He satisfies one of the following conditions:</li>
+      <ol>
+        <li>He enters the game with a lead of no more than three runs and pitches for at least one inning</li>
+        <li>He enters the game, regardless of the count, with the potential tying run either on base, at bat or on deck</li>
+        <li>He pitches for at least three innings</li>
+      </ol>
+  </ol>
+  </h4>
+  
+    <p style="padding-left: 120px;"><font size="4" color="white">Under this definition of a save, all saves are created equal. For example, a pitcher who enters a game with a 3 run lead in the ninth inning gets the same stat boost as a pitcer who has to close out a game in the 7th inning, while only up by one run. Clearly, it is much harder to accomplish the ladder. Because of this, we wanted to create a statistic that rewards pithcers more for making more difficult saves.</font></p>
+
+  </div>
+
+<!-- Second Container -->
+<div id="try" class="container-fluid bg-2 text-center">
+  <h3 style="color:black;">Try it out and search for a relief pitcher!</h3>
+  <!--<a href="#" class="btn btn-default btn-lg">
+    <span class="glyphicon glyphicon-search"></span> Search
+  </a> -->
+  <div class="container">
+    <div class="row">
+        <div class="col-md-6 col-md-offset-3">
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-4 col-md-offset-3">
+            <form id = "form" onsubmit="return false;" action="" class="search-form" autocomplete="off"> 
+                <div class="form-group has-feedback">
+                <label for="search" class="sr-only">Search For A Player...</label>
+                  <!--<input type="text" style = "position: relative; left:100px" class="form-control" id="userInput" placeholder="Search For A Player...">
+                  <input class="btn btn-primary" type="submit" style = "position: absolute; left:460px; top: -5px; color:black;" onclick=",othername(); redirect();" > -->
+                  <!-- WORKING with Submit -->
+                    <div class="autocomplete" style="width:300px; color:black;">
+                      <input type="text" id="userInput" style = "position: relative; left:60px" placeholder="Search For A Player...">
+                    </div>
+                      <input class="btn btn-primary" type="submit" onclick="othername(); redirect();" style = "position: absolute; left:390px; top: 2px; color:black;">-->
+                      <div class="container">
+                        </div>
+                  </div>
+            </form>
+            
+        </div>
+    </div>
+</div> 
+</div>
+
+<script type="text/javascript">
+              function othername() {
+                var input = document.getElementById("userInput").value;
+                localStorage.setItem("PlayerName", input);
+              }
+              function redirect() {
+                location.href = "barchart.html";
+              }
+              
+              function autocomplete(inp, arr) {
+                /*the autocomplete function takes two arguments,
+                the text field element and an array of possible autocompleted values:*/
+                var currentFocus;
+                /*execute a function when someone writes in the text field:*/
+                inp.addEventListener("input", function(e) {
+                    var a, b, i, val = this.value;
+                    /*close any already open lists of autocompleted values*/
+                    closeAllLists();
+                    if (!val) { return false;}
+                    currentFocus = -1;
+                    /*create a DIV element that will contain the items (values):*/
+                    a = document.createElement("DIV");
+                    a.setAttribute("id", this.id + "autocomplete-list");
+                    a.setAttribute("class", "autocomplete-items");
+                    /*append the DIV element as a child of the autocomplete container:*/
+                    this.parentNode.appendChild(a);
+                    /*for each item in the array...*/
+                    for (i = 0; i < arr.length; i++) {
+                      /*check if the item starts with the same letters as the text field value:*/
+                      if (arr[i].substr(0, val.length).toUpperCase() == val.toUpperCase()) {
+                        /*create a DIV element for each matching element:*/
+                        b = document.createElement("DIV");
+                        /*make the matching letters bold:*/
+                        b.innerHTML = "<strong>" + arr[i].substr(0, val.length) + "</strong>";
+                        b.innerHTML += arr[i].substr(val.length);
+                        /*insert a input field that will hold the current array item's value:*/
+                        b.innerHTML += "<input type='hidden' value='" + arr[i] + "'>";
+                        /*execute a function when someone clicks on the item value (DIV element):*/
+                            b.addEventListener("click", function(e) {
+                            /*insert the value for the autocomplete text field:*/
+                            inp.value = this.getElementsByTagName("input")[0].value;
+                            /*close the list of autocompleted values,
+                            (or any other open lists of autocompleted values:*/
+                            closeAllLists();
+                        });
+                        a.appendChild(b);
+                      }
+                    }
+                });
+                /*execute a function presses a key on the keyboard:*/
+                inp.addEventListener("keydown", function(e) {
+                    var x = document.getElementById(this.id + "autocomplete-list");
+                    if (x) x = x.getElementsByTagName("div");
+                    if (e.keyCode == 40) {
+                      /*If the arrow DOWN key is pressed,
+                      increase the currentFocus variable:*/
+                      currentFocus++;
+                      /*and and make the current item more visible:*/
+                      addActive(x);
+                    } else if (e.keyCode == 38) { //up
+                      /*If the arrow UP key is pressed,
+                      decrease the currentFocus variable:*/
+                      currentFocus--;
+                      /*and and make the current item more visible:*/
+                      addActive(x);
+                    } else if (e.keyCode == 13) {
+                      /*If the ENTER key is pressed, prevent the form from being submitted,*/
+                      e.preventDefault();
+                      if (currentFocus > -1) {
+                        /*and simulate a click on the "active" item:*/
+                        if (x) x[currentFocus].click();
+                      }
+                    }
+                });
+                function addActive(x) {
+                  /*a function to classify an item as "active":*/
+                  if (!x) return false;
+                  /*start by removing the "active" class on all items:*/
+                  removeActive(x);
+                  if (currentFocus >= x.length) currentFocus = 0;
+                  if (currentFocus < 0) currentFocus = (x.length - 1);
+                  /*add class "autocomplete-active":*/
+                  x[currentFocus].classList.add("autocomplete-active");
+                }
+                function removeActive(x) {
+                  /*a function to remove the "active" class from all autocomplete items:*/
+                  for (var i = 0; i < x.length; i++) {
+                    x[i].classList.remove("autocomplete-active");
+                  }
+                }
+                function closeAllLists(elmnt) {
+                  /*close all autocomplete lists in the document,
+                  except the one passed as an argument:*/
+                  var x = document.getElementsByClassName("autocomplete-items");
+                  for (var i = 0; i < x.length; i++) {
+                    if (elmnt != x[i] && elmnt != inp) {
+                    x[i].parentNode.removeChild(x[i]);
+                  }
+                }
+              }
+              /*execute a function when someone clicks in the document:*/
+              document.addEventListener("click", function (e) {
+                  closeAllLists(e.target);
+              });
+              }
+
+              var pitchers = ["A.J. Ramos","Aaron Crow","Aaron Heilman","Aaron Loup","Adam Ottavino","Adam Warren","Addison Reed","Al Alburquerque","Alex Burnett","Alex Hinshaw","Alexander Torres","Alexi Ogando","Alfredo Aceves","Alfredo Simon","Andrew Bailey","Andrew Cashner","Andy Sonnanstine","Anthony Slama","Anthony Swarzak","Anthony Varvaro","Antonio Bastardo","Arodys Vizcaino","Aroldis Chapman","Arthur Rhodes","Bill Bray","Billy Wagner","Blake Beavan","Blake Hawksworth","Blake Parker","Blake Wood","Bobby Jenks","Bobby Parnell","Boone Logan","Brad Bergesen","Brad Brach","Brad Lidge","Brad Thompson","Brad Ziegler","Brandon Kintzler","Brandon League","Brandon Lyon","Brandon Maurer","Brandon Workman","Brett Anderson","Brett Cecil","Brett Myers","Brett Tomko","Brian Duensing","Brian Fuentes","Brian Matusz","Brian Omogrosso","Brian Sanches","Brian Sweeney","Brian Tallet","Brian Wilson","Bruce Chen","Bruce Rondon","Bryan Morris","Bryan Shaw","Burke Badenhop","Carlos Marmol","Carlos Torres","Carlos Villanueva","Casey Fien","Casey Janssen","Cesar Ramos","Chad Durbin","Chad Qualls","Chan Ho Park","Charlie Furbush","Chaz Roe","Chia-Jen Lo","Chris Perez","Chris Ray","Chris Resop","Chris Sale","Chris Sampson","Christopher Leroux","Cla Meredith","Clay Hensley","Clay Rapada","Cody Allen","Cory Wade","Craig Breslow","Craig Kimbrel","Craig Stammen","Cristhian Martinez","D.J. Carrasco","Dale Thayer","Dan Haren","Dan Wheeler","Dane DeLaRosa","Daniel Bard","Danny Farquhar","Darren O'Day","Darren Oliver","David Aardsma","David Carpenter","David Hernandez","David Purcey","David Robertson","Derek Holland","Derek Lowe","Doug Mathis","Drew Carpenter","Drew Smyly","Drew Storen","Dustin Nippert","Eduardo Sanchez","Edward Mujica","Enerio Del Rosario","Eric O'Flaherty","Erik Bedard","Ernesto Frieri","Esmerling Vasquez","Esmil Rogers","Evan Meek","Evan Scribner","Everett Teaford","Fautino De Los Santos","Felix Doubront","Fernando Abad","Fernando Cabrera","Fernando Rodney","Fernando Rodriguez","Fernando Salas","Francisco Cordero","Francisco Rodriguez","Frank Francisco","Frank Herrmann","Franklin Morales","Garrett Olson","Garrett Richards","George Kontos","Glen Perkins","Grant Balfour","Greg Holland","Guillermo Mota","Gustavo Chacin","Heath Bell","Hector Ambriz","Hector Santiago","Henry Rodriguez","Hideki Okajima","Hisanori Takahashi","Hisashi Iwakuma","Hong-Chih Kuo","Huston Street","J.C. Romero","J.J. Hoover","J.J. Putz","J.P. Howell","Jake McGee","James Russell","Jamey Wright","Jared Burton","Jared Hughes","Jason Berken","Jason Frasor","Jason Grilli","Jason Hammel","Jason Isringhausen","Jason Motte","Javier Lopez","Javy Guerra","Jean Machi","Jeff Fulchino","Jeff Gray","Jeff Samardzija","Jensen Lewis","Jeremy Accardo","Jeremy Affeldt","Jeremy Hefner","Jeremy Jeffress","Jerome Williams","Jerry Blevins","Jesse Chavez","Jesse Crain","Jesse Litsch","Jim Henderson","Jim Hoey","Jim Johnson","Joakim Soria","Joaquin Benoit","Joba Chamberlain","Joe Kelly","Joe Nathan","Joe Smith","Joe Thatcher","Joel Hanrahan","Joel Peralta","Joel Zumaya","John Axford","Jon Rauch","Jonathan Broxton","Jonathan Papelbon","Jonny Venters","Jordan Norberto","Jordan Walden","Jose Arredondo","Jose Contreras","Jose Ortega","Jose Valverde","Jose Veras","Josh Edgin","Josh Fields","Josh Kinney","Josh Lindblom","Josh Roenicke","Josh Stinson","Josh Zeid","Juan Cruz","Juan Gutierrez","Juan Perez","Junichi Tazawa","Justin Wilson","Kameron Loe","Kelvin Herrera","Kenley Jansen","Kerry Wood","Kevin Chapman","Kevin Gausman","Kevin Gregg","Kevin Jepsen","Koji Uehara","Kris Medlen","Kyle Farnsworth","Kyle Kendrick","Kyle McClellan","LaTroy Hawkins","Leo Nunez","Leo Rosales","Livan Hernandez","Logan Ondrusek","Louis Coleman","Lucas Luetge","Luis Avilan","Luis Ayala","Luis Mendoza","Luis Perez","Luke Gregerson","Luke Hochevar","Luke Putkonen","Manny Acosta","Manny Delcarmen","Manny Parra","Manuel Corpas","Marc Rzepczynski","Marco Estrada","Mariano Rivera","Mark Hendrickson","Mark Lowe","Mark Melancon","Matt Albers","Matt Belisle","Matt Capps","Matt Guerrier","Matt Harrison","Matt Lindstrom","Matt Reynolds","Matt Thornton","Michael Bowden","Michael Dunn","Michael Gonzalez","Michael Kirkman","Michael Kohn","Michael Schwimer","Michael Wuertz","Miguel Batista","Mike Adams","Mike Gonzalez","Mike MacDougal","Mike McClendon","Mike Pelfrey","Mitchell Boggs","Nate Jones","Nathan Adcock","Neal Cotts","Neftali Feliz","Nick Hagadone","Nick Masset","Octavio Dotel","Oliver Perez","Paco Rodriguez","Pat Neshek","Pedro Beato","Pedro Feliciano","Pedro Strop","Peter Moylan","Phil Coke","Phil Dumatrait","Philip Humber","Phillippe Aumont","Rafael Betancourt","Rafael Perez","Rafael Soriano","Ramon S. Ramirez","Randy Choate","Raul Valdes","Rex Brothers","Rich Hill","Robbie Weinhardt","Robinson Tejeda","Ronald Belisario","Roy Oswalt","Ryan Cook","Ryan Franklin","Ryan Madson","Ryan Perry","Ryan Reid","Ryan Tucker","Ryan Webb","Sam Demel","Sam LeCure","Santiago Casilla","Scot Shields","Scott Atchison","Scott Barnes","Scott Downs","Scott Elbert","Scott Linebrink","Scott Proctor","Scott Richmond","Sean Burnett","Sean Doolittle","Sean Marshall","Sean O'Sullivan","Sergio Escalona","Sergio Mitre","Sergio Romo","Sergio Santos","Shawn Camp","Stephen Pryor","Steve Cishek","Steve Delabar","T.J. McFarland","Tanner Scheppers","Taylor Tankersley","Tim Byrdak","Tim Collins","Todd Coffey","Tom Gorzelanny","Tom Layne","Tom Wilhelmsen","Tommy Hottovy","Tommy Hunter","Tony Pena","Tony Sipp","Trevor Bell","Trevor Hoffman","Trevor Rosenthal","Troy Patton","Tyler Chatwood","Tyler Clippard","Tyson Ross","Vic Black","Vicente Padilla","Victor Marte","Vinnie Pestano","Wesley Wright","Will Ohman","Wilton Lopez","Yoshinori Tateyama","Zach Braddock","Zach Duke","Zach Miner"];
+
+              autocomplete(document.getElementById("userInput"), pitchers);
+
+
+</script>
+
+
+<!-- Third Container (Grid) -->
+    <div id="how" class="container-fluid bg-3 text-center">    
+    <h3 class="margin">How We Calculate Save 2.0</h3><br>
+    <div class="i-am-centered">
+    <div class="row">
+    </div>
+    </div>
+  </div>
+
+
+</body>
+</html>
+
