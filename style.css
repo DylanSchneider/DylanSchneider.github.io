@@ -49,7 +49,7 @@ html, body, * {
 			g.infowin text,
 			.axis text {
 			  font: 11px sans-serif;
-			  fill:black;
+			  fill: grey;
 			}
 
 			.axis path,

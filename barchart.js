@@ -143,7 +143,7 @@ d3.csv("pitchers.csv", function(error, data) {
             // alert("Year: " + d.Year + ": " + d.Celsius + " Celsius");
             d3.select("#_yr")
                 .text("Year: " + d.year);
-            d3.select("#degrree")
+            d3.select("#_sr")
                 .text(d.SaveRating);
         });
     svg.append("g")
@@ -170,14 +170,14 @@ d3.csv("pitchers.csv", function(error, data) {
 
     svg.append("g")
         .attr("class", "infowin")
-        .attr("transform", "translate(50, 5)")
+        .attr("transform", "translate(50, 0)")
         .append("text")
         .attr("id", "_yr");
 
     svg.append("g")
         .attr("class", "infowin")
-        .attr("transform", "translate(110, 5)")
+        .attr("transform", "translate(110, 0)")
         .append("text")
-        .attr("id","degrree");
+        .attr("id","_sr");
 
 });
