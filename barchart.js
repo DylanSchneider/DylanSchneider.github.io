@@ -170,13 +170,13 @@ d3.csv("pitchers.csv", function(error, data) {
 
     svg.append("g")
         .attr("class", "infowin")
-        .attr("transform", "translate(50, 0)")
+        .attr("transform", "translate(50, -5)")
         .append("text")
         .attr("id", "_yr");
 
     svg.append("g")
         .attr("class", "infowin")
-        .attr("transform", "translate(110, 0)")
+        .attr("transform", "translate(110, -5)")
         .append("text")
         .attr("id","_sr");
 
