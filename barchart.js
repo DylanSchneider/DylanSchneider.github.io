@@ -97,7 +97,7 @@ d3.csv("pitchers.csv", function(error, data) {
 	xAxis.scale(xAxisScale);
 	
     y.domain(d3.extent(filteredData, function(d) {
-        return parseInt(d.SaveRating);
+        return d.SaveRating;
     }));
 	yAxis.scale(y);
 		
