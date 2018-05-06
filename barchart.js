@@ -45,7 +45,6 @@ d3.csv("pitchers.csv", function(error, data) {
 	});
 	
 	let yearArr = filteredData.map(function(d) { return d.year; });
-	console.log(filteredData);
 	if (yearArr.indexOf("2010") < 0){
 		var new_json = {};
 		new_json.Pitcher_ID = filteredData[0].Pitcher_ID;
