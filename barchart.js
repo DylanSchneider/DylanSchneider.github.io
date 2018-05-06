@@ -5,7 +5,7 @@ var margin = {
         left: 30
     },
     width = 920 - margin.left - margin.right,
-    height = 400 - margin.top - margin.bottom;
+    height = 600 - margin.top - margin.bottom;
 
 var y = d3.scale.linear()
     .range([height, 0]);
