@@ -100,7 +100,8 @@ d3.csv("pitchers.csv", function(error, data) {
         return d.SaveRating;
     }));
 	yAxis.scale(y);
-		
+	console.log("H", y(height));
+	console.log("0", y(0));
     svg.selectAll(".bar")
         .data(filteredData)
         .enter().append("rect")
