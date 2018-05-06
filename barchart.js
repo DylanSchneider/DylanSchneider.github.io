@@ -43,7 +43,7 @@ d3.csv("pitchers.csv", function(error, data) {
 			return d;
 		}
 	});
-	
+	console.log(filteredData);	
 	let yearArr = filteredData.map(function(d) { return d.year; });
 	if (yearArr.indexOf("2010") < 0){
 		var new_json = {};
