@@ -320,7 +320,7 @@ input[type=submit] {
     <div id="how" class="container-fluid bg-3 text-center">    
     <h2 class="margin">How We Calculated Save 2.0</h2>
    	<h5> In order to create this statistic, we needed some way to rate the difficulty of a save for a pitcher. Since the original save stat only counts completed saves, we wanted a way to weight these saves and have a way to penalize pitchers for blowing saves. In order to see how difficult a save actually was, we looked at the save situations pitchers were coming into and calculated how often similar saves had been completed. We grouped the save situations by inning, number of outs, and runners on base. We believe that these 3 things are what determine how hard a save is for a pitcher. After analyzing the situation data, we indeed saw a correlation between inning, number of outs, runners on base and the percentage that the particular save was made/blown. This means pitchers will be rewarded more when they have to pitch for multiple innings with slim leads, but also will be heavily penalized if they blow a save in the 9th with a significant lead. In order to calculate our actual statistic for each save, we just use the percentage that the save was made, and normalize it.  </h5> 
-	<h3> $$D_{save} = \frac{1}{save%}$$ <h3>
+	<h3> $$D_{save} = \frac{1}{save\%}$$ <h3>
 
 
 </body>
