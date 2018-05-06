@@ -8,7 +8,7 @@ var margin = {
     height = 600 - margin.top - margin.bottom;
 
 var y = d3.scale.linear()
-    .range([height-75, 0]);
+    .range([height-50, 0]);
 
 var x = d3.scale.ordinal()
     .rangeRoundBands([0, width], 0.6, 0.3);
