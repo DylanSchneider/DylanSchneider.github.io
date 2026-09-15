@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#0a0710">
+<title>Host · Costume Results</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏆</text></svg>">
+<link rel="stylesheet" href="assets/css/app.css">
+</head>
+<body>
+<div class="bg-fx"></div>
+
+<main>
+  <!-- ── PIN gate ── -->
+  <section id="v-pin" class="view is-active">
+    <div class="wrap">
+      <div class="brand">
+        <div class="brand__mark">🏆</div>
+        <h1 class="brand__title">Host view</h1>
+        <p class="brand__sub">Live results, the voting deadline, and the master guest list.</p>
+      </div>
+
+      <div id="pin-mode"></div>
+
+      <form class="panel" id="form-pin" novalidate>
+        <div class="field">
+          <label class="label" for="in-pin">Admin PIN</label>
+          <input class="input" id="in-pin" type="password" inputmode="numeric"
+                 autocomplete="current-password" enterkeyhint="go"
+                 placeholder="••••" required>
+          <p class="hint">Set in the SEED block of <code>supabase/schema.sql</code>.</p>
+          <p class="err" id="err-pin"></p>
+        </div>
+        <div class="stack">
+          <button class="btn btn--primary btn--block" id="btn-pin" type="submit">Show results</button>
+          <a class="btn btn--ghost btn--block" href="index.html">← Back to the party page</a>
+        </div>
+      </form>
+    </div>
+  </section>
+
+  <!-- ── Results ── -->
+  <section id="v-admin" class="view">
+    <div class="wrap wrap--dash">
+      <div class="topbar">
+        <div class="topbar__who">
+          <span class="eyebrow">Host view</span>
+          <b id="admin-party">—</b>
+        </div>
+        <button class="icon-btn" id="btn-refresh" type="button" aria-label="Refresh">↻</button>
+        <button class="icon-btn" id="btn-lock" type="button" aria-label="Lock">🔒</button>
+      </div>
+
+      <div id="admin-mode"></div>
+
+      <div class="kpis">
+        <div class="kpi"><b id="kpi-guests">0</b><span>Checked in</span></div>
+        <div class="kpi"><b id="kpi-entries">0</b><span>Costumes</span></div>
+        <div class="kpi"><b id="kpi-votes">0</b><span>Votes cast</span></div>
+      </div>
+
+      <div class="clock" id="clock" style="margin-bottom:14px">
+        <div class="clock__label" id="clock-label">Voting closes in</div>
+        <div class="clock__digits" id="clock-digits"></div>
+        <div class="clock__when" id="clock-when"></div>
+      </div>
+
+      <h2 class="section-title" style="margin-top:20px">Standings</h2>
+      <div class="rank" id="rank"></div>
+      <div id="rank-empty"></div>
+
+      <h2 class="section-title" style="margin-top:26px">Controls</h2>
+
+      <details class="fold">
+        <summary>Voting deadline</summary>
+        <div class="fold__body">
+          <div class="field">
+            <label class="label" for="in-close">Voting closes at <span class="opt">— your phone's timezone</span></label>
+            <input class="input" id="in-close" type="datetime-local">
+          </div>
+          <button class="btn btn--primary btn--block btn--sm" id="btn-close" type="button">Save deadline</button>
+          <p class="hint">Running late? Push this out and every phone picks it up within 20 seconds.</p>
+        </div>
+      </details>
+
+      <details class="fold">
+        <summary>Show results to guests</summary>
+        <div class="fold__body">
+          <p class="fine" id="reveal-state" style="margin:0 0 12px"></p>
+          <button class="btn btn--block btn--sm" id="btn-reveal" type="button">Reveal now</button>
+          <p class="hint">Results unlock for everyone automatically when the countdown ends. This just does it early.</p>
+        </div>
+      </details>
+
+      <details class="fold">
+        <summary>Master guest list</summary>
+        <div class="fold__body">
+          <div class="stack" style="margin-top:0;margin-bottom:14px">
+            <button class="btn btn--ghost btn--block btn--sm" id="btn-csv" type="button">⬇︎ Download CSV</button>
+            <button class="btn btn--ghost btn--block btn--sm" id="btn-copy" type="button">⧉ Copy CSV to clipboard</button>
+          </div>
+          <div class="tbl-scroll">
+            <table class="tbl">
+              <thead><tr><th>Name</th><th>Phone</th><th>Years</th><th>Costume</th><th>Voted</th></tr></thead>
+              <tbody id="guest-rows"></tbody>
+            </table>
+          </div>
+        </div>
+      </details>
+
+      <details class="fold">
+        <summary>Remove an entry</summary>
+        <div class="fold__body">
+          <p class="hint" style="margin-top:0">For duplicates or junk. Deleting an entry also deletes the votes cast for it.</p>
+          <div class="rank" id="del-rows" style="margin-top:12px"></div>
+        </div>
+      </details>
+
+      <div style="height:40px"></div>
+    </div>
+  </section>
+</main>
+
+<div id="toast" aria-live="polite"></div>
+
+<script src="config.js"></script>
+<script type="module" src="assets/js/admin.js"></script>
+</body>
+</html>
