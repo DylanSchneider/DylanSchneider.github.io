@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
-<meta name="theme-color" content="#0a0e1c">
+<meta name="theme-color" content="#000000">
 <meta name="description" content="Down the Rabbit Hole — check in, enter your costume, and vote for the best.">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -82,11 +82,14 @@
           </div>
         </form>
 
-        <button class="scroll-cue" id="scroll-cue" type="button" disabled>
+        <div class="scroll-cue" id="scroll-cue" aria-live="polite">
           <span class="scroll-cue__line"></span>
           <span class="scroll-cue__text">Fill in your details to unlock</span>
           <span class="scroll-cue__arrow">↓</span>
-        </button>
+        </div>
+        <div class="fall-sentinel" id="fall-sentinel" aria-hidden="true">
+          <span>Keep falling</span><b>↓</b>
+        </div>
       </div>
     </div>
   </section>

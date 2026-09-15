@@ -963,9 +963,22 @@ body::after {
   transform: translateX(-130%);
   transition: transform .55s ease;
 }
-.btn:hover::after { transform: translateX(130%); }
-.btn:hover { transform: translateY(-2px) rotate(-.4deg); filter: saturate(1.12) brightness(1.05); }
-.btn--primary { box-shadow: 0 10px 30px rgba(239,54,91,.24), 0 0 0 1px rgba(247,203,104,.16) inset; }
+.btn--primary {
+  background: linear-gradient(145deg, #210b13, #0d090c);
+  border-color: rgba(181,18,60,.62);
+  color: #ead9bd;
+  box-shadow: 0 8px 24px rgba(0,0,0,.42), 0 0 0 1px rgba(217,180,109,.08) inset;
+}
+.btn--ghost {
+  background: #08080a;
+  border-color: rgba(255,247,231,.16);
+  color: #b9ada9;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .btn:hover::after { transform: translateX(130%); }
+  .btn:hover { transform: translateY(-2px) rotate(-.4deg); filter: brightness(1.08); }
+}
 
 .card:hover {
   border-color: rgba(247,203,104,.65);
@@ -1208,15 +1221,35 @@ body { background: #000; }
   font: 700 12px/1.2 Georgia, "Times New Roman", serif;
   letter-spacing: 1.5px;
   text-transform: uppercase;
-  cursor: pointer;
+  cursor: default;
   transition: color .25s, opacity .25s;
 }
-.scroll-cue[disabled] { cursor: not-allowed; opacity: .68; }
+.scroll-cue:not(.is-ready) { opacity: .68; }
 .scroll-cue.is-ready { color: var(--wonder-cream); }
 .scroll-cue__line { width: 34px; height: 1px; background: currentColor; opacity: .5; }
 .scroll-cue__arrow { font-size: 20px; line-height: .7; }
 .scroll-cue.is-ready .scroll-cue__arrow { animation: cue-nudge 1.3s ease-in-out infinite; }
 .entry-stage.is-gated { animation: gate-pulse .38s ease-out; }
+
+.fall-sentinel {
+  display: grid;
+  min-height: 32svh;
+  place-content: center;
+  gap: 14px;
+  color: var(--muted-2);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 2px;
+  text-align: center;
+  text-transform: uppercase;
+}
+.fall-sentinel b {
+  color: var(--card-red);
+  font: 400 30px/1 Georgia, "Times New Roman", serif;
+}
+
+.view--landing,
+.landing-shell { touch-action: pan-y; }
 
 body.rabbit-fall { overflow: hidden; }
 body.rabbit-fall #app { animation: rabbit-fall 1.15s cubic-bezier(.55, .04, .3, .95) both; transform-origin: 50% 45%; }

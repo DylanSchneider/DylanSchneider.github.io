@@ -57,15 +57,15 @@
     const name = document.getElementById('in-name');
     const phone = document.getElementById('in-phone');
     const cue = document.getElementById('scroll-cue');
-    const stage = document.getElementById('entry-details');
+    const sentinel = document.getElementById('fall-sentinel');
     if (!form || !name || !phone || !cue) return;
 
     let ready = false;
+    let falling = false;
     const syncGate = () => {
       const fullName = name.value.trim().replace(/\s+/g, ' ');
       const digits = phone.value.replace(/\D/g, '');
       ready = fullName.length >= 2 && fullName.includes(' ') && digits.length === 10;
-      cue.disabled = !ready;
       cue.classList.toggle('is-ready', ready);
       cue.querySelector('.scroll-cue__text').textContent = ready
         ? 'Scroll down to enter Wonderland'
@@ -77,22 +77,24 @@
     phone.addEventListener('input', syncGate);
     syncGate();
 
-    cue.addEventListener('click', () => {
-      if (!ready) return;
-      stage?.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'center' });
-      window.setTimeout(() => form.requestSubmit(), reduced ? 0 : 260);
-    });
-
-    const blockPrematureScroll = (event) => {
-      if (ready || !document.getElementById('v-name')?.classList.contains('is-active')) return;
-      if (event.target.closest?.('#entry-details')) return;
-      event.preventDefault();
-      stage?.classList.remove('is-gated');
-      void stage?.offsetWidth;
-      stage?.classList.add('is-gated');
+    const fall = () => {
+      if (!ready || falling || !document.getElementById('v-name')?.classList.contains('is-active')) return;
+      falling = true;
+      form.requestSubmit();
+      window.setTimeout(() => { falling = false; }, 2000);
     };
-    window.addEventListener('wheel', blockPrematureScroll, { passive: false });
-    window.addEventListener('touchmove', blockPrematureScroll, { passive: false });
+
+    if (sentinel && 'IntersectionObserver' in window) {
+      const observer = new IntersectionObserver((entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) fall();
+      }, { threshold: .35 });
+      observer.observe(sentinel);
+    } else {
+      window.addEventListener('scroll', () => {
+        const nearBottom = window.scrollY + window.innerHeight >= document.documentElement.scrollHeight - 24;
+        if (nearBottom) fall();
+      }, { passive: true });
+    }
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init, { once: true });
