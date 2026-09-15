@@ -739,6 +739,41 @@ h1, h2, h3 { margin: 0; line-height: 1.15; font-weight: 800; }
   transition: width .4s ease;
 }
 
+/* A circular photo thumbnail in place of .rank__pos's number/medal —
+   used by the "join an existing costume" list and its picked-group preview. */
+.rank__pos--thumb {
+  width: 34px; height: 34px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: var(--surface-2);
+  display: grid;
+  place-items: center;
+  font-size: 15px;
+}
+.rank__pos--thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+/* Tappable variant of .rank__row for choosing which group to join. */
+.rank__row--tap { cursor: pointer; transition: transform .1s, border-color .15s; }
+.rank__row--tap:active { transform: scale(.985); border-color: var(--pumpkin); }
+
+.choice-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 22px 0 16px;
+  color: var(--muted-2);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: .8px;
+  text-transform: uppercase;
+}
+.choice-divider::before, .choice-divider::after {
+  content: "";
+  flex: 1 1 auto;
+  height: 1px;
+  background: var(--line);
+}
+
 .tbl-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; margin-inline: -4px; }
 table.tbl { width: 100%; border-collapse: collapse; font-size: 13.5px; }
 table.tbl th, table.tbl td {

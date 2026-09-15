@@ -6,6 +6,11 @@
 
    If config.js has no Supabase credentials, everything below falls back
    to DEMO MODE against localStorage so the full flow is clickable.
+
+   Costume model: an "entry" is the thing being voted on (a solo costume,
+   or a group costume like "Alice in Wonderland"). Each guest who's part
+   of an entry has their own row describing their individual costume/role
+   within it (e.g. "Mad Hatter") — see entry_members in supabase/schema.sql.
    ===================================================================== */
 
 const CFG = window.PARTY_CONFIG || {};
@@ -148,6 +153,28 @@ function blobToDataUrl(blob) {
   });
 }
 
+async function uploadPhoto(guestId, blob) {
+  const name = `${PARTY_ID}/${guestId}-${Date.now()}.jpg`;
+  let res;
+  try {
+    res = await fetch(`${BASE}/storage/v1/object/${BUCKET}/${name}`, {
+      method: 'POST',
+      headers: authHeaders({ 'Content-Type': 'image/jpeg', 'cache-control': 'public, max-age=31536000' }),
+      body: blob
+    });
+  } catch {
+    throw new Error('The photo upload could not reach the server. Check your wifi.');
+  }
+  if (!res.ok) {
+    const t = await res.text().catch(() => '');
+    if (/Bucket not found/i.test(t)) {
+      throw new Error('The "costumes" storage bucket is missing — run supabase/schema.sql.');
+    }
+    throw new Error(friendlyError(t || `Photo upload failed (${res.status}).`, res.status));
+  }
+  return name;
+}
+
 
 /* ── Remembered session (this phone) ─────────────────────────────────── */
 
@@ -177,8 +204,9 @@ function demoRead() {
   if (!db) {
     db = {
       guests: [],
-      entries: [],
-      votes: {},
+      entries: [],    // {id, owner_id, title, photo_path}
+      members: [],    // {guest_id, entry_id, costume_name, is_owner}
+      votes: {},      // voter_id -> entry_id
       closes_at: CFG.FALLBACK_CLOSES_AT || '2026-10-24T22:00:00-04:00',
       results_public: false
     };
@@ -194,13 +222,34 @@ function demoWrite(db) {
   }
 }
 
-const normName = (s) => String(s || '').trim().replace(/\s+/g, ' ').toLowerCase();
+const cleanText = (s) => String(s || '').trim().replace(/\s+/g, ' ');
 const normPhone = (s) => {
   const d = String(s || '').replace(/\D/g, '');
   return d.length === 11 && d[0] === '1' ? d.slice(1) : d;
 };
-const cleanText = (s) => String(s || '').trim().replace(/\s+/g, ' ');
 const uid = () => (crypto.randomUUID ? crypto.randomUUID() : String(Math.random()).slice(2) + Date.now());
+
+function demoRoster(db, entryId) {
+  return db.members
+    .filter((m) => m.entry_id === entryId)
+    .map((m) => ({
+      name: (db.guests.find((g) => g.id === m.guest_id) || {}).full_name || '',
+      costume_name: m.costume_name,
+      is_owner: m.is_owner
+    }))
+    .sort((a, b) => (b.is_owner - a.is_owner) || a.name.localeCompare(b.name));
+}
+
+function demoMembership(db, guestId) {
+  const m = db.members.find((x) => x.guest_id === guestId);
+  if (!m) return null;
+  const e = db.entries.find((x) => x.id === m.entry_id);
+  if (!e) return null;
+  return {
+    entry_id: e.id, title: e.title, photo_path: e.photo_path,
+    is_owner: m.is_owner, costume_name: m.costume_name, members: demoRoster(db, e.id)
+  };
+}
 
 const demo = {
   partyInfo() {
@@ -232,59 +281,103 @@ const demo = {
     else { g = { id: uid(), full_name: fullName, phone: ph }; db.guests.push(g); }
     demoWrite(db);
 
-    const entry = db.entries.find((e) => e.owner_id === g.id) || null;
-    const listed = db.entries.find(
-      (e) => e.owner_id !== g.id && (e.member_names || []).some((m) => normName(m) === normName(g.full_name))
-    );
-
     return {
       guest: g,
-      entry: entry && {
-        id: entry.id, title: entry.title,
-        photo_path: entry.photo_path, member_names: entry.member_names
-      },
-      voted_entry_id: db.votes[g.id] || null,
-      listed_in: listed
-        ? { id: listed.id, title: listed.title, owner_name: (db.guests.find((x) => x.id === listed.owner_id) || {}).full_name }
-        : null
+      membership: demoMembership(db, g.id),
+      voted_entry_id: db.votes[g.id] || null
     };
   },
 
-  async saveEntry(guestId, title, photoBlob, existingPath, members) {
+  createEntry(guestId, title, costumeName, photoPath) {
     const db = demoRead();
+    if (db.members.some((m) => m.guest_id === guestId)) {
+      throw new Error('You already have a costume entered this year — edit it from the menu instead.');
+    }
     const t = cleanText(title);
-    if (t.length < 2) throw new Error('Give your costume a name.');
+    if (t.length < 2) throw new Error('Give your costume (or group) a name.');
+    const costume = cleanText(costumeName) || t;
 
-    let path = existingPath || null;
-    if (photoBlob) path = await blobToDataUrl(photoBlob);
-
-    const me = db.guests.find((g) => g.id === guestId);
-    const clean = [...new Set((members || []).map(cleanText).filter((m) => m.length > 1 && normName(m) !== normName(me?.full_name)))];
-
-    let e = db.entries.find((x) => x.owner_id === guestId);
-    if (e) Object.assign(e, { title: t, photo_path: path, member_names: clean });
-    else { e = { id: uid(), owner_id: guestId, title: t, photo_path: path, member_names: clean }; db.entries.push(e); }
-
+    const e = { id: uid(), owner_id: guestId, title: t, photo_path: photoPath || null };
+    db.entries.push(e);
+    db.members.push({ guest_id: guestId, entry_id: e.id, costume_name: costume, is_owner: true });
     demoWrite(db);
-    return e;
+    return { entry_id: e.id, title: e.title, photo_path: e.photo_path, costume_name: costume, is_owner: true, members: demoRoster(db, e.id) };
+  },
+
+  joinEntry(guestId, entryId, costumeName) {
+    const db = demoRead();
+    if (db.members.some((m) => m.guest_id === guestId)) {
+      throw new Error('You already have a costume entered this year — edit it from the menu instead.');
+    }
+    const e = db.entries.find((x) => x.id === entryId);
+    if (!e) throw new Error('That costume group no longer exists.');
+    const costume = cleanText(costumeName);
+    if (costume.length < 1) throw new Error('What are you dressed as in this group?');
+
+    db.members.push({ guest_id: guestId, entry_id: e.id, costume_name: costume, is_owner: false });
+    demoWrite(db);
+    return { entry_id: e.id, title: e.title, photo_path: e.photo_path, costume_name: costume, is_owner: false, members: demoRoster(db, e.id) };
+  },
+
+  updateEntry(guestId, title, photoPath) {
+    const db = demoRead();
+    const m = db.members.find((x) => x.guest_id === guestId);
+    if (!m) throw new Error('You have not entered a costume yet.');
+    if (!m.is_owner) throw new Error('Only the person who started this group can rename it or change its photo.');
+    const t = cleanText(title);
+    if (t.length < 2) throw new Error('Give your costume (or group) a name.');
+
+    const e = db.entries.find((x) => x.id === m.entry_id);
+    e.title = t;
+    e.photo_path = photoPath || null;
+    demoWrite(db);
+    return { entry_id: e.id, title: e.title, photo_path: e.photo_path, members: demoRoster(db, e.id) };
+  },
+
+  updateMyCostume(guestId, costumeName) {
+    const db = demoRead();
+    const costume = cleanText(costumeName);
+    if (costume.length < 1) throw new Error('What are you dressed as?');
+    const m = db.members.find((x) => x.guest_id === guestId);
+    if (!m) throw new Error('You have not entered a costume yet.');
+    m.costume_name = costume;
+    demoWrite(db);
+    return { costume_name: costume, members: demoRoster(db, m.entry_id) };
+  },
+
+  leaveEntry(guestId) {
+    const db = demoRead();
+    const m = db.members.find((x) => x.guest_id === guestId);
+    if (!m) throw new Error('You have not entered a costume yet.');
+    const rest = db.members.filter((x) => x.entry_id === m.entry_id && x.guest_id !== guestId);
+    if (m.is_owner && rest.length > 0) {
+      throw new Error(`You started this group and ${rest.length} other ${rest.length === 1 ? 'person has' : 'people have'} already joined it — remove the entry from the host page instead of leaving.`);
+    }
+    if (m.is_owner) {
+      db.entries = db.entries.filter((e) => e.id !== m.entry_id);
+      db.members = db.members.filter((x) => x.entry_id !== m.entry_id);
+      for (const k of Object.keys(db.votes)) if (db.votes[k] === m.entry_id) delete db.votes[k];
+    } else {
+      db.members = db.members.filter((x) => x.guest_id !== guestId);
+    }
+    demoWrite(db);
+    return { left: true };
   },
 
   listEntries(guestId) {
     const db = demoRead();
     const info = demo.partyInfo();
-    const me = db.guests.find((g) => g.id === guestId);
-    const myName = normName(me?.full_name);
 
     const rows = db.entries.map((e) => {
       const votes = Object.values(db.votes).filter((v) => v === e.id).length;
+      const members = demoRoster(db, e.id);
       return {
         id: e.id,
         title: e.title,
         photo_path: e.photo_path,
-        member_names: e.member_names || [],
-        owner_name: (db.guests.find((g) => g.id === e.owner_id) || {}).full_name || '',
-        is_group: (e.member_names || []).length > 0,
-        is_mine: e.owner_id === guestId || (myName && (e.member_names || []).some((m) => normName(m) === myName)),
+        members,
+        is_group: members.length > 1,
+        is_mine: db.members.some((m) => m.entry_id === e.id && m.guest_id === guestId),
         votes: info.revealed ? votes : null,
         _votes: votes
       };
@@ -298,8 +391,7 @@ const demo = {
     if (new Date() > new Date(db.closes_at) && !db.results_public) throw new Error('Voting is closed.');
     const e = db.entries.find((x) => x.id === entryId);
     if (!e) throw new Error('That costume is no longer listed.');
-    const me = db.guests.find((g) => g.id === guestId);
-    if (e.owner_id === guestId || (e.member_names || []).some((m) => normName(m) === normName(me?.full_name))) {
+    if (db.members.some((m) => m.entry_id === entryId && m.guest_id === guestId)) {
       throw new Error('You cannot vote for your own costume.');
     }
     db.votes[guestId] = entryId;
@@ -327,20 +419,26 @@ const demo = {
   deleteEntry(id) {
     const db = demoRead();
     db.entries = db.entries.filter((e) => e.id !== id);
+    db.members = db.members.filter((m) => m.entry_id !== id);
     for (const k of Object.keys(db.votes)) if (db.votes[k] === id) delete db.votes[k];
     demoWrite(db);
     return { deleted: id };
   },
   guests() {
     const db = demoRead();
-    return db.guests.map((g) => ({
-      id: g.id, full_name: g.full_name, phone: g.phone,
-      first_seen: new Date().toISOString(),
-      years: [PARTY_ID],
-      here_now: true,
-      entry: (db.entries.find((e) => e.owner_id === g.id) || {}).title || null,
-      voted: Boolean(db.votes[g.id])
-    })).sort((a, b) => a.full_name.localeCompare(b.full_name));
+    return db.guests.map((g) => {
+      const m = db.members.find((x) => x.guest_id === g.id);
+      const e = m ? db.entries.find((x) => x.id === m.entry_id) : null;
+      return {
+        id: g.id, full_name: g.full_name, phone: g.phone,
+        first_seen: new Date().toISOString(),
+        years: [PARTY_ID],
+        here_now: true,
+        entry: e ? e.title : null,
+        costume_name: m ? m.costume_name : null,
+        voted: Boolean(db.votes[g.id])
+      };
+    }).sort((a, b) => a.full_name.localeCompare(b.full_name));
   },
   wipe() { try { localStorage.removeItem(DEMO_KEY); } catch { /* private mode */ } }
 };
@@ -361,43 +459,43 @@ export const api = {
       : Promise.resolve(demo.joinParty(name, phone));
   },
 
-  /**
-   * @param {Blob|null} photoBlob  already shrunk; null means "keep what's there"
-   * @param {string|null} existingPath  current stored path, or null to clear
-   */
-  async saveEntry(guestId, title, photoBlob, existingPath, members) {
-    if (!IS_LIVE) return demo.saveEntry(guestId, title, photoBlob, existingPath, members);
+  /** Start a brand-new solo or group entry. photoBlob may be null (no photo). */
+  async createEntry(guestId, title, costumeName, photoBlob) {
+    if (!IS_LIVE) return demo.createEntry(guestId, title, costumeName, photoBlob ? await blobToDataUrl(photoBlob) : null);
+    const path = photoBlob ? await uploadPhoto(guestId, photoBlob) : null;
+    return rpc('create_entry', { p_party: PARTY_ID, p_guest: guestId, p_title: title, p_costume_name: costumeName, p_photo_path: path });
+  },
 
-    let path = existingPath || null;
-    if (photoBlob) {
-      const name = `${PARTY_ID}/${guestId}-${Date.now()}.jpg`;
-      let res;
-      try {
-        res = await fetch(`${BASE}/storage/v1/object/${BUCKET}/${name}`, {
-          method: 'POST',
-          headers: authHeaders({ 'Content-Type': 'image/jpeg', 'cache-control': 'public, max-age=31536000' }),
-          body: photoBlob
-        });
-      } catch {
-        throw new Error('The photo upload could not reach the server. Check your wifi.');
-      }
-      if (!res.ok) {
-        const t = await res.text().catch(() => '');
-        if (/Bucket not found/i.test(t)) {
-          throw new Error('The "costumes" storage bucket is missing — run supabase/schema.sql.');
-        }
-        throw new Error(friendlyError(t || `Photo upload failed (${res.status}).`, res.status));
-      }
-      path = name;
+  /** Join an existing group with your own costume/role inside it. */
+  joinEntry(guestId, entryId, costumeName) {
+    return IS_LIVE
+      ? rpc('join_entry', { p_party: PARTY_ID, p_guest: guestId, p_entry: entryId, p_costume_name: costumeName })
+      : Promise.resolve(demo.joinEntry(guestId, entryId, costumeName));
+  },
+
+  /** Owner-only: rename the group/solo title and/or replace its photo.
+   *  photoBlob: a new Blob to upload, null to clear the photo, or
+   *  undefined to keep whatever's already there. */
+  async updateEntry(guestId, title, photoBlob, existingPath) {
+    if (!IS_LIVE) {
+      const path = photoBlob === undefined ? existingPath : (photoBlob ? await blobToDataUrl(photoBlob) : null);
+      return demo.updateEntry(guestId, title, path);
     }
+    const path = photoBlob === undefined ? existingPath : (photoBlob ? await uploadPhoto(guestId, photoBlob) : null);
+    return rpc('update_entry', { p_party: PARTY_ID, p_guest: guestId, p_title: title, p_photo_path: path });
+  },
 
-    return rpc('save_entry', {
-      p_party: PARTY_ID,
-      p_guest: guestId,
-      p_title: title,
-      p_photo_path: path,
-      p_members: members || []
-    });
+  /** Anyone: change your own individual costume/role. */
+  updateMyCostume(guestId, costumeName) {
+    return IS_LIVE
+      ? rpc('update_my_costume', { p_party: PARTY_ID, p_guest: guestId, p_costume_name: costumeName })
+      : Promise.resolve(demo.updateMyCostume(guestId, costumeName));
+  },
+
+  leaveEntry(guestId) {
+    return IS_LIVE
+      ? rpc('leave_entry', { p_party: PARTY_ID, p_guest: guestId })
+      : Promise.resolve(demo.leaveEntry(guestId));
   },
 
   listEntries(guestId) {

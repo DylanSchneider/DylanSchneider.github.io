@@ -75,62 +75,14 @@
 
 
   <!-- ─────────────── Step 2 · costume ─────────────── -->
+  <!-- app.js renders whichever sub-screen applies (choose / solo / group /
+       join / edit) into #costume-slot — the shape varies too much for one
+       static form. -->
   <section id="v-costume" class="view">
     <div class="wrap">
       <button class="linkback" id="btn-back" type="button">&larr; Back</button>
       <div class="steps"><i class="on"></i><i class="on"></i></div>
-
-      <div id="listed-note"></div>
-
-      <form id="form-costume" class="panel" novalidate>
-        <p class="eyebrow" id="costume-eyebrow">Step 2 of 2 &middot; Your costume</p>
-        <h2 class="section-title" style="margin-top:8px">What are you dressed as?</h2>
-
-        <div class="field">
-          <label class="label" for="in-title">Costume name</label>
-          <input class="input" id="in-title" type="text" name="title"
-                 autocapitalize="words" autocomplete="off" enterkeyhint="next"
-                 maxlength="80" placeholder="e.g. Beetlejuice" required>
-          <p class="err" id="err-title"></p>
-        </div>
-
-        <div class="field">
-          <span class="label">Photo <span class="opt">&mdash; optional, but photos win votes</span></span>
-          <!-- the file input is stretched invisibly over this whole box, so
-               there is no `for` here: that would fire the picker twice -->
-          <label class="photo" id="photo">
-            <input type="file" id="in-photo" accept="image/*">
-            <span class="photo__empty">
-              <span class="photo__icon">📸</span>
-              <b>Add a photo</b>
-              <span class="fine">Take one now or pick from your library</span>
-            </span>
-            <img class="photo__img" id="photo-img" alt="Your costume">
-            <span class="photo__swap">Change</span>
-          </label>
-          <p class="err" id="err-photo"></p>
-          <button class="btn btn--ghost btn--sm" id="btn-rmphoto" type="button"
-                  style="margin-top:10px;display:none">Remove photo</button>
-        </div>
-
-        <div class="field">
-          <label class="label" for="in-member">Group costume? <span class="opt">&mdash; add everyone else</span></label>
-          <div class="row-add">
-            <input class="input" id="in-member" type="text"
-                   autocapitalize="words" autocomplete="off" autocorrect="off"
-                   spellcheck="false" enterkeyhint="done" maxlength="60"
-                   placeholder="Their real name">
-            <button class="btn btn--ghost" id="btn-addmember" type="button" aria-label="Add this name">+</button>
-          </div>
-          <p class="hint">Leave this blank if you're going solo. A group is voted on as one costume, so only one of you needs to enter it.</p>
-          <div class="chips" id="chips"></div>
-        </div>
-
-        <div class="stack">
-          <button class="btn btn--primary btn--block" id="btn-costume" type="submit">Enter my costume</button>
-          <button class="btn btn--ghost btn--block" id="btn-skip" type="button">No costume &mdash; just let me vote</button>
-        </div>
-      </form>
+      <div id="costume-slot"></div>
     </div>
   </section>
 

@@ -11,12 +11,23 @@ Live at whatever URL GitHub Pages serves this repo from (Settings → Pages).
 
 1. **Check in** — real name + phone number. This builds a master guest list
    that persists across years.
-2. **Enter a costume** — name, an optional photo, and (optional) the real
-   names of anyone else in the group. A group costume is voted on as one
-   entry; only one person in the group needs to enter it.
+2. **Enter a costume.** Three ways in:
+   - **Going solo** — just a costume name and an optional photo.
+   - **Starting a group** — a group name (e.g. "Alice in Wonderland") and
+     your own individual costume/role within it (e.g. "Mad Hatter"), plus
+     an optional photo for the whole group.
+   - **Joining a group** — see everyone already entered on your check-in
+     screen; tap "Join" on your group and enter your own costume/role
+     (e.g. "White Rabbit"). No need to know who's starting it in advance —
+     whoever gets there first starts it, everyone else joins.
+   A group is voted on as one entry no matter how many people are in it.
+   Anyone can edit their own costume name later, the group's starter can
+   rename the group or change its photo, and anyone can leave to switch
+   groups (the group's starter can only leave if no one else has joined).
 3. **Vote** — one vote per person, changeable until the deadline. You can't
-   vote for your own costume (solo or group). Results stay hidden until
-   voting closes, when the countdown flips the page over to show them.
+   vote for your own costume, solo or group (nor for anyone else in your
+   group). Results stay hidden until voting closes, when the countdown
+   flips the page over to show them.
 
 ## The host page (`admin.html`)
 
@@ -60,19 +71,86 @@ Until you do this, the site runs in **demo mode**: fully clickable on one
 phone, but nothing is shared between phones and no votes are real. A banner
 says so on every page in that mode.
 
-## Changing the party each year
+## Multi-year usage
 
-Everything year-specific lives in [`config.js`](config.js):
+This is meant to be reused every year (it's on its 5th annual as of 2026) —
+both the app and the underlying data are designed around that.
 
-- `PARTY_ID` — must match a row id in the `parties` table. To start a new
-  year without losing old guests, insert a new party row (see the SEED
-  block in `supabase/schema.sql` for the shape) and bump `PARTY_ID` to
-  match. The master guest list (`guests` table) is shared across every
-  `PARTY_ID`.
-- `PARTY_TITLE` / `PARTY_YEAR` — shown in the header.
+### What persists automatically, in the database
 
-The voting deadline and admin PIN live in the database, not in this repo —
-change them from the host page (`admin.html`) any time, no redeploy needed.
+Nothing here needs any yearly reset — it's all already keyed by `party_id`
+so old years are simply never touched by a new one:
+
+- **`guests`** — the master list of real name + phone number, one row per
+  person, forever. This is also your **invite list**: `admin_guests` /
+  the CSV export on the host page pulls every guest who has ever attended,
+  with a `years` column showing which parties (`party_id`s) they were at.
+- **`entries` + `entry_members`** — every costume and group, every year,
+  with each guest's own individual costume/role inside it. Since these are
+  linked to a specific guest (not just a name), this is a real per-guest
+  costume history, not just free text. There's a ready-made query for it —
+  `admin_guest_history(pin, guest_id)` — for whenever you want to build a
+  "what was I last year?" view; it's not wired into the host page yet.
+- **`attendance`** — who actually showed up each year (vs. just being on
+  the invite list from a prior year).
+
+**`votes` is the one table that's deliberately *not* meant to be kept
+forever** — it's per-party ballots, not part of anyone's personal record.
+Once you've read a year's winner off the host page, it's safe to clear that
+year's votes from the Supabase SQL Editor if you'd rather not keep a
+permanent log of who voted for what:
+
+```sql
+delete from public.votes where party_id = '2026';
+```
+
+(Entries and guests are untouched by this — only the ballots.)
+
+### Starting a new year
+
+1. In the Supabase SQL Editor, insert a new party row rather than editing
+   the old one — this is also in a comment at the bottom of
+   `supabase/schema.sql`:
+   ```sql
+   insert into public.parties (id, name, voting_closes_at, admin_pin)
+   values ('2027', 'Halloween 2027',
+           (timestamp '2027-10-30 22:00') at time zone 'America/Denver',
+           '2468')
+   on conflict (id) do nothing;
+   ```
+2. Bump `PARTY_ID` (and `PARTY_TITLE`/`PARTY_YEAR`) in [`config.js`](config.js)
+   to match, commit, and push.
+3. That's it — `guests` carries over automatically; `entries` starts empty
+   for the new `party_id` so last year's costumes don't show up as this
+   year's entrants.
+
+### Archiving each year's code
+
+The app itself (this repo) will keep evolving year to year, so it's worth
+snapshotting what was actually live for a given party. This repo doesn't
+use separate deploy branches (GitHub Pages for a user site like this one
+only serves a single branch), so the convention is: keep building on
+`master`, and tag the commit that was live on party night.
+
+```sh
+git tag party-2026
+git push origin party-2026
+```
+
+That gives you a permanent pointer (`git show party-2026`, or
+`git checkout party-2026` to look at it) to exactly what guests used that
+year, without branching your ongoing work. [`scripts/archive-season.ps1`](scripts/archive-season.ps1)
+does the same thing — run it after the party with the year as the argument:
+
+```powershell
+./scripts/archive-season.ps1 2026
+```
+
+### The admin PIN and voting deadline
+
+These live in the database, not this repo, so they don't need a redeploy —
+change them any time from the host page (`admin.html`), or directly in
+Supabase.
 
 ## Files
 

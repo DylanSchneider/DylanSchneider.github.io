@@ -48,6 +48,15 @@ function loading(btn, on) {
   btn.disabled = on;
 }
 
+/** costume/group roster as display text: just the name when solo, else
+ *  "Name (Costume), Name (Costume)". */
+function rosterText(e) {
+  const members = e.members || [];
+  if (!members.length) return '';
+  if (members.length === 1) return members[0].name;
+  return members.map((m) => `${m.name} (${m.costume_name})`).join(', ');
+}
+
 
 /* ── PIN gate ────────────────────────────────────────────────────────── */
 
@@ -116,7 +125,7 @@ async function loadGuests() {
     paintGuests();
   } catch (err) {
     $('guest-rows').replaceChildren(
-      h('tr', {}, h('td', { colspan: '5', class: 'wrap-cell', text: err.message }))
+      h('tr', {}, h('td', { colspan: '6', class: 'wrap-cell', text: err.message }))
     );
   }
 }
@@ -211,7 +220,7 @@ function paintRank() {
   box.replaceChildren(...list.map((e, i) => {
     if (e.votes !== last) { pos = i + 1; last = e.votes; }
     const medal = pos <= 3 && e.votes > 0 ? ['🥇', '🥈', '🥉'][pos - 1] : String(pos);
-    const who = [e.owner_name, ...(e.member_names || [])].filter(Boolean).join(', ');
+    const who = rosterText(e);
 
     return h('div', { class: 'rank__row' },
       h('div', { class: 'rank__pos', text: medal }),
@@ -245,7 +254,7 @@ function paintDelete() {
       h('div', { class: 'rank__pos', text: '🗑' }),
       h('div', { class: 'rank__main' },
         h('div', { class: 'rank__title', text: e.title }),
-        h('div', { class: 'rank__sub', text: `${e.owner_name} · ${e.votes} ${e.votes === 1 ? 'vote' : 'votes'}` })
+        h('div', { class: 'rank__sub', text: `${rosterText(e)} · ${e.votes} ${e.votes === 1 ? 'vote' : 'votes'}` })
       ),
       h('button', {
         class: 'btn btn--danger btn--sm', type: 'button',
@@ -259,7 +268,7 @@ function paintGuests() {
   const rows = state.guests;
   if (!rows.length) {
     $('guest-rows').replaceChildren(
-      h('tr', {}, h('td', { colspan: '5', text: 'Nobody has checked in yet.' }))
+      h('tr', {}, h('td', { colspan: '6', text: 'Nobody has checked in yet.' }))
     );
     return;
   }
@@ -269,6 +278,7 @@ function paintGuests() {
       h('td', { text: prettyPhone(g.phone) }),
       h('td', { text: (g.years || []).join(', ') }),
       h('td', { class: 'wrap-cell', text: g.entry || '—' }),
+      h('td', { class: 'wrap-cell', text: (g.costume_name && g.costume_name !== g.entry) ? g.costume_name : '—' }),
       h('td', { text: g.voted ? '✅' : '—' })
     )
   ));
@@ -345,13 +355,13 @@ function csv() {
     const s = v == null ? '' : String(v);
     return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
   };
-  const head = ['Name', 'Phone', 'Years attended', `Costume (${PARTY_ID})`, `Voted (${PARTY_ID})`, 'First seen'];
+  const head = ['Name', 'Phone', 'Years attended', `Group/Costume (${PARTY_ID})`, `Their role (${PARTY_ID})`, `Voted (${PARTY_ID})`, 'First seen'];
   const lines = [head.join(',')];
   for (const g of state.guests) {
     lines.push([
       esc(g.full_name), esc(prettyPhone(g.phone)), esc((g.years || []).join(' ')),
-      esc(g.entry || ''), g.voted ? 'yes' : 'no',
-      esc(String(g.first_seen || '').slice(0, 10))
+      esc(g.entry || ''), esc((g.costume_name && g.costume_name !== g.entry) ? g.costume_name : ''),
+      g.voted ? 'yes' : 'no', esc(String(g.first_seen || '').slice(0, 10))
     ].join(','));
   }
   return lines.join('\r\n');

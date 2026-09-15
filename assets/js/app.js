@@ -1,6 +1,6 @@
 /* =====================================================================
    Halloween Party — guest app
-   Screens: check in → costume → vote dashboard
+   Screens: check in → costume (join / start solo / start group / edit) → vote
    ===================================================================== */
 
 import { api, session, photoUrl, shrinkPhoto, demoStore, IS_LIVE, PARTY_ID } from './store.js';
@@ -33,14 +33,11 @@ const state = {
   closesAt: null,      // Date
   revealed: false,
   entries: [],
-  myEntry: null,
+  membership: null,    // { entry_id, title, photo_path, is_owner, costume_name, members }
   votedId: null,
   selectedId: null,
-  members: [],
-  photoBlob: null,
-  photoPath: null,
-  photoObjectUrl: null,
   costumeReturn: 'v-name',
+  costumeMode: 'chooser', // chooser | solo | group | join | edit
   busy: false
 };
 
@@ -74,9 +71,14 @@ function loading(btn, on) {
   btn.disabled = on;
 }
 
-function fieldError(errId, inputId, msg) {
-  $(errId).textContent = msg || '';
-  if (inputId) $(inputId).setAttribute('aria-invalid', msg ? 'true' : 'false');
+/** costume/group roster as display text: just the name when solo (the
+ *  costume name is already the entry title, so repeating it is noise);
+ *  "Name (Costume), Name (Costume)" once there's more than one person. */
+function rosterText(e) {
+  const members = e.members || [];
+  if (!members.length) return '';
+  if (members.length === 1) return members[0].name;
+  return members.map((m) => `${m.name} (${m.costume_name})`).join(', ');
 }
 
 
@@ -143,6 +145,11 @@ $('in-phone').addEventListener('input', (ev) => {
   fieldError('err-phone', 'in-phone', '');
 });
 
+function fieldError(errId, inputId, msg) {
+  $(errId).textContent = msg || '';
+  if (inputId) $(inputId).setAttribute('aria-invalid', msg ? 'true' : 'false');
+}
+
 $('in-name').addEventListener('input', () => fieldError('err-name', 'in-name', ''));
 
 $('form-name').addEventListener('submit', async (ev) => {
@@ -167,8 +174,8 @@ $('form-name').addEventListener('submit', async (ev) => {
   try {
     const res = await api.joinParty(name, phone);
     adoptJoin(res);
-    if (state.myEntry) { await goDash(); toast('Welcome back, ' + firstName() + '!'); }
-    else openCostume('v-name', res.listed_in);
+    if (state.membership) { await goDash(); toast('Welcome back, ' + firstName() + '!'); }
+    else openCostume('v-name');
   } catch (err) {
     toast(err.message, 'bad');
     buzz(60);
@@ -179,189 +186,385 @@ $('form-name').addEventListener('submit', async (ev) => {
 
 function adoptJoin(res) {
   state.me = res.guest;
-  state.myEntry = res.entry || null;
+  state.membership = res.membership || null;
   state.votedId = res.voted_entry_id || null;
   session.set(res.guest);
 }
 
 const firstName = () => String(state.me?.full_name || '').split(' ')[0];
 
+/** Merge a create/join/update result into state.membership (each call only
+ *  returns the fields it actually changed). */
+function mergeMembership(partial) {
+  const cur = state.membership || {};
+  state.membership = {
+    entry_id: partial.entry_id ?? cur.entry_id,
+    title: partial.title ?? cur.title,
+    photo_path: 'photo_path' in partial ? partial.photo_path : cur.photo_path,
+    is_owner: 'is_owner' in partial ? partial.is_owner : cur.is_owner,
+    costume_name: partial.costume_name ?? cur.costume_name,
+    members: partial.members ?? cur.members
+  };
+}
+
 
 /* ── Step 2 · costume ────────────────────────────────────────────────── */
 
-function openCostume(returnTo, listedIn) {
-  state.costumeReturn = returnTo || 'v-dash';
-  const editing = Boolean(state.myEntry);
-
-  $('in-title').value = state.myEntry?.title || '';
-  state.members = [...(state.myEntry?.member_names || [])];
-  state.photoBlob = null;
-  state.photoPath = state.myEntry?.photo_path || null;
-  $('in-photo').value = '';
-  setPreview(state.photoPath ? photoUrl(state.photoPath) : null);
-  paintChips();
-  fieldError('err-title', 'in-title', '');
-  fieldError('err-photo', null, '');
-
-  $('costume-eyebrow').textContent = editing ? 'Edit your costume' : 'Step 2 of 2 · Your costume';
-  $('btn-costume').textContent = editing ? 'Save changes' : 'Enter my costume';
-  $('btn-skip').hidden = editing;
-  $('btn-back').textContent = returnTo === 'v-dash' ? '← Back to voting' : '← Back';
-
-  $('listed-note').replaceChildren();
-  if (listedIn && !editing) {
-    $('listed-note').replaceChildren(
-      h('div', { class: 'note note--warn' },
-        h('b', {}, `${listedIn.owner_name} already listed you in “${listedIn.title}”`),
-        'If that is your costume you are all set — no need to enter it again. ',
-        'Only add your own entry below if you have a different costume.',
-        h('button', {
-          class: 'btn btn--primary btn--block', style: 'margin-top:12px', type: 'button',
-          onclick: () => goDash()
-        }, 'That’s mine — take me to voting')
-      )
-    );
-  }
-
-  show('v-costume');
+function updateBackButton() {
+  const btn = $('btn-back');
+  if (state.costumeMode === 'edit') btn.textContent = '← Back to voting';
+  else if (state.costumeMode === 'chooser') btn.textContent = state.costumeReturn === 'v-dash' ? '← Back to voting' : '← Back';
+  else btn.textContent = '← Choose differently';
 }
 
 $('btn-back').addEventListener('click', () => {
-  if (state.costumeReturn === 'v-dash') goDash();
-  else show('v-name');
+  if (state.costumeMode === 'edit') goDash();
+  else if (state.costumeMode === 'chooser') { if (state.costumeReturn === 'v-dash') goDash(); else show('v-name'); }
+  else renderCostume('chooser');
 });
 
-/* Photo */
-function setPreview(url) {
-  const box = $('photo');
-  const img = $('photo-img');
-  if (state.photoObjectUrl && state.photoObjectUrl !== url) {
-    URL.revokeObjectURL(state.photoObjectUrl);
-    state.photoObjectUrl = null;
-  }
-  if (url) {
-    img.src = url;
-    box.classList.add('has-img');
-    $('btn-rmphoto').style.display = '';
-  } else {
-    img.removeAttribute('src');
-    box.classList.remove('has-img');
-    $('btn-rmphoto').style.display = 'none';
-  }
+function openCostume(returnTo) {
+  state.costumeReturn = returnTo || 'v-dash';
+  show('v-costume');
+  renderCostume(state.membership ? 'edit' : 'chooser');
 }
 
-$('in-photo').addEventListener('change', async (ev) => {
-  const file = ev.target.files && ev.target.files[0];
-  if (!file) return;
-  fieldError('err-photo', null, '');
+function renderCostume(mode, ctx) {
+  state.costumeMode = mode;
+  updateBackButton();
+  const slot = $('costume-slot');
+  slot.replaceChildren();
+  if (mode === 'chooser') renderChooser(slot);
+  else if (mode === 'solo') renderSoloForm(slot);
+  else if (mode === 'group') renderGroupForm(slot);
+  else if (mode === 'join') renderJoinForm(slot, ctx);
+  else if (mode === 'edit') renderEditForm(slot);
+}
 
-  const box = $('photo');
-  box.classList.add('is-busy');
-  $('btn-costume').disabled = true;
-  try {
-    // Resize on the phone: a 10MB camera photo becomes a few hundred KB,
-    // which is the difference between an instant upload and a hung one.
-    const blob = await shrinkPhoto(file, CFG.PHOTO_MAX_EDGE, IS_LIVE ? CFG.PHOTO_QUALITY : 0.7);
-    state.photoBlob = blob;
-    state.photoObjectUrl = URL.createObjectURL(blob);
-    setPreview(state.photoObjectUrl);
-  } catch (err) {
-    ev.target.value = '';
-    fieldError('err-photo', null,
-      /empty|read as an image/i.test(err.message)
+function field(labelText, inputEl, errEl, placeholder, hintText) {
+  inputEl.classList.add('input');
+  if (placeholder) inputEl.setAttribute('placeholder', placeholder);
+  inputEl.setAttribute('autocapitalize', 'words');
+  inputEl.setAttribute('autocomplete', 'off');
+  inputEl.setAttribute('enterkeyhint', 'done');
+  inputEl.setAttribute('maxlength', '80');
+  return h('div', { class: 'field' },
+    h('label', { class: 'label' }, labelText),
+    inputEl,
+    hintText ? h('p', { class: 'hint', text: hintText }) : null,
+    errEl
+  );
+}
+
+/** A photo <label>+<input type=file> with resize-on-pick. get() returns:
+ *  undefined = no change (only meaningful when existingUrl was given),
+ *  null = photo cleared, or a Blob = a new photo to upload. */
+function buildPhotoField(existingUrl) {
+  let picked = existingUrl ? undefined : null;
+  let objectUrl = null;
+
+  const img = h('img', { class: 'photo__img', alt: 'Costume' });
+  const err = h('p', { class: 'err' });
+  const removeBtn = h('button', {
+    class: 'btn btn--ghost btn--sm', type: 'button', style: 'margin-top:10px',
+    onclick: () => { picked = null; fileInput.value = ''; setPreview(null); }
+  }, 'Remove photo');
+  removeBtn.style.display = existingUrl ? '' : 'none';
+
+  const fileInput = h('input', { type: 'file', accept: 'image/*' });
+  const box = h('label', { class: 'photo' },
+    fileInput,
+    h('span', { class: 'photo__empty' },
+      h('span', { class: 'photo__icon', text: '📸' }),
+      h('b', { text: 'Add a photo' }),
+      h('span', { class: 'fine', text: 'Take one now or pick from your library' })
+    ),
+    img,
+    h('span', { class: 'photo__swap', text: 'Change' })
+  );
+  if (existingUrl) { img.src = existingUrl; box.classList.add('has-img'); }
+
+  function setPreview(url) {
+    if (objectUrl && objectUrl !== url) { URL.revokeObjectURL(objectUrl); objectUrl = null; }
+    if (url) { img.src = url; box.classList.add('has-img'); removeBtn.style.display = ''; }
+    else { img.removeAttribute('src'); box.classList.remove('has-img'); removeBtn.style.display = 'none'; }
+  }
+
+  fileInput.addEventListener('change', async (ev) => {
+    const file = ev.target.files && ev.target.files[0];
+    if (!file) return;
+    err.textContent = '';
+    box.classList.add('is-busy');
+    try {
+      const blob = await shrinkPhoto(file, CFG.PHOTO_MAX_EDGE, IS_LIVE ? CFG.PHOTO_QUALITY : 0.7);
+      picked = blob;
+      objectUrl = URL.createObjectURL(blob);
+      setPreview(objectUrl);
+    } catch (e) {
+      ev.target.value = '';
+      err.textContent = /empty|read as an image/i.test(e.message)
         ? 'That file could not be read as a photo. Try taking a new one with the camera.'
-        : err.message);
-  } finally {
-    box.classList.remove('is-busy');
-    $('btn-costume').disabled = false;
+        : e.message;
+    } finally {
+      box.classList.remove('is-busy');
+    }
+  });
+
+  return {
+    node: h('div', { class: 'field' },
+      h('span', { class: 'label' }, 'Photo ', h('span', { class: 'opt', text: '— optional, but photos win votes' })),
+      box, err, removeBtn
+    ),
+    get: () => picked
+  };
+}
+
+/** One row in the "join an existing costume" list — tappable, or a static
+ *  preview (staticOnly) on the join-detail screen. */
+function joinRow(e, staticOnly) {
+  const cls = ['rank__row'];
+  if (!staticOnly) cls.push('rank__row--tap');
+  return h('div', { class: cls.join(' '), onclick: staticOnly ? null : () => renderCostume('join', e) },
+    h('div', { class: 'rank__pos rank__pos--thumb' },
+      e.photo_path ? h('img', { src: photoUrl(e.photo_path), alt: '' }) : '🎭'),
+    h('div', { class: 'rank__main' },
+      h('div', { class: 'rank__title', text: e.title }),
+      h('div', { class: 'rank__sub', text: rosterText(e) })
+    ),
+    staticOnly ? null : h('button', {
+      class: 'btn btn--sm btn--primary', type: 'button',
+      onclick: (ev) => { ev.stopPropagation(); renderCostume('join', e); }
+    }, 'Join')
+  );
+}
+
+async function renderChooser(slot) {
+  slot.replaceChildren(
+    h('p', { class: 'eyebrow' }, 'Step 2 of 2 · Your costume'),
+    h('h2', { class: 'section-title', style: 'margin-top:8px' }, 'What are you dressed as?'),
+    h('p', { class: 'fine', style: 'margin-top:10px' }, 'Loading costumes already entered…')
+  );
+
+  let list = [];
+  try { list = await api.listEntries(state.me.id); } catch { /* still let them start their own below */ }
+
+  const nodes = [
+    h('p', { class: 'eyebrow' }, 'Step 2 of 2 · Your costume'),
+    h('h2', { class: 'section-title', style: 'margin-top:8px' }, 'What are you dressed as?')
+  ];
+
+  if (list.length) {
+    nodes.push(h('p', { class: 'hint', style: 'margin:14px 0 10px' },
+      'See your group below? Join it instead of starting a new one.'));
+    nodes.push(h('div', { class: 'rank' }, ...list.map((e) => joinRow(e, false))));
   }
-});
 
-$('btn-rmphoto').addEventListener('click', () => {
-  state.photoBlob = null;
-  state.photoPath = null;
-  $('in-photo').value = '';
-  setPreview(null);
-});
-
-/* Group members */
-function paintChips() {
-  $('chips').replaceChildren(...state.members.map((name, i) =>
-    h('span', { class: 'chip' }, name,
-      h('button', { type: 'button', 'aria-label': `Remove ${name}`, onclick: () => {
-        state.members.splice(i, 1);
-        paintChips();
-      } }, '×')
-    )
+  nodes.push(h('div', { class: 'choice-divider', text: list.length ? 'or start your own' : 'start your own' }));
+  nodes.push(h('div', { class: 'stack', style: 'margin-top:0' },
+    h('button', { class: 'btn btn--primary btn--block', type: 'button', onclick: () => renderCostume('solo') },
+      '🧍 Going solo'),
+    h('button', { class: 'btn btn--ghost btn--block', type: 'button', onclick: () => renderCostume('group') },
+      '👥 Starting a group costume'),
+    h('button', { class: 'btn btn--ghost btn--block', type: 'button', onclick: () => goDash() },
+      'No costume — just let me vote')
   ));
+
+  slot.replaceChildren(...nodes);
 }
 
-function addMembers(raw) {
-  const mine = String(state.me?.full_name || '').trim().toLowerCase();
-  let added = 0, skipped = '';
-  for (const part of String(raw).split(/[,\n;]/)) {
-    const name = part.trim().replace(/\s+/g, ' ');
-    if (name.length < 2) continue;
-    if (name.toLowerCase() === mine) { skipped = 'You are already on your own entry.'; continue; }
-    if (state.members.some((m) => m.toLowerCase() === name.toLowerCase())) { skipped = `${name} is already listed.`; continue; }
-    if (state.members.length >= 20) { skipped = 'That is as many people as one group can hold.'; break; }
-    state.members.push(name);
-    added++;
-  }
-  paintChips();
-  if (!added && skipped) toast(skipped, 'bad');
-  return added;
+function renderSoloForm(slot) {
+  const title = h('input', {});
+  const err = h('p', { class: 'err' });
+  const photo = buildPhotoField('');
+
+  const btn = h('button', { class: 'btn btn--primary btn--block', type: 'button' }, 'Enter my costume');
+  btn.addEventListener('click', async () => {
+    const t = title.value.trim().replace(/\s+/g, ' ');
+    if (t.length < 2) { err.textContent = 'Give your costume a name.'; buzz(40); return; }
+    loading(btn, true);
+    try {
+      const saved = await api.createEntry(state.me.id, t, t, photo.get() || null);
+      mergeMembership(saved);
+      await goDash();
+      toast('Costume entered. Good luck!', 'good');
+      buzz(30);
+    } catch (e) {
+      toast(e.message, 'bad'); buzz(60);
+    } finally {
+      loading(btn, false);
+    }
+  });
+
+  slot.replaceChildren(
+    h('p', { class: 'eyebrow', style: 'margin-top:0' }, 'Solo costume'),
+    h('div', { class: 'panel', style: 'margin-top:8px' },
+      field('Costume name', title, err, 'e.g. Beetlejuice'),
+      photo.node,
+      h('div', { class: 'stack' }, btn)
+    )
+  );
+  title.focus();
 }
 
-$('btn-addmember').addEventListener('click', () => {
-  const input = $('in-member');
-  if (addMembers(input.value)) input.value = '';
-  input.focus();
-});
+function renderGroupForm(slot) {
+  const groupName = h('input', {});
+  const yourRole = h('input', {});
+  const errG = h('p', { class: 'err' });
+  const errR = h('p', { class: 'err' });
+  const photo = buildPhotoField('');
 
-$('in-member').addEventListener('keydown', (ev) => {
-  if (ev.key === 'Enter') {
-    ev.preventDefault();
-    $('btn-addmember').click();
-  }
-});
+  const btn = h('button', { class: 'btn btn--primary btn--block', type: 'button' }, 'Start this group');
+  btn.addEventListener('click', async () => {
+    const g = groupName.value.trim().replace(/\s+/g, ' ');
+    const r = yourRole.value.trim().replace(/\s+/g, ' ');
+    let bad = false;
+    if (g.length < 2) { errG.textContent = 'Give your group a name.'; bad = true; }
+    if (r.length < 1) { errR.textContent = 'What are you dressed as in the group?'; bad = true; }
+    if (bad) { buzz(40); return; }
 
-$('in-title').addEventListener('input', () => fieldError('err-title', 'in-title', ''));
+    loading(btn, true);
+    try {
+      const saved = await api.createEntry(state.me.id, g, r, photo.get() || null);
+      mergeMembership(saved);
+      await goDash();
+      toast('Group started. Send the rest of your group to check in and join it!', 'good');
+      buzz(30);
+    } catch (e) {
+      toast(e.message, 'bad'); buzz(60);
+    } finally {
+      loading(btn, false);
+    }
+  });
 
-$('form-costume').addEventListener('submit', async (ev) => {
-  ev.preventDefault();
-  const title = $('in-title').value.trim().replace(/\s+/g, ' ');
-  if (title.length < 2) {
-    fieldError('err-title', 'in-title', 'Give your costume a name.');
-    buzz(40);
-    return;
-  }
+  slot.replaceChildren(
+    h('p', { class: 'eyebrow', style: 'margin-top:0' }, 'Group costume'),
+    h('div', { class: 'panel', style: 'margin-top:8px' },
+      field('Group costume name', groupName, errG, 'e.g. Alice in Wonderland'),
+      field('Your costume in the group', yourRole, errR, 'e.g. Mad Hatter'),
+      photo.node,
+      h('p', { class: 'hint' },
+        'Once the rest of your group checks in, they can find and join this group from their own phone — you only need to enter your own costume here.'),
+      h('div', { class: 'stack' }, btn)
+    )
+  );
+  groupName.focus();
+}
 
-  // A name typed but never added with + would otherwise be silently dropped.
-  if ($('in-member').value.trim().length > 1) {
-    addMembers($('in-member').value);
-    $('in-member').value = '';
-  }
+function renderJoinForm(slot, entry) {
+  const role = h('input', {});
+  const err = h('p', { class: 'err' });
 
-  const btn = $('btn-costume');
-  loading(btn, true);
-  try {
-    const saved = await api.saveEntry(state.me.id, title, state.photoBlob, state.photoPath, state.members);
-    state.myEntry = saved;
-    state.photoBlob = null;
-    state.photoPath = saved.photo_path || null;
-    await goDash();
-    toast(state.members.length ? 'Group costume entered. Good luck!' : 'Costume entered. Good luck!', 'good');
-    buzz(30);
-  } catch (err) {
-    toast(err.message, 'bad');
-    buzz(60);
-  } finally {
-    loading(btn, false);
-  }
-});
+  const btn = h('button', { class: 'btn btn--primary btn--block', type: 'button' }, `Join "${entry.title}"`);
+  btn.addEventListener('click', async () => {
+    const v = role.value.trim().replace(/\s+/g, ' ');
+    if (v.length < 1) { err.textContent = 'What are you dressed as in this group?'; buzz(40); return; }
+    loading(btn, true);
+    try {
+      const saved = await api.joinEntry(state.me.id, entry.id, v);
+      mergeMembership(saved);
+      await goDash();
+      toast(`Joined "${entry.title}". Good luck!`, 'good');
+      buzz(30);
+    } catch (e) {
+      toast(e.message, 'bad'); buzz(60);
+      if (/already exists|already have a costume/i.test(e.message)) renderCostume('chooser');
+    } finally {
+      loading(btn, false);
+    }
+  });
 
-$('btn-skip').addEventListener('click', () => goDash());
+  slot.replaceChildren(
+    h('p', { class: 'eyebrow', style: 'margin-top:0' }, 'Joining a group'),
+    h('div', { class: 'rank', style: 'margin-top:10px' }, joinRow(entry, true)),
+    h('div', { class: 'panel', style: 'margin-top:14px' },
+      field('Your costume in this group', role, err, 'e.g. White Rabbit'),
+      h('div', { class: 'stack' }, btn)
+    )
+  );
+  role.focus();
+}
+
+function renderEditForm(slot) {
+  const m = state.membership;
+  const isGroup = (m.members || []).length > 1;
+  const isOwner = Boolean(m.is_owner);
+
+  const titleInput = isOwner ? h('input', { value: m.title }) : null;
+  const errTitle = h('p', { class: 'err' });
+  const roleInput = h('input', { value: m.costume_name });
+  const errRole = h('p', { class: 'err' });
+  const photo = isOwner ? buildPhotoField(m.photo_path ? photoUrl(m.photo_path) : '') : null;
+
+  const saveBtn = h('button', { class: 'btn btn--primary btn--block', type: 'button' }, 'Save changes');
+  saveBtn.addEventListener('click', async () => {
+    errTitle.textContent = '';
+    errRole.textContent = '';
+    const role = roleInput.value.trim().replace(/\s+/g, ' ');
+    if (role.length < 1) { errRole.textContent = 'What are you dressed as?'; buzz(40); return; }
+    let title;
+    if (isOwner) {
+      title = titleInput.value.trim().replace(/\s+/g, ' ');
+      if (title.length < 2) { errTitle.textContent = 'Give your costume (or group) a name.'; buzz(40); return; }
+    }
+
+    loading(saveBtn, true);
+    try {
+      if (isOwner) mergeMembership(await api.updateEntry(state.me.id, title, photo.get(), m.photo_path));
+      if (role !== m.costume_name) mergeMembership(await api.updateMyCostume(state.me.id, role));
+      await goDash();
+      toast('Costume updated.', 'good');
+    } catch (e) {
+      toast(e.message, 'bad');
+    } finally {
+      loading(saveBtn, false);
+    }
+  });
+
+  const leaveBtn = h('button', {
+    class: 'btn btn--danger btn--block', type: 'button'
+  }, isOwner ? 'Remove this costume' : 'Leave this group');
+  leaveBtn.addEventListener('click', async () => {
+    const sure = isOwner
+      ? confirm('Remove your costume entry? This can’t be undone.')
+      : confirm('Leave this group? You can join a different one, or go solo, afterward.');
+    if (!sure) return;
+    loading(leaveBtn, true);
+    try {
+      await api.leaveEntry(state.me.id);
+      state.membership = null;
+      renderCostume('chooser');
+      toast(isOwner ? 'Costume removed.' : 'You left the group.', 'good');
+    } catch (e) {
+      toast(e.message, 'bad');
+    } finally {
+      loading(leaveBtn, false);
+    }
+  });
+
+  const nameLabel = isGroup ? 'Group costume name' : 'Costume name';
+  slot.replaceChildren(
+    h('p', { class: 'eyebrow', style: 'margin-top:0' }, isGroup ? 'Edit your group' : 'Edit your costume'),
+    h('div', { class: 'panel', style: 'margin-top:8px' },
+      isOwner
+        ? field(nameLabel, titleInput, errTitle)
+        : h('div', { class: 'field' },
+            h('span', { class: 'label', text: nameLabel }),
+            h('p', { class: 'fine', style: 'margin-top:6px' },
+              m.title, ' ', h('span', { class: 'opt', text: '— only the person who started it can rename it' }))
+          ),
+      field('Your costume', roleInput, errRole),
+      isOwner ? photo.node : null,
+      h('div', { class: 'stack' }, saveBtn)
+    ),
+    isGroup ? h('div', { class: 'panel', style: 'margin-top:14px' },
+      h('p', { class: 'eyebrow' }, 'Who’s in this group'),
+      h('div', { class: 'chips', style: 'margin-top:10px' },
+        ...m.members.map((x) => h('span', { class: 'chip', style: 'cursor:default' },
+          `${x.name} — ${x.costume_name}${x.is_owner ? ' (started it)' : ''}`)))
+    ) : null,
+    h('div', { style: 'margin-top:14px' }, leaveBtn)
+  );
+}
 
 
 /* ── Dashboard ───────────────────────────────────────────────────────── */
@@ -369,7 +572,12 @@ $('btn-skip').addEventListener('click', () => goDash());
 async function goDash() {
   $('me-name').textContent = state.me?.full_name || '—';
   show('v-dash');
+  paintMenuLabel();
   await refresh();
+}
+
+function paintMenuLabel() {
+  $('menu-edit').textContent = state.membership ? '✏️ Edit my costume' : '🎭 Enter a costume';
 }
 
 async function refresh(quiet) {
@@ -481,11 +689,9 @@ function paintWinner() {
     h('div', { class: 'winner__crown', text: winners.length > 1 ? '🤝' : '👑' }),
     h('div', { class: 'winner__label', text: winners.length > 1 ? label + ' · tie' : label }),
     h('div', { class: 'winner__name', text: winners.map((w) => w.title).join('  ·  ') }),
-    h('div', { class: 'winner__meta', text: `${top} ${top === 1 ? 'vote' : 'votes'} · ${roster(winners[0])}` })
+    h('div', { class: 'winner__meta', text: `${top} ${top === 1 ? 'vote' : 'votes'} · ${rosterText(winners[0])}` })
   ));
 }
-
-const roster = (e) => [e.owner_name, ...(e.member_names || [])].filter(Boolean).join(', ');
 
 /* Your-vote strip */
 function paintStatus() {
@@ -526,7 +732,7 @@ function paintCards() {
     empty.replaceChildren(h('div', { class: 'empty' },
       h('div', { class: 'empty__icon', text: '👻' }),
       h('b', { text: 'No costumes entered yet' }),
-      h('p', { text: state.myEntry ? 'Yours is in. Check back as other people scan the code.' : 'Be the first — add yours from the menu.' })
+      h('p', { text: state.membership ? 'Yours is in. Check back as other people scan the code.' : 'Be the first — add yours from the menu.' })
     ));
     return;
   }
@@ -550,10 +756,6 @@ function entryCard(e, rank) {
   if (e.id === state.selectedId && e.id !== state.votedId) cls.push('is-selected');
   if (medalled) cls.push('card--rank' + rank);
 
-  const people = e.member_names && e.member_names.length
-    ? roster(e)
-    : e.owner_name;
-
   return h('button', {
     class: cls.join(' '),
     type: 'button',
@@ -571,7 +773,7 @@ function entryCard(e, rank) {
     ),
     h('div', { class: 'card__body' },
       h('div', { class: 'card__title', text: e.title }),
-      h('div', { class: 'card__people', text: people }),
+      h('div', { class: 'card__people', text: rosterText(e) }),
       state.revealed
         ? h('div', { class: 'card__tally' },
             h('b', { text: String(e.votes || 0) }),
@@ -657,7 +859,7 @@ $('sheet').addEventListener('click', (ev) => { if (ev.target === $('sheet')) clo
 
 $('menu-edit').addEventListener('click', () => {
   closeSheet();
-  openCostume('v-dash', null);
+  openCostume('v-dash');
 });
 
 $('menu-results').addEventListener('click', () => { closeSheet(); location.href = 'admin.html'; });
@@ -666,8 +868,7 @@ $('menu-switch').addEventListener('click', () => {
   closeSheet();
   session.clear();
   Object.assign(state, {
-    me: null, myEntry: null, votedId: null, selectedId: null,
-    members: [], photoBlob: null, photoPath: null, entries: []
+    me: null, membership: null, votedId: null, selectedId: null, entries: []
   });
   $('in-name').value = '';
   $('in-phone').value = '';
