@@ -170,7 +170,7 @@ $('form-name').addEventListener('submit', async (ev) => {
 
   document.body.classList.add('rabbit-fall');
   const btn = $('btn-name');
-  loading(btn, true);
+  if (btn) loading(btn, true);
   try {
     const res = await api.joinParty(name, phone);
     adoptJoin(res);
@@ -180,7 +180,7 @@ $('form-name').addEventListener('submit', async (ev) => {
     toast(err.message, 'bad');
     buzz(60);
   } finally {
-    loading(btn, false);
+    if (btn) loading(btn, false);
     window.setTimeout(() => document.body.classList.remove('rabbit-fall'), 1200);
   }
 });

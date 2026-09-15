@@ -1248,6 +1248,55 @@ body { background: #000; }
   font: 400 30px/1 Georgia, "Times New Roman", serif;
 }
 
+.fall-tunnel {
+  position: relative;
+  width: 100vw;
+  min-height: 125svh;
+  margin: 8px 0 0 calc(50% - 50vw);
+  overflow: hidden;
+  isolation: isolate;
+  background: #000;
+}
+.fall-tunnel::before {
+  position: absolute;
+  inset: -14%;
+  content: "";
+  background: repeating-radial-gradient(ellipse at 50% 50%, #f4efe3 0 14px, #050505 15px 42px);
+  filter: contrast(1.25);
+  opacity: .9;
+  transform: perspective(680px) rotateX(7deg) scale(1.08);
+  animation: tunnel-pull 16s linear infinite;
+}
+.fall-tunnel::after {
+  position: absolute;
+  inset: 0;
+  content: "";
+  background:
+    radial-gradient(ellipse at center, transparent 0 20%, rgba(0,0,0,.08) 44%, rgba(0,0,0,.92) 100%),
+    linear-gradient(90deg, rgba(0,0,0,.9), transparent 24%, transparent 76%, rgba(0,0,0,.9));
+}
+.fall-tunnel__copy {
+  position: absolute;
+  z-index: 1;
+  top: 50%;
+  left: 50%;
+  color: #050505;
+  font: 400 clamp(25px, 7vw, 54px)/.95 Georgia, "Times New Roman", serif;
+  letter-spacing: -.06em;
+  text-align: center;
+  text-shadow: 0 1px rgba(255,255,255,.35);
+  transform: translate(-50%, -50%) rotate(-4deg);
+}
+.fall-tunnel__copy span {
+  display: inline-block;
+  margin-top: 12px;
+  color: #f4efe3;
+  font-size: .33em;
+  font-style: italic;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+
 .view--landing,
 .landing-shell { touch-action: pan-y; }
 
@@ -1264,6 +1313,10 @@ body.rabbit-fall .wonderland-layer { animation: portal-fall 1.15s cubic-bezier(.
 @keyframes gate-pulse {
   30% { transform: translateX(-5px); }
   60% { transform: translateX(5px); }
+}
+@keyframes tunnel-pull {
+  0% { transform: perspective(680px) rotateX(7deg) scale(1.08) rotate(0deg); }
+  100% { transform: perspective(680px) rotateX(7deg) scale(1.08) rotate(360deg); }
 }
 @keyframes rabbit-fall {
   0% { opacity: 1; transform: scale(1) rotate(0); }
@@ -1296,6 +1349,7 @@ body.rabbit-fall .wonderland-layer { animation: portal-fall 1.15s cubic-bezier(.
 
 @media (prefers-reduced-motion: reduce) {
   .landing-hero::before, .scroll-cue.is-ready .scroll-cue__arrow { animation: none; }
+  .fall-tunnel::before { animation: none; }
   body.rabbit-fall #app, body.rabbit-fall .wonderland-layer { animation: none; }
 }
 
