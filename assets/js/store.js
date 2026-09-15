@@ -11,10 +11,15 @@
 const CFG = window.PARTY_CONFIG || {};
 
 export const PARTY_ID = CFG.PARTY_ID || '2026';
-export const IS_LIVE = Boolean(CFG.SUPABASE_URL && CFG.SUPABASE_ANON_KEY);
+export const IS_LIVE = Boolean(CFG.SUPABASE_URL && CFG.SUPABASE_PUBLISHABLE_KEY);
 
-const BASE = String(CFG.SUPABASE_URL || '').replace(/\/+$/, '');
-const KEY = CFG.SUPABASE_ANON_KEY || '';
+// Accept either the bare project URL or one with /rest/v1 already on the
+// end (Supabase's dashboard shows both forms in different places), so a
+// pasted value works either way.
+const BASE = String(CFG.SUPABASE_URL || '').replace(/\/+$/, '').replace(/\/rest\/v1$/, '');
+// The "publishable" key is Supabase's current name for what used to be
+// called the "anon" key — same public, RLS-scoped key, used the same way.
+const KEY = CFG.SUPABASE_PUBLISHABLE_KEY || '';
 const BUCKET = 'costumes';
 
 

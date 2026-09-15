@@ -105,7 +105,7 @@ function bootFail(message) {
       h('ol', { class: 'setup-steps', style: 'margin-top:12px' },
         h('li', {}, 'Open your Supabase project → SQL Editor, paste all of ',
           h('b', { text: 'supabase/schema.sql' }), ' and press Run.'),
-        h('li', {}, 'Copy your Project URL and ', h('b', { text: 'anon' }),
+        h('li', {}, 'Copy your Project URL and ', h('b', { text: 'Publishable' }),
           ' key into ', h('code', { text: 'config.js' }), '.'),
         h('li', {}, 'Make sure ', h('code', { text: 'PARTY_ID' }), ' in config.js matches the party row id (currently ',
           h('code', { text: PARTY_ID }), ').'),

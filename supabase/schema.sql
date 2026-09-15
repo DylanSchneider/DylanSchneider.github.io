@@ -524,7 +524,7 @@ values (
   '2026',
   'Halloween 2026',
   -- 1. When voting closes. Change the date/time or the timezone name.
-  (timestamp '2026-10-24 22:00') at time zone 'America/New_York',
+  (timestamp '2026-10-24 22:00') at time zone 'America/Denver',
   -- 2. Your admin PIN. Change it. Guests can never read this column.
   '1031'
 )
@@ -532,6 +532,6 @@ on conflict (id) do nothing;
 
 -- Already seeded and want to change them? Run this instead:
 --   update public.parties
---      set voting_closes_at = (timestamp '2026-10-24 22:00') at time zone 'America/New_York',
+--      set voting_closes_at = (timestamp '2026-10-24 22:00') at time zone 'America/Denver',
 --          admin_pin        = '1031'
 --    where id = '2026';

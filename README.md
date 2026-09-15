@@ -41,15 +41,18 @@ storage), and works from GitHub Pages with no server of your own.
    party row — edit the two marked lines at the bottom of that file first
    (the voting deadline and your admin PIN) if you want to set them at
    creation instead of from the host page later.
-3. Open **Project Settings → Data API** and copy the **Project URL**.
-   Open **Project Settings → API Keys** and copy the **anon / public** key.
-   (This key is meant to be public — every table is locked by row-level
-   security and the party rules live in the database functions, not in the
-   browser.)
+3. Open **Project Settings → Data API** and copy the **Project URL** (just
+   the bare `https://xxxxxxxx.supabase.co` — no `/rest/v1` on the end).
+   Open **Project Settings → API Keys** and copy the **Publishable** key
+   (starts with `sb_publishable_`; this is Supabase's current name for what
+   used to be called the "anon" key — an older project's legacy `anon` key,
+   a long `eyJ...` JWT, works here too). This key is meant to be public —
+   every table is locked by row-level security and the party rules live in
+   the database functions, not in the browser.
 4. Paste both into [`config.js`](config.js):
    ```js
    SUPABASE_URL: 'https://xxxxxxxx.supabase.co',
-   SUPABASE_ANON_KEY: 'eyJ...',
+   SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_...',
    ```
 5. Commit and push. GitHub Pages redeploys automatically.
 
