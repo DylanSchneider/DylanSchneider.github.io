@@ -23,6 +23,7 @@ create table if not exists public.parties (
   voting_opens_at   timestamptz not null default now(),
   voting_closes_at  timestamptz not null,
   results_public    boolean     not null default false, -- force an early reveal
+  testing_reset_enabled boolean not null default true,   -- disable destructive test reset before the party
   admin_pin         text,                              -- unreadable to guests (RLS)
   created_at        timestamptz not null default now()
 );
@@ -51,6 +52,7 @@ create table if not exists public.entries (
   id            uuid        primary key default gen_random_uuid(),
   party_id      text        not null references public.parties(id) on delete cascade,
   owner_id      uuid        not null references public.guests(id)  on delete cascade,
+  entry_type    text        not null default 'solo' check (entry_type in ('solo', 'group')),
   title         text        not null,
   photo_path    text,                                   -- path inside the 'costumes' bucket
   created_at    timestamptz not null default now(),
@@ -123,6 +125,34 @@ create index if not exists votes_entry_idx         on public.votes         (entr
 -- instead of being a free-text name in the group owner's entry.
 alter table public.entries drop column if exists member_names;
 drop function if exists public.save_entry(text, uuid, text, text, text[]);
+
+-- Existing parties keep the test reset available until the host explicitly
+-- disables it in Supabase with testing_reset_enabled = false.
+alter table public.parties add column if not exists testing_reset_enabled boolean;
+update public.parties set testing_reset_enabled = true where testing_reset_enabled is null;
+alter table public.parties alter column testing_reset_enabled set default true;
+alter table public.parties alter column testing_reset_enabled set not null;
+
+-- Explicitly separate solo entries from group entries. Older versions
+-- inferred this from member count, so classify those rows before enforcing
+-- the new type and before exposing group-only join options.
+alter table public.entries add column if not exists entry_type text;
+update public.entries e
+   set entry_type = case when (
+     select count(*) from public.entry_members em where em.entry_id = e.id
+   ) > 1 or exists (
+     select 1 from public.entry_members em
+      where em.entry_id = e.id and em.costume_name <> e.title
+   ) then 'group' else 'solo' end
+ where e.entry_type is null;
+alter table public.entries alter column entry_type set default 'solo';
+alter table public.entries alter column entry_type set not null;
+do $$
+begin
+  alter table public.entries
+    add constraint entries_entry_type_check check (entry_type in ('solo', 'group'));
+exception when duplicate_object then null;
+end $$;
 
 
 -- ---------------------------------------------------------------------
@@ -260,6 +290,7 @@ begin
 
   select json_build_object(
            'entry_id',     e.id,
+           'entry_type',   e.entry_type,
            'title',        e.title,
            'photo_path',   e.photo_path,
            'is_owner',     em.is_owner,
@@ -282,9 +313,10 @@ end $$;
 -- group. p_costume_name is this guest's own individual costume/role — for
 -- a solo entry that's usually the same as p_title, so it defaults to it
 -- when left blank.
+drop function if exists public.create_entry(text, uuid, text, text, text);
 create or replace function public.create_entry(
   p_party text, p_guest uuid, p_title text,
-  p_costume_name text, p_photo_path text
+  p_costume_name text, p_entry_type text, p_photo_path text
 ) returns json language plpgsql security definer set search_path = public as $$
 declare
   p         public.parties;
@@ -310,21 +342,24 @@ begin
   if length(v_title) < 2 then
     raise exception 'Give your costume (or group) a name.';
   end if;
+  if p_entry_type not in ('solo', 'group') then
+    raise exception 'Choose either a solo or group costume.';
+  end if;
 
   v_costume := clean_text(p_costume_name);
   if length(v_costume) < 1 then
     v_costume := v_title;
   end if;
 
-  insert into public.entries (party_id, owner_id, title, photo_path)
-  values (p_party, p_guest, v_title, nullif(p_photo_path, ''))
+  insert into public.entries (party_id, owner_id, entry_type, title, photo_path)
+  values (p_party, p_guest, p_entry_type, v_title, nullif(p_photo_path, ''))
   returning * into e;
 
   insert into public.entry_members (party_id, guest_id, entry_id, costume_name, is_owner)
   values (p_party, p_guest, e.id, v_costume, true);
 
   return json_build_object(
-    'entry_id', e.id, 'title', e.title, 'photo_path', e.photo_path,
+    'entry_id', e.id, 'entry_type', e.entry_type, 'title', e.title, 'photo_path', e.photo_path,
     'costume_name', v_costume, 'is_owner', true, 'members', entry_roster(e.id)
   );
 end $$;
@@ -357,6 +392,9 @@ begin
   if e.id is null then
     raise exception 'That costume group no longer exists.';
   end if;
+  if e.entry_type <> 'group' then
+    raise exception 'That costume is solo and is not open to group members.';
+  end if;
 
   v_costume := clean_text(p_costume_name);
   if length(v_costume) < 1 then
@@ -367,7 +405,7 @@ begin
   values (p_party, p_guest, e.id, v_costume, false);
 
   return json_build_object(
-    'entry_id', e.id, 'title', e.title, 'photo_path', e.photo_path,
+    'entry_id', e.id, 'entry_type', e.entry_type, 'title', e.title, 'photo_path', e.photo_path,
     'costume_name', v_costume, 'is_owner', false, 'members', entry_roster(e.id)
   );
 end $$;
@@ -413,7 +451,7 @@ begin
   returning * into e;
 
   return json_build_object(
-    'entry_id', e.id, 'title', e.title, 'photo_path', e.photo_path, 'members', entry_roster(e.id)
+    'entry_id', e.id, 'entry_type', e.entry_type, 'title', e.title, 'photo_path', e.photo_path, 'members', entry_roster(e.id)
   );
 end $$;
 
@@ -515,7 +553,8 @@ begin
                'id',         e.id,
                'title',      e.title,
                'photo_path', e.photo_path,
-               'is_group',   mc.n > 1,
+               'entry_type', e.entry_type,
+               'is_group',   e.entry_type = 'group',
                'is_mine',    exists (
                                select 1 from public.entry_members em
                                where em.entry_id = e.id and em.guest_id = p_guest
@@ -615,6 +654,7 @@ begin
                  'id',         e.id,
                  'title',      e.title,
                  'photo_path', e.photo_path,
+                 'entry_type', e.entry_type,
                  'members',    entry_roster(e.id),
                  'votes',      coalesce(vc.c, 0),
                  -- who voted for it: admins only
@@ -665,6 +705,49 @@ begin
   perform assert_admin(p_party, p_pin);
   delete from public.entries where id = p_entry and party_id = p_party;
   return json_build_object('deleted', p_entry);
+end $$;
+
+-- Testing reset: clear only the selected party's user activity. Guests who
+-- have attendance in another party remain in the master guest list.
+create or replace function public.admin_clear_all(p_party text, p_pin text)
+returns json language plpgsql security definer set search_path = public as $$
+declare
+  p             public.parties;
+  n_votes       integer;
+  n_members     integer;
+  n_entries     integer;
+  n_attendance  integer;
+  n_guests      integer;
+begin
+  perform assert_admin(p_party, p_pin);
+  select * into p from public.parties where id = p_party;
+  if not p.testing_reset_enabled then
+    raise exception 'The testing reset is disabled for this party.';
+  end if;
+
+  delete from public.votes where party_id = p_party;
+  get diagnostics n_votes = row_count;
+  delete from public.entry_members where party_id = p_party;
+  get diagnostics n_members = row_count;
+  delete from public.entries where party_id = p_party;
+  get diagnostics n_entries = row_count;
+  delete from public.attendance where party_id = p_party;
+  get diagnostics n_attendance = row_count;
+
+  -- guests is a cross-party master list, so remove only now-orphaned test guests.
+  delete from public.guests g
+   where not exists (select 1 from public.attendance a where a.guest_id = g.id);
+  get diagnostics n_guests = row_count;
+
+  update public.parties set results_public = false where id = p_party;
+
+  return json_build_object(
+    'votes', n_votes,
+    'entry_members', n_members,
+    'entries', n_entries,
+    'attendance', n_attendance,
+    'guests', n_guests
+  );
 end $$;
 
 -- The master guest list, across every year — including each guest's
@@ -740,7 +823,7 @@ revoke all on function public.assert_admin(text, text) from public, anon, authen
 
 grant execute on function public.party_info(text)                          to anon, authenticated;
 grant execute on function public.join_party(text, text, text)              to anon, authenticated;
-grant execute on function public.create_entry(text, uuid, text, text, text) to anon, authenticated;
+grant execute on function public.create_entry(text, uuid, text, text, text, text) to anon, authenticated;
 grant execute on function public.join_entry(text, uuid, uuid, text)        to anon, authenticated;
 grant execute on function public.update_entry(text, uuid, text, text)      to anon, authenticated;
 grant execute on function public.update_my_costume(text, uuid, text)       to anon, authenticated;
@@ -751,6 +834,7 @@ grant execute on function public.get_results(text, text)                  to ano
 grant execute on function public.admin_set_close(text, text, timestamptz) to anon, authenticated;
 grant execute on function public.admin_set_reveal(text, text, boolean)    to anon, authenticated;
 grant execute on function public.admin_delete_entry(text, text, uuid)     to anon, authenticated;
+grant execute on function public.admin_clear_all(text, text)              to anon, authenticated;
 grant execute on function public.admin_guests(text, text)                 to anon, authenticated;
 grant execute on function public.admin_guest_history(text, uuid)          to anon, authenticated;
 

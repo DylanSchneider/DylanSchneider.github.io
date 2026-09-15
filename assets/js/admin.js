@@ -7,6 +7,7 @@
 import { api, IS_LIVE, PARTY_ID } from './store.js';
 
 const CFG = window.PARTY_CONFIG || {};
+const RESET_ENABLED = CFG.ENABLE_TEST_RESET !== false;
 const $ = (id) => document.getElementById(id);
 const PIN_KEY = `hp:${PARTY_ID}:pin`;
 
@@ -84,6 +85,7 @@ async function enter(pin) {
   state.pin = pin;
   try { sessionStorage.setItem(PIN_KEY, pin); } catch { /* private mode */ }
   adopt(data);
+  $('reset-control').hidden = !RESET_ENABLED;
   show('v-admin');
   loadGuests();
   paintAll();
@@ -185,7 +187,7 @@ function paintClock() {
 
   $('clock-digits').replaceChildren(...units.map(([n, lbl]) =>
     h('div', { class: 'clock__unit' },
-      h('span', { class: 'clock__n', text: d > 0 ? String(n) : two(n) }),
+      h('span', { class: 'clock__n is-flipping', text: d > 0 ? String(n) : two(n) }),
       h('span', { class: 'clock__t', text: lbl })
     )
   ));
@@ -346,6 +348,29 @@ async function removeEntry(entry, btn) {
     loading(btn, false);
   }
 }
+
+$('btn-clear-all').addEventListener('click', async (ev) => {
+  if (!RESET_ENABLED) return;
+  if (!confirm('Clear this party’s attendance, entries, votes, and test guests? This cannot be undone.')) return;
+  const phrase = prompt('Type CLEAR to confirm the full test reset.');
+  if (phrase !== 'CLEAR') {
+    if (phrase !== null) toast('Reset cancelled — the confirmation text did not match.', 'bad');
+    return;
+  }
+
+  const btn = ev.currentTarget;
+  loading(btn, true);
+  try {
+    await api.adminClearAll(state.pin);
+    await refresh(true);
+    await loadGuests();
+    toast('All testing data for this party was cleared.', 'good');
+  } catch (err) {
+    toast(err.message, 'bad');
+  } finally {
+    loading(btn, false);
+  }
+});
 
 
 /* ── CSV of the master guest list ────────────────────────────────────── */

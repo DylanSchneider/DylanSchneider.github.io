@@ -40,19 +40,6 @@
       burst.addEventListener('animationend', () => burst.remove(), { once: true });
     });
 
-    const digits = document.getElementById('clock-digits');
-    if (digits) {
-      const observer = new MutationObserver(() => {
-        if (reduced) return;
-        digits.querySelectorAll('.clock__n').forEach((node) => {
-          node.classList.remove('is-ticking');
-          void node.offsetWidth;
-          node.classList.add('is-ticking');
-        });
-      });
-      observer.observe(digits, { childList: true, subtree: true, characterData: true });
-    }
-
     const form = document.getElementById('form-name');
     const name = document.getElementById('in-name');
     const phone = document.getElementById('in-phone');

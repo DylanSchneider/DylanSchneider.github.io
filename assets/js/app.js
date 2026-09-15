@@ -200,6 +200,7 @@ function mergeMembership(partial) {
   const cur = state.membership || {};
   state.membership = {
     entry_id: partial.entry_id ?? cur.entry_id,
+    entry_type: partial.entry_type ?? cur.entry_type,
     title: partial.title ?? cur.title,
     photo_path: 'photo_path' in partial ? partial.photo_path : cur.photo_path,
     is_owner: 'is_owner' in partial ? partial.is_owner : cur.is_owner,
@@ -347,7 +348,10 @@ async function renderChooser(slot) {
   );
 
   let list = [];
-  try { list = await api.listEntries(state.me.id); } catch { /* still let them start their own below */ }
+  try {
+    const entries = await api.listEntries(state.me.id);
+    list = entries.filter((entry) => entry.entry_type === 'group' || entry.is_group);
+  } catch { /* still let them start their own below */ }
 
   const nodes = [
     h('p', { class: 'eyebrow' }, 'Step 2 of 2 · Your costume'),
@@ -365,9 +369,7 @@ async function renderChooser(slot) {
     h('button', { class: 'btn btn--primary btn--block', type: 'button', onclick: () => renderCostume('solo') },
       '🧍 Going solo'),
     h('button', { class: 'btn btn--ghost btn--block', type: 'button', onclick: () => renderCostume('group') },
-      '👥 Starting a group costume'),
-    h('button', { class: 'btn btn--ghost btn--block', type: 'button', onclick: () => goDash() },
-      'No costume — just let me vote')
+      '👥 Starting a group costume')
   ));
 
   slot.replaceChildren(...nodes);
@@ -384,7 +386,7 @@ function renderSoloForm(slot) {
     if (t.length < 2) { err.textContent = 'Give your costume a name.'; buzz(40); return; }
     loading(btn, true);
     try {
-      const saved = await api.createEntry(state.me.id, t, t, photo.get() || null);
+      const saved = await api.createEntry(state.me.id, t, t, photo.get() || null, 'solo');
       mergeMembership(saved);
       await goDash();
       toast('Costume entered. Good luck!', 'good');
@@ -404,7 +406,6 @@ function renderSoloForm(slot) {
       h('div', { class: 'stack' }, btn)
     )
   );
-  title.focus();
 }
 
 function renderGroupForm(slot) {
@@ -425,7 +426,7 @@ function renderGroupForm(slot) {
 
     loading(btn, true);
     try {
-      const saved = await api.createEntry(state.me.id, g, r, photo.get() || null);
+      const saved = await api.createEntry(state.me.id, g, r, photo.get() || null, 'group');
       mergeMembership(saved);
       await goDash();
       toast('Group started. Send the rest of your group to check in and join it!', 'good');
@@ -448,7 +449,6 @@ function renderGroupForm(slot) {
       h('div', { class: 'stack' }, btn)
     )
   );
-  groupName.focus();
 }
 
 function renderJoinForm(slot, entry) {
@@ -482,12 +482,11 @@ function renderJoinForm(slot, entry) {
       h('div', { class: 'stack' }, btn)
     )
   );
-  role.focus();
 }
 
 function renderEditForm(slot) {
   const m = state.membership;
-  const isGroup = (m.members || []).length > 1;
+  const isGroup = m.entry_type === 'group' || (m.members || []).length > 1;
   const isOwner = Boolean(m.is_owner);
 
   const titleInput = isOwner ? h('input', { value: m.title }) : null;
@@ -629,7 +628,10 @@ function paintClock() {
     box.classList.add('is-closed');
     box.classList.remove('is-urgent');
     $('clock-label').textContent = 'Voting is closed';
-    digits.replaceChildren(h('div', { class: 'clock__n', style: 'font-size:22px;padding:6px 0', text: '🕛 Time’s up' }));
+    if (digits.dataset.state !== 'closed') {
+      digits.replaceChildren(h('div', { class: 'clock__n', style: 'font-size:22px;padding:6px 0', text: '🕛 Time’s up' }));
+      digits.dataset.state = 'closed';
+    }
     $('clock-when').textContent = `Closed ${fmtWhen(state.closesAt)}`;
     return;
   }
@@ -648,12 +650,27 @@ function paintClock() {
     ? [[d, 'days'], [hr, 'hrs'], [mi, 'min'], [se, 'sec']]
     : [[hr, 'hrs'], [mi, 'min'], [se, 'sec']];
 
-  digits.replaceChildren(...units.map(([n, t]) =>
-    h('div', { class: 'clock__unit' },
-      h('span', { class: 'clock__n', text: d > 0 ? String(n) : two(n) }),
-      h('span', { class: 'clock__t', text: t })
-    )
-  ));
+  const values = units.map(([n]) => d > 0 ? String(n) : two(n));
+  const current = [...digits.children];
+  if (digits.dataset.state === 'closed' || current.length !== units.length) {
+    digits.replaceChildren(...units.map(([n, t], i) =>
+      h('div', { class: 'clock__unit' },
+        h('span', { class: 'clock__n', text: values[i] }),
+        h('span', { class: 'clock__t', text: t })
+      )
+    ));
+    digits.dataset.state = 'open';
+  } else {
+    current.forEach((unit, i) => {
+      const number = unit.querySelector('.clock__n');
+      if (!number || number.textContent === values[i]) return;
+      number.textContent = values[i];
+      number.classList.remove('is-flipping');
+      void number.offsetWidth;
+      number.classList.add('is-flipping');
+      window.setTimeout(() => number.classList.remove('is-flipping'), 560);
+    });
+  }
   $('clock-when').textContent = `Closes ${fmtWhen(state.closesAt)}`;
 }
 
@@ -935,7 +952,8 @@ document.addEventListener('visibilitychange', () => {
   try {
     const res = await api.joinParty(saved.full_name, saved.phone);
     adoptJoin(res);
-    await goDash();
+    if (state.membership) await goDash();
+    else openCostume('v-name');
   } catch {
     session.clear();
     show('v-name');

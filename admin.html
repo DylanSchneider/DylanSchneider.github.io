@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
-<meta name="theme-color" content="#0a0e1c">
+<meta name="theme-color" content="#000000">
 <title>Host · Wonderland Results</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>👑</text></svg>">
 <link rel="stylesheet" href="assets/css/app.css">
@@ -115,6 +115,17 @@
         <div class="fold__body">
           <p class="hint" style="margin-top:0">For duplicates or junk. Deleting an entry also deletes the votes cast for it.</p>
           <div class="rank" id="del-rows" style="margin-top:12px"></div>
+        </div>
+      </details>
+
+      <details class="fold fold--danger" id="reset-control">
+        <summary>Clear all testing data</summary>
+        <div class="fold__body">
+          <p class="hint" style="margin-top:0">
+            Removes this party’s attendance, entries, entry members, votes, and guests who are not attached to another party.
+            The party settings remain. Uploaded photos stay in Storage and can be removed separately from the Supabase Storage dashboard.
+          </p>
+          <button class="btn btn--danger btn--block btn--sm" id="btn-clear-all" type="button">Clear all user data</button>
         </div>
       </details>
 

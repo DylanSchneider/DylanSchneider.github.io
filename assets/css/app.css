@@ -809,6 +809,8 @@ details.fold > summary::after { content: "⌄"; color: var(--muted-2); }
 details.fold[open] > summary::after { content: "⌃"; }
 details.fold > .fold__body { padding: 0 16px 16px; }
 details.fold + details.fold { margin-top: 10px; }
+.fold--danger { border-color: rgba(181,18,60,.38); }
+.fold--danger > summary { color: #c77a86; }
 
 /* ── Wonderland atmosphere ──────────────────────────────────────────── */
 
@@ -987,7 +989,17 @@ body::after {
 
 .clock__digits { filter: drop-shadow(0 0 10px rgba(247,203,104,.12)); }
 .clock__unit { border-color: rgba(247,203,104,.22); }
-.clock__n.is-ticking { animation: tick-pop .34s ease-out; }
+.clock.is-urgent {
+  animation: none;
+  border-color: rgba(181,18,60,.58);
+  box-shadow: 0 0 24px rgba(181,18,60,.12);
+}
+.clock__n {
+  transform-origin: center center;
+  backface-visibility: hidden;
+  perspective: 300px;
+}
+.clock__n.is-flipping { animation: clock-flip .52s cubic-bezier(.2,.72,.2,1) both; }
 
 @keyframes rabbit-hole-drift {
   to { transform: rotate(360deg); }
@@ -1009,6 +1021,12 @@ body::after {
 @keyframes tick-pop {
   0% { transform: translateY(4px); opacity: .3; }
   100% { transform: none; opacity: 1; }
+}
+@keyframes clock-flip {
+  0% { opacity: .62; transform: rotateX(0deg); }
+  42% { opacity: .2; transform: rotateX(-88deg); }
+  58% { opacity: .2; transform: rotateX(88deg); }
+  100% { opacity: 1; transform: rotateX(0deg); }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1299,6 +1317,13 @@ body { background: #000; }
 
 .view--landing,
 .landing-shell { touch-action: pan-y; }
+.view--costume { min-height: 100svh; touch-action: pan-y; }
+.view--costume .wrap {
+  padding-top: max(12px, env(safe-area-inset-top));
+  padding-bottom: calc(36px + var(--safe-b));
+  overscroll-behavior-y: auto;
+}
+.view--costume .panel { scroll-margin-top: 16px; }
 
 body.rabbit-fall { overflow: hidden; }
 body.rabbit-fall #app { animation: rabbit-fall 1.15s cubic-bezier(.55, .04, .3, .95) both; transform-origin: 50% 45%; }
@@ -1328,11 +1353,16 @@ body.rabbit-fall .wonderland-layer { animation: portal-fall 1.15s cubic-bezier(.
 }
 
 @media (max-width: 560px) {
+  body { overflow-x: hidden; }
   .landing-shell { padding-top: 10px; }
   .landing-hero { min-height: 45svh; padding-top: 52px; }
   .landing-hero::before { top: 18%; width: 105vw; }
   .landing-hero__sub { max-width: 330px; font-size: 14px; }
   .entry-stage { padding-top: 24px; }
+  .view--costume .wrap { padding-inline: 14px; }
+  .view--costume .panel { padding: 18px 15px; }
+  .view--costume .photo { max-height: none; }
+  .view--costume .stack { margin-top: 18px; }
 }
 
 @media (min-width: 760px) {
@@ -1350,6 +1380,7 @@ body.rabbit-fall .wonderland-layer { animation: portal-fall 1.15s cubic-bezier(.
 @media (prefers-reduced-motion: reduce) {
   .landing-hero::before, .scroll-cue.is-ready .scroll-cue__arrow { animation: none; }
   .fall-tunnel::before { animation: none; }
+  .clock__n.is-flipping { animation: none; }
   body.rabbit-fall #app, body.rabbit-fall .wonderland-layer { animation: none; }
 }
 

@@ -33,9 +33,16 @@ Live at whatever URL GitHub Pages serves this repo from (Settings → Pages).
 
 PIN-gated. Shows live vote counts (even while hidden from guests), the
 master guest list with a "voted?" column, a CSV export, controls to push
-the deadline or reveal results early, and the ability to delete a bad entry.
+the deadline or reveal results early, the ability to delete a bad entry, and
+a PIN-protected "Clear all testing data" control for pre-party testing.
 After the deadline it needs no PIN — anyone (i.e. you) can open it and see
 the winner.
+
+The testing reset clears the selected party's attendance, entries,
+entry-members, votes, and guests who are not associated with another party.
+It leaves party settings intact. Set `ENABLE_TEST_RESET: false` in
+[`config.js`](config.js), and set `testing_reset_enabled = false` on the
+party row in Supabase, before the event.
 
 ## One-time setup (Supabase — free)
 

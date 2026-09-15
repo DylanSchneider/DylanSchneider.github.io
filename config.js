@@ -29,6 +29,10 @@ window.PARTY_CONFIG = {
   PARTY_TITLE: 'Halloween',
   PARTY_YEAR: '2026',
 
+  // Set false before the party to hide the destructive test reset control.
+  // The database flag testing_reset_enabled can also be set false in Supabase.
+  ENABLE_TEST_RESET: true,
+
   // Only used in demo mode, and as a placeholder while the real close
   // time is still loading. The database is the source of truth.
   FALLBACK_CLOSES_AT: '2026-10-24T22:00:00-04:00',

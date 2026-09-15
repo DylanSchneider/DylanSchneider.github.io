@@ -246,7 +246,7 @@ function demoMembership(db, guestId) {
   const e = db.entries.find((x) => x.id === m.entry_id);
   if (!e) return null;
   return {
-    entry_id: e.id, title: e.title, photo_path: e.photo_path,
+    entry_id: e.id, entry_type: e.entry_type || 'solo', title: e.title, photo_path: e.photo_path,
     is_owner: m.is_owner, costume_name: m.costume_name, members: demoRoster(db, e.id)
   };
 }
@@ -288,7 +288,7 @@ const demo = {
     };
   },
 
-  createEntry(guestId, title, costumeName, photoPath) {
+  createEntry(guestId, title, costumeName, photoPath, entryType) {
     const db = demoRead();
     if (db.members.some((m) => m.guest_id === guestId)) {
       throw new Error('You already have a costume entered this year — edit it from the menu instead.');
@@ -297,11 +297,12 @@ const demo = {
     if (t.length < 2) throw new Error('Give your costume (or group) a name.');
     const costume = cleanText(costumeName) || t;
 
-    const e = { id: uid(), owner_id: guestId, title: t, photo_path: photoPath || null };
+    const type = entryType === 'group' ? 'group' : 'solo';
+    const e = { id: uid(), owner_id: guestId, entry_type: type, title: t, photo_path: photoPath || null };
     db.entries.push(e);
     db.members.push({ guest_id: guestId, entry_id: e.id, costume_name: costume, is_owner: true });
     demoWrite(db);
-    return { entry_id: e.id, title: e.title, photo_path: e.photo_path, costume_name: costume, is_owner: true, members: demoRoster(db, e.id) };
+    return { entry_id: e.id, entry_type: e.entry_type, title: e.title, photo_path: e.photo_path, costume_name: costume, is_owner: true, members: demoRoster(db, e.id) };
   },
 
   joinEntry(guestId, entryId, costumeName) {
@@ -311,12 +312,15 @@ const demo = {
     }
     const e = db.entries.find((x) => x.id === entryId);
     if (!e) throw new Error('That costume group no longer exists.');
+    const memberCount = db.members.filter((m) => m.entry_id === e.id).length;
+    const isGroup = e.entry_type ? e.entry_type === 'group' : memberCount > 1;
+    if (!isGroup) throw new Error('That costume is solo and is not open to group members.');
     const costume = cleanText(costumeName);
     if (costume.length < 1) throw new Error('What are you dressed as in this group?');
 
     db.members.push({ guest_id: guestId, entry_id: e.id, costume_name: costume, is_owner: false });
     demoWrite(db);
-    return { entry_id: e.id, title: e.title, photo_path: e.photo_path, costume_name: costume, is_owner: false, members: demoRoster(db, e.id) };
+    return { entry_id: e.id, entry_type: e.entry_type || 'group', title: e.title, photo_path: e.photo_path, costume_name: costume, is_owner: false, members: demoRoster(db, e.id) };
   },
 
   updateEntry(guestId, title, photoPath) {
@@ -376,7 +380,8 @@ const demo = {
         title: e.title,
         photo_path: e.photo_path,
         members,
-        is_group: members.length > 1,
+        entry_type: e.entry_type || (members.length > 1 ? 'group' : 'solo'),
+        is_group: e.entry_type ? e.entry_type === 'group' : members.length > 1,
         is_mine: db.members.some((m) => m.entry_id === e.id && m.guest_id === guestId),
         votes: info.revealed ? votes : null,
         _votes: votes
@@ -460,10 +465,10 @@ export const api = {
   },
 
   /** Start a brand-new solo or group entry. photoBlob may be null (no photo). */
-  async createEntry(guestId, title, costumeName, photoBlob) {
-    if (!IS_LIVE) return demo.createEntry(guestId, title, costumeName, photoBlob ? await blobToDataUrl(photoBlob) : null);
+  async createEntry(guestId, title, costumeName, photoBlob, entryType) {
+    if (!IS_LIVE) return demo.createEntry(guestId, title, costumeName, photoBlob ? await blobToDataUrl(photoBlob) : null, entryType);
     const path = photoBlob ? await uploadPhoto(guestId, photoBlob) : null;
-    return rpc('create_entry', { p_party: PARTY_ID, p_guest: guestId, p_title: title, p_costume_name: costumeName, p_photo_path: path });
+    return rpc('create_entry', { p_party: PARTY_ID, p_guest: guestId, p_title: title, p_costume_name: costumeName, p_entry_type: entryType || 'solo', p_photo_path: path });
   },
 
   /** Join an existing group with your own costume/role inside it. */
@@ -532,6 +537,12 @@ export const api = {
     return IS_LIVE
       ? rpc('admin_delete_entry', { p_party: PARTY_ID, p_pin: pin, p_entry: entryId })
       : Promise.resolve(demo.deleteEntry(entryId));
+  },
+
+  adminClearAll(pin) {
+    return IS_LIVE
+      ? rpc('admin_clear_all', { p_party: PARTY_ID, p_pin: pin })
+      : Promise.resolve(demo.wipe());
   },
 
   adminGuests(pin) {
