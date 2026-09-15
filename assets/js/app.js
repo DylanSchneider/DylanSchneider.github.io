@@ -181,7 +181,7 @@ $('form-name').addEventListener('submit', async (ev) => {
     buzz(60);
   } finally {
     if (btn) loading(btn, false);
-    window.setTimeout(() => document.body.classList.remove('rabbit-fall'), 1200);
+    window.setTimeout(() => document.body.classList.remove('rabbit-fall'), 2250);
   }
 });
 

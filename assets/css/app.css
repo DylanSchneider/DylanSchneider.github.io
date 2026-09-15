@@ -544,12 +544,41 @@ h1, h2, h3 { margin: 0; line-height: 1.15; font-weight: 800; }
   border-color: var(--card-red);
   box-shadow: 0 0 0 3px rgba(224, 38, 77, .22), var(--shadow);
 }
-/* The vote actually on record */
-.card.is-voted { border-color: var(--garden); }
+/* The vote actually on record — a moving rainbow ring marks the one card
+   this guest has submitted. Unvoted cards keep their ordinary border. */
+.card.is-voted {
+  border-color: transparent;
+  isolation: isolate;
+}
+.card.is-voted::before {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  padding: 2px;
+  border-radius: inherit;
+  content: "";
+  background: conic-gradient(
+    from 0deg,
+    #ff4d6d,
+    #ff9f43,
+    #ffe66d,
+    #8ee28e,
+    #65d6ff,
+    #9d8cff,
+    #ff4d6d
+  );
+  pointer-events: none;
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  animation: card-rainbow 4.8s linear infinite;
+}
 .card.is-voted::after {
   content: "✓";
   position: absolute;
   top: 10px; right: 10px;
+  z-index: 4;
   display: grid;
   place-items: center;
   width: 32px; height: 32px;
@@ -1355,8 +1384,8 @@ body { background: #000; }
 .view--costume .panel { scroll-margin-top: 16px; }
 
 body.rabbit-fall { overflow: hidden; }
-body.rabbit-fall #app { animation: rabbit-fall 1.15s cubic-bezier(.55, .04, .3, .95) both; transform-origin: 50% 45%; }
-body.rabbit-fall .wonderland-layer { animation: portal-fall 1.15s cubic-bezier(.55, .04, .3, .95) both; }
+body.rabbit-fall #app { animation: rabbit-fall 2.2s cubic-bezier(.55, .04, .3, .95) both; transform-origin: 50% 45%; }
+body.rabbit-fall .wonderland-layer { animation: portal-fall 2.2s cubic-bezier(.55, .04, .3, .95) both; }
 
 @keyframes portal-breathe {
   50% { opacity: .38; transform: translateX(-50%) scale(1.08); }
@@ -1375,6 +1404,9 @@ body.rabbit-fall .wonderland-layer { animation: portal-fall 1.15s cubic-bezier(.
 @keyframes rainbow-shift {
   0% { background-position: 0% 50%; }
   100% { background-position: 400% 50%; }
+}
+@keyframes card-rainbow {
+  to { transform: rotate(360deg); }
 }
 @keyframes rabbit-fall {
   0% { opacity: 1; transform: scale(1) rotate(0); }
@@ -1414,6 +1446,7 @@ body.rabbit-fall .wonderland-layer { animation: portal-fall 1.15s cubic-bezier(.
   .landing-hero::before, .scroll-cue.is-ready .scroll-cue__arrow { animation: none; }
   .fall-tunnel::before { animation: none; }
   .fall-tunnel__copy { animation: none; }
+  .card.is-voted::before { animation: none; }
   body.rabbit-fall #app, body.rabbit-fall .wonderland-layer { animation: none; }
 }
 
