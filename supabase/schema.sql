@@ -84,6 +84,30 @@ create table if not exists public.votes (
   primary key (party_id, voter_id)
 );
 
+-- One winner per year — manually recorded after the party for the record.
+-- Strictly one row per party_id (primary key enforces it).
+create table if not exists public.winners (
+  party_id   text        primary key references public.parties(id) on delete cascade,
+  entry_id   uuid        not null references public.entries(id)  on delete cascade,
+  vote_count int         not null,
+  recorded_at timestamptz not null default now(),
+  notes      text
+);
+
+-- To record a winner after the party, find the top entry and run:
+--   insert into public.winners (party_id, entry_id, vote_count, notes)
+--   values ('2026', '<entry_id_uuid>', <vote_count>, 'Mad Hatter group - 14 votes')
+--   on conflict (party_id) do update set entry_id = excluded.entry_id, vote_count = excluded.vote_count, recorded_at = now();
+-- Or query the live vote count:
+--   with top_entry as (
+--     select e.id, count(*) as c from public.entries e
+--     left join public.votes v on v.entry_id = e.id
+--     where e.party_id = '2026' group by e.id order by c desc limit 1
+--   )
+--   insert into public.winners (party_id, entry_id, vote_count)
+--   select '2026', id, c from top_entry
+--   on conflict (party_id) do update set entry_id = excluded.entry_id, vote_count = excluded.vote_count, recorded_at = now();
+
 create index if not exists entries_party_idx       on public.entries       (party_id);
 create index if not exists entry_members_entry_idx on public.entry_members (entry_id);
 create index if not exists votes_entry_idx         on public.votes         (entry_id);
@@ -114,6 +138,7 @@ alter table public.attendance    enable row level security;
 alter table public.entries       enable row level security;
 alter table public.entry_members enable row level security;
 alter table public.votes         enable row level security;
+alter table public.winners       enable row level security;
 
 
 -- ---------------------------------------------------------------------

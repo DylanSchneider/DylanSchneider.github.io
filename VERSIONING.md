@@ -159,7 +159,38 @@ When merging a feature branch back to `master`:
 
 For this project, **merge commits** are fine. They show which commits were part of a feature and when it landed.
 
-## Example: Adding a Feature and Tagging a Release
+## Recording the Winner
+
+After the countdown ends and results are live, the database still has all the votes. To **permanently record** who won:
+
+### Via SQL Editor (easiest)
+
+In Supabase → SQL Editor, run:
+
+```sql
+with top_entry as (
+  select e.id, count(*) as c from public.entries e
+  left join public.votes v on v.entry_id = e.id
+  where e.party_id = '2026' group by e.id order by c desc limit 1
+)
+insert into public.winners (party_id, entry_id, vote_count, notes)
+select '2026', id, c, 'Mad Hatter group - 14 votes' from top_entry
+on conflict (party_id) do update set entry_id = excluded.entry_id, vote_count = excluded.vote_count, recorded_at = now();
+```
+
+This finds the top entry by vote count and inserts it into the `winners` table (one row per year, strictly). If you accidentally run it twice, the second run just updates the record.
+
+### Manual entry
+
+If you know the winner by heart:
+
+```sql
+insert into public.winners (party_id, entry_id, vote_count, notes)
+values ('2026', '<uuid-of-winning-entry>', 14, 'Mad Hatter group')
+on conflict (party_id) do update set entry_id = excluded.entry_id;
+```
+
+## Example: Full Year Workflow
 
 ```bash
 # Create a feature branch
@@ -173,7 +204,11 @@ git push origin feature/add-cheshire-cat-easter-egg
 # Back on master (pull the merge)
 git pull origin master
 
-# Party happens, all works great
+# Party happens, voting closes, results show
+# Visit admin.html, note the winner, and record it in the database:
+#   - Either run the SQL query above
+#   - Or manually insert the winner via SQL Editor
+
 # Now freeze this version:
 ./scripts/archive-season.ps1 2026
 
