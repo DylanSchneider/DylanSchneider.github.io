@@ -20,7 +20,7 @@ window.PARTY_CONFIG = {
   // "anon" key — it's meant to be public. Every table is locked by RLS and
   // the party rules are enforced in the database, not here. An older
   // project's legacy "anon" key (a long eyJ... JWT) works here too.
-  SUPABASE_PUBLISHABLE_KEY: '',
+  SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_khHl0nBOziVAPYSxi4v3wg__7VBZlfI',
 
   // Must match the party row id in the database (the SEED block in schema.sql).
   PARTY_ID: '2026',
