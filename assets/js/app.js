@@ -35,7 +35,6 @@ const state = {
   entries: [],
   membership: null,    // { entry_id, title, photo_path, is_owner, costume_name, members }
   votedId: null,
-  selectedId: null,
   costumeReturn: 'v-name',
   costumeMode: 'chooser', // chooser | solo | group | join | edit
   busy: false
@@ -48,9 +47,7 @@ const serverNow = () => new Date(Date.now() + state.skew);
 
 function show(viewId) {
   for (const v of document.querySelectorAll('.view')) v.classList.toggle('is-active', v.id === viewId);
-  $('actionbar').classList.toggle('is-up', false);
   window.scrollTo(0, 0);
-  if (viewId === 'v-dash') paintActionbar();
 }
 
 let toastTimer;
@@ -611,7 +608,6 @@ function paintAll() {
   paintWinner();
   paintStatus();
   paintCards();
-  paintActionbar();
 }
 
 /* Countdown */
@@ -721,7 +717,7 @@ function paintStatus() {
     strip.hidden = true;
   } else {
     icon.textContent = '🗳️';
-    txt.textContent = 'You have one vote. Tap a costume to pick it.';
+    txt.textContent = 'You have one vote. Tap a costume to cast it.';
   }
 }
 
@@ -756,7 +752,6 @@ function entryCard(e, rank) {
   const cls = ['card'];
   if (e.is_mine) cls.push('is-mine');
   if (e.id === state.votedId) cls.push('is-voted');
-  if (e.id === state.selectedId && e.id !== state.votedId) cls.push('is-selected');
   if (medalled) cls.push('card--rank' + rank);
 
   return h('button', {
@@ -787,46 +782,19 @@ function entryCard(e, rank) {
   );
 }
 
-function tapCard(e) {
+async function tapCard(e) {
   if (serverNow() >= state.closesAt) { toast('Voting is closed.', 'bad'); return; }
   if (e.is_mine) { toast('You cannot vote for your own costume.', 'bad'); buzz(40); return; }
   if (e.id === state.votedId) { toast('That is already your vote.'); return; }
-
-  state.selectedId = state.selectedId === e.id ? null : e.id;
-  buzz(12);
-  paintCards();
-  paintActionbar();
-}
-
-/* Sticky bar: only appears when there is a pending change to commit */
-function paintActionbar() {
-  const bar = $('actionbar');
-  const btn = $('btn-vote');
-  const note = $('vote-note');
-
-  const closed = !state.closesAt || serverNow() >= state.closesAt;
-  const pick = state.entries.find((e) => e.id === state.selectedId);
-  const pending = pick && pick.id !== state.votedId && !closed;
-
-  bar.classList.toggle('is-up', Boolean(pending));
-  if (!pending) return;
-
-  btn.textContent = (state.votedId ? 'Change my vote to ' : 'Vote for ') + `“${pick.title}”`;
-  note.textContent = 'You can change your vote until the timer runs out.';
-}
-
-$('btn-vote').addEventListener('click', async () => {
-  const pick = state.entries.find((e) => e.id === state.selectedId);
-  if (!pick || state.busy) return;
+  if (state.busy) return;
 
   state.busy = true;
-  const btn = $('btn-vote');
-  loading(btn, true);
+  buzz(12);
+  paintCards();
   try {
-    await api.castVote(state.me.id, pick.id);
-    state.votedId = pick.id;
-    state.selectedId = null;
-    toast(`Vote locked in for “${pick.title}”`, 'good');
+    await api.castVote(state.me.id, e.id);
+    state.votedId = e.id;
+    toast(`Vote locked in for “${e.title}”`, 'good');
     buzz([18, 40, 18]);
     paintAll();
     refresh(true);
@@ -835,10 +803,9 @@ $('btn-vote').addEventListener('click', async () => {
     buzz(70);
     refresh(true);
   } finally {
-    loading(btn, false);
     state.busy = false;
   }
-});
+}
 
 $('btn-refresh').addEventListener('click', () => refresh(false));
 
@@ -871,7 +838,7 @@ $('menu-switch').addEventListener('click', () => {
   closeSheet();
   session.clear();
   Object.assign(state, {
-    me: null, membership: null, votedId: null, selectedId: null, entries: []
+    me: null, membership: null, votedId: null, entries: []
   });
   $('in-name').value = '';
   $('in-phone').value = '';
@@ -892,7 +859,6 @@ setInterval(() => {
   if (wasOpen === null) wasOpen = open;
   else if (wasOpen && !open) {
     wasOpen = false;
-    state.selectedId = null;
     refresh(true);
   } else {
     wasOpen = open;
