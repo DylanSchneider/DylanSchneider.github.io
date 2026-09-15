@@ -567,6 +567,9 @@ h1, h2, h3 { margin: 0; line-height: 1.15; font-weight: 800; }
   -webkit-mask-composite: xor;
   mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   mask-composite: exclude;
+  transform: rotate(0deg) translateZ(0);
+  backface-visibility: hidden;
+  will-change: transform;
   animation: card-rainbow 4.8s linear infinite;
 }
 .card.is-voted::after {
@@ -1349,7 +1352,7 @@ body.rabbit-fall .wonderland-layer { animation: portal-fall 2.2s cubic-bezier(.5
   100% { background-position: 400% 50%; }
 }
 @keyframes card-rainbow {
-  to { transform: rotate(360deg); }
+  to { transform: rotate(360deg) translateZ(0); }
 }
 @keyframes rabbit-fall {
   0% { opacity: 1; transform: scale(1) rotate(0); }

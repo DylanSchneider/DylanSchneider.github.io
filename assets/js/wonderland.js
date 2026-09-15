@@ -49,9 +49,14 @@
 
     let ready = false;
     let falling = false;
+    let syncQueued = false;
+    const phoneDigits = (raw) => {
+      const all = String(raw).replace(/\D/g, '');
+      return all.length === 11 && all.startsWith('1') ? all.slice(1) : all.slice(0, 10);
+    };
     const syncGate = () => {
       const fullName = name.value.trim().replace(/\s+/g, ' ');
-      const digits = phone.value.replace(/\D/g, '');
+      const digits = phoneDigits(phone.value);
       ready = fullName.length >= 2 && fullName.includes(' ') && digits.length === 10;
       cue.classList.toggle('is-ready', ready);
       cue.querySelector('.scroll-cue__text').textContent = ready
@@ -59,9 +64,21 @@
         : 'Fill in your details to unlock';
       document.documentElement.classList.toggle('rabbit-ready', ready);
     };
+    const syncGateSoon = () => {
+      if (syncQueued) return;
+      syncQueued = true;
+      window.setTimeout(() => {
+        syncQueued = false;
+        syncGate();
+      }, 0);
+    };
 
-    name.addEventListener('input', syncGate);
-    phone.addEventListener('input', syncGate);
+    name.addEventListener('input', syncGateSoon);
+    phone.addEventListener('input', syncGateSoon);
+    name.addEventListener('change', syncGate);
+    phone.addEventListener('change', syncGate);
+    name.addEventListener('blur', syncGate);
+    phone.addEventListener('blur', syncGate);
     syncGate();
 
     const fall = () => {

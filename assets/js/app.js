@@ -121,8 +121,13 @@ function bootFail(message) {
 
 /* ── Step 1 · check in ───────────────────────────────────────────────── */
 
+function phoneDigits(raw) {
+  const all = String(raw).replace(/\D/g, '');
+  return all.length === 11 && all.startsWith('1') ? all.slice(1) : all.slice(0, 10);
+}
+
 function formatPhone(raw) {
-  const d = String(raw).replace(/\D/g, '').slice(0, 10);
+  const d = phoneDigits(raw);
   if (d.length <= 3) return d;
   if (d.length <= 6) return `(${d.slice(0, 3)}) ${d.slice(3)}`;
   return `(${d.slice(0, 3)}) ${d.slice(3, 6)}-${d.slice(6)}`;
@@ -152,7 +157,7 @@ $('form-name').addEventListener('submit', async (ev) => {
   ev.preventDefault();
   const name = $('in-name').value.trim().replace(/\s+/g, ' ');
   const phone = $('in-phone').value;
-  const digits = phone.replace(/\D/g, '');
+  const digits = phoneDigits(phone);
 
   let bad = false;
   if (name.length < 2 || !name.includes(' ')) {
@@ -577,7 +582,7 @@ function paintMenuLabel() {
   $('menu-edit').textContent = state.membership ? '✏️ Edit my costume' : '🎭 Enter a costume';
 }
 
-async function refresh(quiet) {
+async function refresh(quiet, repaint = true) {
   const spin = $('btn-refresh');
   if (!quiet) spin.classList.add('is-spinning');
   try {
@@ -587,7 +592,7 @@ async function refresh(quiet) {
     ]);
     adoptInfo(info);
     state.entries = Array.isArray(entries) ? entries : [];
-    paintAll();
+    if (repaint) paintAll();
   } catch (err) {
     if (!quiet) toast(err.message, 'bad');
   } finally {
@@ -790,14 +795,15 @@ async function tapCard(e) {
 
   state.busy = true;
   buzz(12);
-  paintCards();
   try {
     await api.castVote(state.me.id, e.id);
     state.votedId = e.id;
     toast(`Vote locked in for “${e.title}”`, 'good');
     buzz([18, 40, 18]);
     paintAll();
-    refresh(true);
+    await refresh(true, false);
+    paintWinner();
+    paintStatus();
   } catch (err) {
     toast(err.message, 'bad');
     buzz(70);
