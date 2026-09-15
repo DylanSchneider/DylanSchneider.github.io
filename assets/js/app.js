@@ -168,6 +168,7 @@ $('form-name').addEventListener('submit', async (ev) => {
   }
   if (bad) { buzz(40); return; }
 
+  document.body.classList.add('rabbit-fall');
   const btn = $('btn-name');
   loading(btn, true);
   try {
@@ -180,6 +181,7 @@ $('form-name').addEventListener('submit', async (ev) => {
     buzz(60);
   } finally {
     loading(btn, false);
+    window.setTimeout(() => document.body.classList.remove('rabbit-fall'), 1200);
   }
 });
 
