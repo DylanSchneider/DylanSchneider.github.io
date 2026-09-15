@@ -187,7 +187,7 @@ function paintClock() {
 
   $('clock-digits').replaceChildren(...units.map(([n, lbl]) =>
     h('div', { class: 'clock__unit' },
-      h('span', { class: 'clock__n is-flipping', text: d > 0 ? String(n) : two(n) }),
+      h('span', { class: 'clock__n', text: d > 0 ? String(n) : two(n) }),
       h('span', { class: 'clock__t', text: lbl })
     )
   ));

@@ -106,10 +106,6 @@ button, a, label, summary, .card {
 }
 .wrap--dash { padding-block: 14px 0; }
 
-/* Room for the sticky action bar. */
-.pad-actionbar { height: calc(104px + var(--safe-b)); }
-
-
 /* ── Type ────────────────────────────────────────────────────────────── */
 
 h1, h2, h3 { margin: 0; line-height: 1.15; font-weight: 800; }
@@ -995,11 +991,33 @@ body::after {
   box-shadow: 0 0 24px rgba(181,18,60,.12);
 }
 .clock__n {
-  transform-origin: center center;
-  backface-visibility: hidden;
-  perspective: 300px;
+  transform: none;
 }
-.clock__n.is-flipping { animation: clock-flip .52s cubic-bezier(.2,.72,.2,1) both; }
+
+/* Keep the vote action beside the cards while the guest browses. */
+#v-dash .actionbar {
+  position: sticky;
+  top: max(8px, env(safe-area-inset-top));
+  z-index: 40;
+  display: none;
+  margin: 12px 0 14px;
+  padding: 0;
+  background: transparent;
+  backdrop-filter: none;
+  transform: none;
+}
+#v-dash .actionbar.is-up {
+  display: block;
+  animation: selection-reveal .18s ease-out both;
+}
+#v-dash .actionbar__inner {
+  padding: 10px;
+  border: 1px solid rgba(181,18,60,.42);
+  border-radius: var(--r-lg);
+  background: rgba(11, 7, 10, .96);
+  box-shadow: 0 12px 28px rgba(0,0,0,.45);
+}
+#v-dash .actionbar__note { margin: 7px 0 0; }
 
 @keyframes rabbit-hole-drift {
   to { transform: rotate(360deg); }
@@ -1018,15 +1036,9 @@ body::after {
   from { opacity: 1; transform: translate(-50%, -50%) scale(.65) rotate(-15deg); }
   to { opacity: 0; transform: translate(calc(-50% + var(--burst-x)), calc(-50% + var(--burst-y))) scale(1.4) rotate(20deg); }
 }
-@keyframes tick-pop {
-  0% { transform: translateY(4px); opacity: .3; }
-  100% { transform: none; opacity: 1; }
-}
-@keyframes clock-flip {
-  0% { opacity: .62; transform: rotateX(0deg); }
-  42% { opacity: .2; transform: rotateX(-88deg); }
-  58% { opacity: .2; transform: rotateX(88deg); }
-  100% { opacity: 1; transform: rotateX(0deg); }
+@keyframes selection-reveal {
+  from { opacity: 0; transform: translateY(-5px); }
+  to { opacity: 1; transform: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1380,7 +1392,6 @@ body.rabbit-fall .wonderland-layer { animation: portal-fall 1.15s cubic-bezier(.
 @media (prefers-reduced-motion: reduce) {
   .landing-hero::before, .scroll-cue.is-ready .scroll-cue__arrow { animation: none; }
   .fall-tunnel::before { animation: none; }
-  .clock__n.is-flipping { animation: none; }
   body.rabbit-fall #app, body.rabbit-fall .wonderland-layer { animation: none; }
 }
 

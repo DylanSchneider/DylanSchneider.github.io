@@ -665,10 +665,6 @@ function paintClock() {
       const number = unit.querySelector('.clock__n');
       if (!number || number.textContent === values[i]) return;
       number.textContent = values[i];
-      number.classList.remove('is-flipping');
-      void number.offsetWidth;
-      number.classList.add('is-flipping');
-      window.setTimeout(() => number.classList.remove('is-flipping'), 560);
     });
   }
   $('clock-when').textContent = `Closes ${fmtWhen(state.closesAt)}`;
