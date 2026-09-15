@@ -1,24 +1,25 @@
 /* =====================================================================
-   Halloween Party — mobile-first stylesheet
+   Halloween Party — "Down the Rabbit Hole" (Alice in Wonderland skin)
    Designed for one-handed use on a phone in a dark room.
    ===================================================================== */
 
 :root {
-  --bg:           #0a0710;
-  --bg-2:         #120c1c;
-  --surface:      #17101f;
-  --surface-2:    #1f1629;
+  --bg:           #0a0e1c;
+  --bg-2:         #0d1428;
+  --surface:      #131c33;
+  --surface-2:    #1b2747;
   --line:         rgba(255, 255, 255, 0.10);
   --line-strong:  rgba(255, 255, 255, 0.20);
 
   --text:         #f6f0e8;
-  --muted:        #a598b4;
-  --muted-2:      #7b6e8a;
+  --muted:        #a7b0c9;
+  --muted-2:      #74809e;
 
-  --pumpkin:      #ff7a1a;
-  --pumpkin-2:    #ffa552;
-  --purple:       #a259ff;
-  --slime:        #8ce03f;
+  /* Queen of Hearts crimson, Mad Hatter gold, Cheshire Cat teal. */
+  --card-red:     #e0264d;
+  --card-gold:    #f4c04a;
+  --card-teal:    #2dd4bf;
+  --garden:       #8ce03f;
   --danger:       #ff6b6b;
 
   --gold:         #ffd166;
@@ -35,7 +36,7 @@
   --safe-b: env(safe-area-inset-bottom, 0px);
 
   --shadow: 0 10px 34px rgba(0, 0, 0, 0.55);
-  --ring: 0 0 0 3px rgba(255, 122, 26, 0.32);
+  --ring: 0 0 0 3px rgba(224, 38, 77, 0.32);
 
   color-scheme: dark;
 }
@@ -65,10 +66,10 @@ body {
   z-index: -1;
   pointer-events: none;
   background:
-    radial-gradient(90% 55% at 12% -8%,  rgba(255, 122, 26, 0.20), transparent 70%),
-    radial-gradient(80% 50% at 92% 4%,   rgba(162, 89, 255, 0.20), transparent 70%),
-    radial-gradient(120% 70% at 50% 108%, rgba(162, 89, 255, 0.12), transparent 70%),
-    linear-gradient(#0a0710, #0d0814 60%, #0a0710);
+    radial-gradient(90% 55% at 12% -8%,  rgba(224, 38, 77, 0.20), transparent 70%),
+    radial-gradient(80% 50% at 92% 4%,   rgba(45, 212, 191, 0.20), transparent 70%),
+    radial-gradient(120% 70% at 50% 108%, rgba(45, 212, 191, 0.12), transparent 70%),
+    linear-gradient(#0a0e1c, #0d1428 60%, #0a0e1c);
 }
 
 /* Kill the grey flash on tap; we draw our own :active states instead. */
@@ -78,7 +79,7 @@ button, a, label, summary, .card {
 }
 
 :focus-visible {
-  outline: 2px solid var(--pumpkin-2);
+  outline: 2px solid var(--card-gold);
   outline-offset: 2px;
 }
 
@@ -117,13 +118,13 @@ h1, h2, h3 { margin: 0; line-height: 1.15; font-weight: 800; }
   text-align: center;
   margin-bottom: 22px;
 }
-.brand__mark { font-size: 46px; line-height: 1; filter: drop-shadow(0 4px 14px rgba(255, 122, 26, .5)); }
+.brand__mark { font-size: 46px; line-height: 1; filter: drop-shadow(0 4px 14px rgba(224, 38, 77, .5)); }
 .brand__title {
   margin-top: 8px;
   font-size: clamp(30px, 10vw, 40px);
   font-weight: 900;
   letter-spacing: -0.5px;
-  background: linear-gradient(100deg, var(--pumpkin-2), var(--pumpkin) 45%, var(--purple));
+  background: linear-gradient(100deg, var(--card-gold), var(--card-red) 45%, var(--card-teal));
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -160,7 +161,7 @@ h1, h2, h3 { margin: 0; line-height: 1.15; font-weight: 800; }
   border-radius: var(--r-pill);
   background: var(--line-strong);
 }
-.steps i.on { background: var(--pumpkin); box-shadow: 0 0 12px rgba(255, 122, 26, .6); }
+.steps i.on { background: var(--card-red); box-shadow: 0 0 12px rgba(224, 38, 77, .6); }
 
 
 /* ── Cards & panels ──────────────────────────────────────────────────── */
@@ -206,7 +207,7 @@ h1, h2, h3 { margin: 0; line-height: 1.15; font-weight: 800; }
 .input::placeholder { color: var(--muted-2); }
 .input:focus {
   outline: none;
-  border-color: var(--pumpkin);
+  border-color: var(--card-red);
   box-shadow: var(--ring);
 }
 .input[aria-invalid="true"] { border-color: var(--danger); }
@@ -227,8 +228,8 @@ h1, h2, h3 { margin: 0; line-height: 1.15; font-weight: 800; }
   align-items: center;
   gap: 4px;
   padding: 8px 8px 8px 14px;
-  background: rgba(162, 89, 255, 0.16);
-  border: 1px solid rgba(162, 89, 255, 0.42);
+  background: rgba(45, 212, 191, 0.16);
+  border: 1px solid rgba(45, 212, 191, 0.42);
   border-radius: var(--r-pill);
   font-size: 14px;
   font-weight: 600;
@@ -260,7 +261,7 @@ h1, h2, h3 { margin: 0; line-height: 1.15; font-weight: 800; }
   overflow: hidden;
   cursor: pointer;
 }
-.photo:active { border-color: var(--pumpkin); }
+.photo:active { border-color: var(--card-red); }
 .photo input[type="file"] {
   position: absolute;
   inset: 0;
@@ -293,7 +294,7 @@ h1, h2, h3 { margin: 0; line-height: 1.15; font-weight: 800; }
   right: 10px; bottom: 10px;
   padding: 9px 14px;
   border-radius: var(--r-pill);
-  background: rgba(10, 7, 16, 0.82);
+  background: rgba(13, 20, 40, 0.82);
   backdrop-filter: blur(8px);
   border: 1px solid var(--line-strong);
   font-size: 13px;
@@ -327,9 +328,9 @@ h1, h2, h3 { margin: 0; line-height: 1.15; font-weight: 800; }
 .btn[disabled] { opacity: .45; pointer-events: none; }
 
 .btn--primary {
-  background: linear-gradient(100deg, var(--pumpkin), #ff5f0f);
-  color: #1a0b02;
-  box-shadow: 0 8px 22px rgba(255, 122, 26, .32);
+  background: linear-gradient(100deg, var(--card-red), var(--card-gold));
+  color: #2a0610;
+  box-shadow: 0 8px 22px rgba(224, 38, 77, .32);
 }
 .btn--ghost {
   background: transparent;
@@ -350,7 +351,7 @@ h1, h2, h3 { margin: 0; line-height: 1.15; font-weight: 800; }
   border-top-color: currentcolor;
   border-radius: 50%;
   animation: spin .7s linear infinite;
-  color: #1a0b02;
+  color: #2a0610;
 }
 .btn--ghost.is-loading::after, .btn--danger.is-loading::after { color: var(--text); }
 @keyframes spin { to { transform: rotate(360deg); } }
@@ -398,15 +399,15 @@ h1, h2, h3 { margin: 0; line-height: 1.15; font-weight: 800; }
 /* ── Countdown ───────────────────────────────────────────────────────── */
 
 .clock {
-  border: 1px solid rgba(255, 122, 26, .3);
+  border: 1px solid rgba(224, 38, 77, .3);
   background:
-    radial-gradient(120% 140% at 50% -30%, rgba(255, 122, 26, .2), transparent 70%),
+    radial-gradient(120% 140% at 50% -30%, rgba(224, 38, 77, .2), transparent 70%),
     var(--surface);
   border-radius: var(--r-lg);
   padding: 16px;
   text-align: center;
 }
-.clock__label { font-size: 11px; font-weight: 800; letter-spacing: 1.4px; text-transform: uppercase; color: var(--pumpkin-2); }
+.clock__label { font-size: 11px; font-weight: 800; letter-spacing: 1.4px; text-transform: uppercase; color: var(--card-gold); }
 .clock__digits {
   display: flex;
   justify-content: center;
@@ -435,9 +436,16 @@ h1, h2, h3 { margin: 0; line-height: 1.15; font-weight: 800; }
 .clock.is-closed .clock__label { color: var(--muted); }
 .clock.is-urgent { animation: pulse 1.8s ease-in-out infinite; }
 @keyframes pulse {
-  50% { border-color: rgba(255, 122, 26, .75); box-shadow: 0 0 26px rgba(255, 122, 26, .3); }
+  50% { border-color: rgba(224, 38, 77, .75); box-shadow: 0 0 26px rgba(224, 38, 77, .3); }
 }
 @media (prefers-reduced-motion: reduce) { .clock.is-urgent { animation: none; } }
+
+/* Card float animation — gentle bob on hover */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-4px); }
+}
+.card:hover { animation: float .6s ease-in-out; }
 
 
 /* ── Vote status strip ───────────────────────────────────────────────── */
@@ -488,7 +496,7 @@ h1, h2, h3 { margin: 0; line-height: 1.15; font-weight: 800; }
 .card__media {
   position: relative;
   aspect-ratio: 4 / 3;
-  background: linear-gradient(140deg, var(--surface-2), #0e0916);
+  background: linear-gradient(140deg, var(--surface-2), #131c33);
   overflow: hidden;
 }
 .card__media img {
@@ -524,7 +532,7 @@ h1, h2, h3 { margin: 0; line-height: 1.15; font-weight: 800; }
   top: 10px; left: 10px;
   padding: 6px 11px;
   border-radius: var(--r-pill);
-  background: rgba(10, 7, 16, .8);
+  background: rgba(13, 20, 40, .8);
   backdrop-filter: blur(8px);
   border: 1px solid var(--line-strong);
   font-size: 11px;
@@ -532,16 +540,16 @@ h1, h2, h3 { margin: 0; line-height: 1.15; font-weight: 800; }
   letter-spacing: .5px;
   text-transform: uppercase;
 }
-.badge--group { background: rgba(162, 89, 255, .3); border-color: rgba(162, 89, 255, .5); }
-.badge--mine  { background: rgba(255, 122, 26, .3); border-color: rgba(255, 122, 26, .55); }
+.badge--group { background: rgba(45, 212, 191, .3); border-color: rgba(45, 212, 191, .5); }
+.badge--mine  { background: rgba(224, 38, 77, .3); border-color: rgba(224, 38, 77, .55); }
 
 /* Selected (tapped, not yet submitted) */
 .card.is-selected {
-  border-color: var(--pumpkin);
-  box-shadow: 0 0 0 3px rgba(255, 122, 26, .22), var(--shadow);
+  border-color: var(--card-red);
+  box-shadow: 0 0 0 3px rgba(224, 38, 77, .22), var(--shadow);
 }
 /* The vote actually on record */
-.card.is-voted { border-color: var(--slime); }
+.card.is-voted { border-color: var(--garden); }
 .card.is-voted::after {
   content: "✓";
   position: absolute;
@@ -550,7 +558,7 @@ h1, h2, h3 { margin: 0; line-height: 1.15; font-weight: 800; }
   place-items: center;
   width: 32px; height: 32px;
   border-radius: 50%;
-  background: var(--slime);
+  background: var(--garden);
   color: #0d1a03;
   font-size: 18px;
   font-weight: 900;
@@ -610,7 +618,7 @@ h1, h2, h3 { margin: 0; line-height: 1.15; font-weight: 800; }
   left: 0; right: 0; bottom: 0;
   z-index: 40;
   padding: 12px var(--gut) calc(12px + var(--safe-b));
-  background: linear-gradient(to top, var(--bg) 42%, rgba(10, 7, 16, .93) 78%, transparent);
+  background: linear-gradient(to top, var(--bg) 42%, rgba(13, 20, 40, .93) 78%, transparent);
   backdrop-filter: blur(14px);
   transform: translateY(130%);
   transition: transform .22s cubic-bezier(.2, .8, .3, 1);
@@ -652,15 +660,15 @@ h1, h2, h3 { margin: 0; line-height: 1.15; font-weight: 800; }
 #toast .toast {
   padding: 13px 16px;
   border-radius: var(--r);
-  background: #241a30;
+  background: #1a2540;
   border: 1px solid var(--line-strong);
   box-shadow: var(--shadow);
   font-size: 14.5px;
   font-weight: 600;
   text-align: center;
 }
-#toast .toast.is-bad  { background: #3a1620; border-color: rgba(255, 107, 107, .5); }
-#toast .toast.is-good { background: #172a12; border-color: rgba(140, 224, 63, .5); }
+#toast .toast.is-bad  { background: #2d1f3a; border-color: rgba(255, 107, 107, .5); }
+#toast .toast.is-good { background: #1a2d25; border-color: rgba(140, 224, 63, .5); }
 
 
 /* ── Banners ─────────────────────────────────────────────────────────── */
@@ -674,7 +682,7 @@ h1, h2, h3 { margin: 0; line-height: 1.15; font-weight: 800; }
   font-size: 14px;
   line-height: 1.5;
 }
-.note--warn { border-color: rgba(255, 165, 82, .45); background: rgba(255, 122, 26, .1); }
+.note--warn { border-color: rgba(244, 192, 74, .45); background: rgba(224, 38, 77, .1); }
 .note b { display: block; margin-bottom: 3px; }
 .note code {
   padding: 2px 6px;
@@ -735,7 +743,7 @@ h1, h2, h3 { margin: 0; line-height: 1.15; font-weight: 800; }
   display: block;
   height: 100%;
   border-radius: var(--r-pill);
-  background: linear-gradient(90deg, var(--pumpkin), var(--pumpkin-2));
+  background: linear-gradient(90deg, var(--card-red), var(--card-gold));
   transition: width .4s ease;
 }
 
@@ -754,7 +762,7 @@ h1, h2, h3 { margin: 0; line-height: 1.15; font-weight: 800; }
 
 /* Tappable variant of .rank__row for choosing which group to join. */
 .rank__row--tap { cursor: pointer; transition: transform .1s, border-color .15s; }
-.rank__row--tap:active { transform: scale(.985); border-color: var(--pumpkin); }
+.rank__row--tap:active { transform: scale(.985); border-color: var(--card-red); }
 
 .choice-divider {
   display: flex;
@@ -817,7 +825,7 @@ details.fold + details.fold { margin-top: 10px; }
   color: var(--text);
   overflow: visible;
 }
-.sheet::backdrop { background: rgba(4, 2, 8, 0.66); backdrop-filter: blur(3px); }
+.sheet::backdrop { background: rgba(6, 8, 15, 0.66); backdrop-filter: blur(3px); }
 
 .sheet__inner {
   padding: 10px 14px calc(16px + var(--safe-b));

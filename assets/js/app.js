@@ -3,7 +3,7 @@
    Screens: check in → costume (join / start solo / start group / edit) → vote
    ===================================================================== */
 
-import { api, session, photoUrl, shrinkPhoto, demoStore, IS_LIVE, PARTY_ID } from './store.js';
+import { api, session, photoUrl, shrinkPhoto, IS_LIVE, PARTY_ID } from './store.js';
 
 const CFG = window.PARTY_CONFIG || {};
 const $ = (id) => document.getElementById(id);
@@ -95,7 +95,6 @@ function paintModeNotes() {
   );
   $('mode-note').replaceChildren(note());
   $('mode-note-2').replaceChildren(note());
-  $('menu-wipe').hidden = false;
 }
 
 function bootFail(message) {
@@ -874,13 +873,6 @@ $('menu-switch').addEventListener('click', () => {
   $('in-phone').value = '';
   show('v-name');
   $('in-name').focus();
-});
-
-$('menu-wipe').addEventListener('click', () => {
-  closeSheet();
-  demoStore.wipe();
-  session.clear();
-  location.reload();
 });
 
 
