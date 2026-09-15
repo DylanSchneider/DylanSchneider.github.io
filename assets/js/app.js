@@ -650,23 +650,12 @@ function paintClock() {
     ? [[d, 'days'], [hr, 'hrs'], [mi, 'min'], [se, 'sec']]
     : [[hr, 'hrs'], [mi, 'min'], [se, 'sec']];
 
-  const values = units.map(([n]) => d > 0 ? String(n) : two(n));
-  const current = [...digits.children];
-  if (digits.dataset.state === 'closed' || current.length !== units.length) {
-    digits.replaceChildren(...units.map(([n, t], i) =>
-      h('div', { class: 'clock__unit' },
-        h('span', { class: 'clock__n', text: values[i] }),
-        h('span', { class: 'clock__t', text: t })
-      )
-    ));
-    digits.dataset.state = 'open';
-  } else {
-    current.forEach((unit, i) => {
-      const number = unit.querySelector('.clock__n');
-      if (!number || number.textContent === values[i]) return;
-      number.textContent = values[i];
-    });
-  }
+  digits.replaceChildren(...units.map(([n, lbl]) =>
+    h('div', { class: 'clock__unit' },
+      h('span', { class: 'clock__n', text: d > 0 ? String(n) : two(n) }),
+      h('span', { class: 'clock__t', text: lbl })
+    )
+  ));
   $('clock-when').textContent = `Closes ${fmtWhen(state.closesAt)}`;
 }
 
