@@ -144,6 +144,15 @@
 
 </main>
 
+<!-- Full-screen descent layer: it covers the old and new views during the
+     transition so the tunnel is always the first thing the guest sees. -->
+<div class="fall-transition" id="fall-transition" aria-hidden="true">
+  <div class="fall-transition__tunnel"></div>
+  <div class="fall-transition__glow"></div>
+  <div class="fall-transition__dust"></div>
+  <div class="fall-transition__copy">Down we go<span>follow the White Rabbit</span></div>
+</div>
+
 <!-- Bottom sheet menu -->
 <dialog class="sheet" id="sheet">
   <div class="sheet__inner">

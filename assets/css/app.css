@@ -401,6 +401,7 @@ h1, h2, h3 { margin: 0; line-height: 1.15; font-weight: 800; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
 .stack { display: grid; gap: 10px; margin-top: 20px; }
+.costume-choice-stack { display: flex; flex-direction: column; }
 
 .linkback {
   all: unset;
@@ -923,6 +924,86 @@ body::after {
 
 #app { position: relative; z-index: 1; }
 
+.fall-transition {
+  position: fixed;
+  z-index: 500;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  visibility: hidden;
+  pointer-events: none;
+  background: #020106;
+  opacity: 0;
+  isolation: isolate;
+}
+.fall-transition__tunnel,
+.fall-transition__glow,
+.fall-transition__dust {
+  position: absolute;
+  inset: -42%;
+}
+.fall-transition__tunnel {
+  background:
+    repeating-conic-gradient(from 2deg at 50% 50%, rgba(255,247,231,.98) 0 5deg, rgba(8,7,12,.98) 5deg 14deg),
+    repeating-radial-gradient(ellipse at 50% 50%, transparent 0 5%, rgba(247,203,104,.9) 5.3% 5.9%, rgba(13,8,18,.98) 6.2% 10%);
+  background-blend-mode: screen, normal;
+  filter: contrast(1.25) saturate(.82);
+  transform: perspective(900px) rotateX(8deg) scale(.34) rotate(-7deg);
+  animation: fall-tunnel-dive 2.25s cubic-bezier(.2,.72,.14,1) both;
+}
+.fall-transition__tunnel::after {
+  position: absolute;
+  inset: 0;
+  content: "";
+  background:
+    radial-gradient(ellipse at center, transparent 0 8%, rgba(0,0,0,.18) 25%, rgba(0,0,0,.78) 68%, #020106 100%),
+    linear-gradient(90deg, rgba(0,0,0,.72), transparent 24%, transparent 76%, rgba(0,0,0,.72));
+}
+.fall-transition__glow {
+  inset: -20%;
+  z-index: 1;
+  background: radial-gradient(circle at center, rgba(255,247,231,.28), rgba(239,54,91,.08) 20%, transparent 52%);
+  mix-blend-mode: screen;
+  animation: fall-glow-pulse 2.25s ease-out both;
+}
+.fall-transition__dust {
+  z-index: 2;
+  inset: 0;
+  opacity: .6;
+  background-image:
+    radial-gradient(circle, rgba(255,247,231,.8) 0 1px, transparent 1.5px),
+    radial-gradient(circle, rgba(247,203,104,.65) 0 1px, transparent 1.5px);
+  background-position: 12% 24%, 74% 68%;
+  background-size: 83px 107px, 137px 151px;
+  animation: fall-dust-rush 2.25s cubic-bezier(.2,.72,.14,1) both;
+}
+.fall-transition__copy {
+  position: relative;
+  z-index: 3;
+  color: var(--wonder-cream);
+  font: 400 clamp(34px, 10vw, 86px)/.88 Georgia, "Times New Roman", serif;
+  letter-spacing: -.07em;
+  text-align: center;
+  text-shadow: 0 5px 26px rgba(0,0,0,.9);
+  opacity: 0;
+  transform: translateY(12px) rotate(-4deg);
+  animation: fall-copy-arrive 2.25s ease-out both;
+}
+.fall-transition__copy span {
+  display: block;
+  margin-top: 17px;
+  color: var(--card-gold);
+  font: 800 10px/1 Georgia, "Times New Roman", serif;
+  letter-spacing: .24em;
+  text-transform: uppercase;
+}
+
+body.rabbit-fall .fall-transition {
+  visibility: visible;
+  animation: fall-transition-cover 2.25s cubic-bezier(.2,.72,.14,1) both;
+}
+
 .wonderland-card {
   position: absolute;
   display: grid;
@@ -1385,6 +1466,34 @@ body.rabbit-fall .wonderland-layer { animation: portal-fall 2.2s cubic-bezier(.5
 @keyframes portal-breathe {
   50% { opacity: .38; transform: translateX(-50%) scale(1.08); }
 }
+@keyframes fall-transition-cover {
+  0% { opacity: 0; }
+  7% { opacity: 1; }
+  84% { opacity: 1; }
+  100% { opacity: 0; }
+}
+@keyframes fall-tunnel-dive {
+  0% { transform: perspective(900px) rotateX(8deg) scale(.34) rotate(-7deg); }
+  18% { transform: perspective(900px) rotateX(8deg) scale(.72) rotate(4deg); }
+  55% { transform: perspective(900px) rotateX(8deg) scale(2.2) rotate(18deg); }
+  100% { transform: perspective(900px) rotateX(8deg) scale(7.5) rotate(31deg); }
+}
+@keyframes fall-glow-pulse {
+  0% { opacity: 0; transform: scale(.55); }
+  18% { opacity: 1; }
+  63% { opacity: .28; transform: scale(1.3); }
+  100% { opacity: 0; transform: scale(2.4); }
+}
+@keyframes fall-dust-rush {
+  0% { opacity: 0; transform: scale(.7) rotate(-4deg); }
+  12% { opacity: .72; }
+  100% { opacity: 0; transform: scale(2.6) rotate(12deg); }
+}
+@keyframes fall-copy-arrive {
+  0%, 14% { opacity: 0; transform: translateY(12px) rotate(-4deg) scale(.8); }
+  28%, 67% { opacity: 1; transform: translateY(0) rotate(-4deg) scale(1); }
+  84%, 100% { opacity: 0; transform: translateY(-18px) rotate(3deg) scale(1.15); }
+}
 @keyframes cue-nudge {
   50% { transform: translateY(5px); }
 }
@@ -1443,6 +1552,7 @@ body.rabbit-fall .wonderland-layer { animation: portal-fall 2.2s cubic-bezier(.5
   .fall-tunnel__copy { animation: none; }
   .card.is-voted::before { animation: none; }
   body.rabbit-fall #app, body.rabbit-fall .wonderland-layer { animation: none; }
+  body.rabbit-fall .fall-transition { visibility: hidden; animation: none; }
 }
 
 /* ── Bottom sheet menu ───────────────────────────────────────────────── */

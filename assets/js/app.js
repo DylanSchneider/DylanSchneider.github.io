@@ -389,11 +389,18 @@ async function renderChooser(slot) {
     h('b', { text: 'Starting a group?' }),
     ' Wait until everyone in the group has arrived. A group entry uses one shared photo.'
   ));
-  nodes.push(h('div', { class: 'stack', style: 'margin-top:0' },
-    h('button', { class: 'btn btn--ghost btn--block', type: 'button', onclick: () => renderCostume('group') },
-      '👥 Starting a group costume'),
-    h('button', { class: 'btn btn--primary btn--block', type: 'button', onclick: () => renderCostume('solo') },
-      '🧍 Going solo')
+  // Keep the group path first: it is the intended shared-costume flow, and
+  // the solo option is the fallback below it.
+  const groupButton = h('button', {
+    class: 'btn btn--primary btn--block costume-choice-group', type: 'button',
+    onclick: () => renderCostume('group')
+  }, '👥 Starting a group costume');
+  const soloButton = h('button', {
+    class: 'btn btn--ghost btn--block costume-choice-solo', type: 'button',
+    onclick: () => renderCostume('solo')
+  }, '🧍 Going solo');
+  nodes.push(h('div', { class: 'stack costume-choice-stack', style: 'margin-top:0' },
+    groupButton, soloButton
   ));
 
   slot.replaceChildren(...nodes);
