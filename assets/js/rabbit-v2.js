@@ -12,8 +12,8 @@ document.body.classList.add('homepage-v2');
 const stage = document.createElement('div');
 stage.className = 'v2-tunnel-stage';
 stage.innerHTML = `
-  <div class="v2-tunnel-stage__topline">THE WAY IS DOWN <span>SCROLL TO FALL</span></div>
-  <div class="v2-tunnel-stage__title">Keep falling<small>the rabbit is waiting</small></div>
+  <div class="v2-tunnel-stage__topline">THE WAY IS DOWN <span>DON'T BE LATE</span></div>
+  <div class="v2-tunnel-stage__title">Keep falling<small>tea is waiting at the bottom</small></div>
 `;
 stage.append(canvas);
 tunnel.replaceChildren(stage);
@@ -62,10 +62,71 @@ for (let i = 0; i < 32; i++) {
   });
   const ring = new THREE.Mesh(new THREE.TorusGeometry(radius, i % 5 === 0 ? .045 : .018, 6, 72), material);
   ring.position.z = 3 - i * 3.55;
+  ring.position.x = Math.sin(i * 1.41) * .16;
+  ring.position.y = Math.cos(i * 1.17) * .13;
+  ring.scale.set(1 + Math.sin(i * 1.9) * .08, .84 + Math.cos(i * 1.23) * .08, 1);
   ring.rotation.z = (i % 2 ? -.12 : .12) + i * .025;
   tunnelGroup.add(ring);
   rings.push(ring);
 }
+
+// A distant keyhole gives the camera a Wonderland destination instead of an
+// abstract vanishing point. It grows into the blackout at the end of the fall.
+const keyhole = new THREE.Group();
+const keyholeMaterial = new THREE.MeshBasicMaterial({ color: 0xf2f2f2, transparent: true, opacity: .58, side: THREE.DoubleSide });
+const keyholeHead = new THREE.Mesh(new THREE.CircleGeometry(.72, 32), keyholeMaterial);
+keyholeHead.position.y = .5;
+const keyholeStem = new THREE.Mesh(new THREE.BoxGeometry(.58, 1.45, .04), keyholeMaterial);
+keyholeStem.position.y = -.35;
+const keyholeFrame = new THREE.Mesh(
+  new THREE.TorusGeometry(1.02, .035, 6, 40),
+  new THREE.MeshBasicMaterial({ color: 0x858585, transparent: true, opacity: .42 })
+);
+keyhole.add(keyholeHead, keyholeStem, keyholeFrame);
+keyhole.position.set(.12, .08, -111);
+keyhole.rotation.z = -.08;
+tunnelGroup.add(keyhole);
+
+// A pocket watch drifts past the camera—an Alice cue that also supports the
+// "don't be late" copy without adding another color to the palette.
+const watch = new THREE.Group();
+const watchFace = new THREE.Mesh(
+  new THREE.CircleGeometry(.78, 32),
+  new THREE.MeshBasicMaterial({ color: 0x111111, transparent: true, opacity: .72, side: THREE.DoubleSide })
+);
+const watchRim = new THREE.Mesh(
+  new THREE.TorusGeometry(.84, .06, 6, 32),
+  new THREE.MeshBasicMaterial({ color: 0xd8d8d8, transparent: true, opacity: .55 })
+);
+const watchHand = new THREE.Mesh(
+  new THREE.BoxGeometry(.045, .48, .035),
+  new THREE.MeshBasicMaterial({ color: 0xf4f4f4, transparent: true, opacity: .78 })
+);
+watchHand.position.y = .2;
+const watchMinute = new THREE.Mesh(
+  new THREE.BoxGeometry(.035, .62, .035),
+  new THREE.MeshBasicMaterial({ color: 0x8f8f8f, transparent: true, opacity: .8 })
+);
+watchMinute.position.y = .27;
+watchMinute.rotation.z = 1.05;
+watch.add(watchFace, watchRim, watchHand, watchMinute);
+watch.position.set(-3.2, 1.9, -28);
+watch.rotation.z = -.22;
+tunnelGroup.add(watch);
+
+// A quiet Cheshire grin appears off-axis, then slips away as the camera
+// moves deeper. The shape is intentionally suggestive rather than literal.
+const grin = new THREE.Group();
+const grinMaterial = new THREE.MeshBasicMaterial({ color: 0xe8e8e8, transparent: true, opacity: .28, side: THREE.DoubleSide });
+const grinSmile = new THREE.Mesh(new THREE.TorusGeometry(.72, .035, 5, 28, Math.PI), grinMaterial);
+const grinEye = new THREE.Mesh(new THREE.CircleGeometry(.055, 12), grinMaterial);
+const grinEyeTwo = grinEye.clone();
+grinEye.position.set(-.32, .42, 0);
+grinEyeTwo.position.set(.32, .42, 0);
+grin.add(grinSmile, grinEye, grinEyeTwo);
+grin.position.set(3.15, -1.45, -53);
+grin.rotation.z = .12;
+tunnelGroup.add(grin);
 
 const suits = ['♠', '♣', '♦', '♥', '♠', '♣', '♦', '♥'];
 const cards = [];
@@ -152,6 +213,11 @@ function render() {
     card.position.x = card.userData.baseX + Math.sin(state.drift * card.userData.speed + i) * (.12 + p * .25);
     card.position.y = card.userData.baseY + Math.cos(state.drift * card.userData.speed + i) * (.1 + p * .18);
   });
+  watch.rotation.z += .0018;
+  watch.position.x = -3.2 + Math.sin(state.drift * .7) * (.12 + p * .32);
+  watch.position.y = 1.9 + Math.cos(state.drift * .52) * (.08 + p * .16);
+  grin.rotation.z += .0008;
+  grin.position.x = 3.15 + Math.sin(state.drift * .45) * .2;
   particles.rotation.z = state.drift * .12;
   renderer.render(scene, camera);
   raf = requestAnimationFrame(render);
