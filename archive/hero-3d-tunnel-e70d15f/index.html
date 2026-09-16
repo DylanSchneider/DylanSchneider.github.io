@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#000000">
+<meta name="description" content="Down the Rabbit Hole — check in, enter your costume, and vote for the best.">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="format-detection" content="telephone=no">
+<title>Down the Rabbit Hole · Costume Contest</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐰</text></svg>">
+<link rel="stylesheet" href="assets/css/app.css">
+<link rel="stylesheet" href="assets/css/tunnel.css">
+</head>
+<body class="homepage-v2">
+<div class="bg-fx"></div>
+
+<main id="app">
+
+  <!-- ─────────────── Boot / fatal error ─────────────── -->
+  <section id="v-boot" class="view is-active">
+    <div class="wrap">
+      <div class="brand">
+        <div class="brand__mark">🐰</div>
+        <h1 class="brand__title">Wonderland</h1>
+        <p class="brand__sub" id="boot-msg">Loading…</p>
+      </div>
+      <div id="boot-extra"></div>
+    </div>
+  </section>
+
+
+  <!-- ─────────────── Step 1 · name + phone ─────────────── -->
+  <section id="v-name" class="view view--landing">
+    <div class="landing-shell">
+      <div id="mode-note"></div>
+
+      <div class="landing-hero">
+        <div class="landing-hero__topline">
+          <span>AN INVITATION TO WONDERLAND</span>
+          <span id="brand-year"></span>
+        </div>
+        <div class="rabbit-symbol" aria-hidden="true"><span></span><span></span></div>
+        <p class="landing-hero__kicker">Everyone is mad here</p>
+        <h1 class="landing-hero__title">Down<br><em>the Rabbit Hole</em></h1>
+        <p class="landing-hero__sub">A spooky evening of strange costumes, curious characters, and tea served at the wrong time.</p>
+        <div class="landing-hero__rule" aria-hidden="true"><i></i><span>♥</span><i></i></div>
+      </div>
+
+      <div class="entry-stage" id="entry-details">
+        <div class="entry-stage__label">Follow the White Rabbit <span>·</span> step 1 of 2</div>
+        <h2 class="entry-stage__title">Before you enter…</h2>
+        <p class="entry-stage__copy">Tell us who is falling through the looking glass.</p>
+
+        <div class="steps"><i class="on"></i><i></i></div>
+
+        <form id="form-name" class="panel" novalidate>
+          <p class="eyebrow">Your invitation</p>
+
+          <div class="field" style="margin-top:14px">
+            <label class="label" for="in-name">Your real name</label>
+            <input class="input" id="in-name" type="text" name="name"
+                   autocomplete="name" autocapitalize="words" autocorrect="off"
+                   spellcheck="false" enterkeyhint="next" maxlength="60"
+                   placeholder="First and last name" required>
+            <p class="err" id="err-name"></p>
+          </div>
+
+          <div class="field">
+            <label class="label" for="in-phone">Mobile number</label>
+            <input class="input" id="in-phone" type="tel" name="phone"
+                   inputmode="numeric" autocomplete="tel-national"
+                   enterkeyhint="go" maxlength="16"
+                   placeholder="(555) 123-4567" required>
+            <p class="hint">For the guest list and your one vote. No texts, ever.</p>
+            <p class="err" id="err-phone"></p>
+          </div>
+
+          <button id="btn-name" class="btn btn--primary btn--block" type="submit">Begin the descent ↓</button>
+          <button class="tunnel-skip" type="submit" data-skip-tunnel="true">Skip the journey · enter directly</button>
+        </form>
+
+        <div class="scroll-cue" id="scroll-cue" aria-live="polite">
+          <span class="scroll-cue__line"></span>
+          <span class="scroll-cue__text">Fill in your details to unlock</span>
+          <span class="scroll-cue__arrow">↓</span>
+        </div>
+        <div class="fall-tunnel" aria-hidden="true">
+          <div class="fall-tunnel__copy">Keep falling<br><span>the way is down</span></div>
+        </div>
+        <div class="fall-sentinel" id="fall-sentinel" aria-hidden="true">
+          <span>Reach the bottom</span><b>↓</b>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ─────────────── Step 2 · costume ─────────────── -->
+  <!-- app.js renders whichever sub-screen applies (choose / solo / group /
+       join / edit) into #costume-slot — the shape varies too much for one
+       static form. -->
+  <section id="v-costume" class="view view--costume">
+    <div class="wrap">
+      <button class="linkback" id="btn-back" type="button">&larr; Back</button>
+      <div class="steps"><i class="on"></i><i class="on"></i></div>
+      <div id="costume-slot"></div>
+    </div>
+  </section>
+
+
+  <!-- ─────────────── Dashboard · vote ─────────────── -->
+  <section id="v-dash" class="view">
+    <div class="wrap wrap--dash">
+      <div class="topbar">
+        <div class="topbar__who">
+          <span class="eyebrow">Checked in as</span>
+          <b id="me-name">&mdash;</b>
+        </div>
+        <button class="icon-btn" id="btn-refresh" type="button" aria-label="Refresh costumes">↻</button>
+        <button class="icon-btn" id="btn-menu" type="button" aria-label="Open menu">⋯</button>
+      </div>
+
+      <div id="mode-note-2"></div>
+
+      <div class="clock" id="clock">
+        <div class="clock__label" id="clock-label">Voting closes in</div>
+        <div class="clock__digits" id="clock-digits"></div>
+        <div class="clock__when" id="clock-when"></div>
+      </div>
+
+      <div id="winner"></div>
+
+      <div class="status" id="status" hidden>
+        <span class="status__icon" id="status-icon">🗳️</span>
+        <span id="status-text"></span>
+      </div>
+
+      <div id="photo-save"></div>
+
+      <div class="cards" id="cards"></div>
+      <div id="empty"></div>
+    </div>
+  </section>
+
+</main>
+
+<!-- Full-screen descent layer. Canvas renders the tunnel; the timeline keeps
+     the old and new views completely separate during the handoff. -->
+<div class="fall-transition" id="fall-transition" aria-hidden="true">
+  <canvas id="fall-canvas"></canvas>
+  <div class="fall-transition__veil"></div>
+  <div class="fall-transition__iris"></div>
+  <div class="fall-transition__copy">
+    <strong>Down we go</strong>
+    <span>follow the White Rabbit</span>
+  </div>
+  <div class="fall-transition__flash"></div>
+</div>
+
+<!-- Bottom sheet menu -->
+<dialog class="sheet" id="sheet">
+  <div class="sheet__inner">
+    <div class="sheet__grip"></div>
+    <button class="sheet__item" id="menu-edit" type="button">✏️ Edit my costume</button>
+    <button class="sheet__item" id="menu-photos" type="button">📸 Party photos</button>
+    <button class="sheet__item" id="menu-results" type="button">🏆 Host results (PIN)</button>
+    <button class="sheet__item" id="menu-switch" type="button">👤 Not you? Check in as someone else</button>
+    <button class="sheet__item sheet__item--close" id="menu-close" type="button">Close</button>
+  </div>
+</dialog>
+
+<div id="toast" aria-live="polite"></div>
+
+<noscript>
+  <div class="wrap">
+    <div class="note note--warn"><b>JavaScript is off</b>This page needs JavaScript to check you in and take your vote.</div>
+  </div>
+</noscript>
+
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/gsap.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/ScrollTrigger.min.js" defer></script>
+<script src="assets/js/rabbit-v2-loader.js" defer></script>
+<script src="assets/js/wonderland.js" defer></script>
+<script type="module" src="assets/js/app.js"></script>
+</body>
+</html>

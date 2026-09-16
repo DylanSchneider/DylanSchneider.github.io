@@ -1,0 +1,11 @@
+.claude/
+.DS_Store
+Thumbs.db
+
+# Local secrets — real credentials, never commit
+secrets.local.md
+.env
+.env.*
+
+# Local browser screenshots and profiling output
+.tmp/
