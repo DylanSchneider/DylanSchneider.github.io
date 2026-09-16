@@ -79,22 +79,22 @@
       for (let segment = 0; segment < segments; segment++) {
         const a0 = twist + segment / segments * Math.PI * 2;
         const a1 = twist + (segment + 1) / segments * Math.PI * 2;
-        const hue = segment % 4 === 0 ? '181,18,60' : segment % 3 === 0 ? '217,180,109' : '245,239,227';
+        const hue = segment % 4 === 0 ? '255,255,255' : segment % 3 === 0 ? '172,172,172' : '235,235,235';
         const alpha = (.08 + near * .16) * (segment % 2 ? .7 : 1);
         polygon([
           [cx + Math.cos(a0) * inner, cy + Math.sin(a0) * inner * .82],
           [cx + Math.cos(a1) * inner, cy + Math.sin(a1) * inner * .82],
           [cx + Math.cos(a1) * outer, cy + Math.sin(a1) * outer * .82],
           [cx + Math.cos(a0) * outer, cy + Math.sin(a0) * outer * .82]
-        ], `rgba(${hue},${alpha})`, `rgba(255,247,231,${.035 + near * .08})`);
+        ], `rgba(${hue},${alpha})`, `rgba(255,255,255,${.035 + near * .08})`);
       }
     }
 
     // The bright mouth at the end of the fall gives the transition a target.
     const mouth = ctx.createRadialGradient(cx, cy, 0, cx, cy, maxR * .24);
-    mouth.addColorStop(0, `rgba(255,247,231,${.34 * easeOut(p)})`);
-    mouth.addColorStop(.18, `rgba(217,180,109,${.16 * easeOut(p)})`);
-    mouth.addColorStop(1, 'rgba(181,18,60,0)');
+    mouth.addColorStop(0, `rgba(255,255,255,${.34 * easeOut(p)})`);
+    mouth.addColorStop(.18, `rgba(190,190,190,${.16 * easeOut(p)})`);
+    mouth.addColorStop(1, 'rgba(255,255,255,0)');
     ctx.fillStyle = mouth;
     ctx.fillRect(0, 0, width, height);
 
@@ -107,9 +107,7 @@
       const y = cy + Math.sin(angle) * radius * .82;
       const alpha = clamp((depth - .08) * 1.5, 0, .75) * (1 - p * .15);
       if (alpha <= 0) return;
-      ctx.fillStyle = particle.warm
-        ? `rgba(217,180,109,${alpha})`
-        : `rgba(255,247,231,${alpha * .78})`;
+      ctx.fillStyle = `rgba(255,255,255,${alpha * (particle.warm ? 1 : .78)})`;
       ctx.beginPath();
       ctx.arc(x, y, particle.size * (.7 + depth * 2.4), 0, Math.PI * 2);
       ctx.fill();
@@ -123,7 +121,7 @@
       ctx.save();
       ctx.translate(cx + Math.sin(p * 12) * 18, cy - rabbitP * height * .12);
       ctx.rotate(-.12 + rabbitP * .25);
-      ctx.fillStyle = `rgba(255,247,231,${.12 + rabbitP * .35})`;
+      ctx.fillStyle = `rgba(255,255,255,${.12 + rabbitP * .35})`;
       ctx.beginPath();
       ctx.ellipse(0, rabbitScale * .48, rabbitScale * .62, rabbitScale * .9, 0, 0, Math.PI * 2);
       ctx.fill();
@@ -149,7 +147,7 @@
 
   function fallbackFlight() {
     const started = performance.now();
-    const duration = 1900;
+    const duration = 3300;
     return new Promise((resolve) => {
       const step = (now) => {
         const t = clamp((now - started) / duration, 0, 1);
@@ -198,13 +196,13 @@
         }
       });
       timeline
-        .to(scene, { progress: .18, duration: .32, ease: 'power2.in' })
-        .to(scene, { progress: .72, duration: .62, ease: 'power4.in' })
-        .to(scene, { progress: 1, duration: .48, ease: 'expo.in' })
-        .to(overlay.querySelector('.fall-transition__iris'), { scale: 5, duration: .25, ease: 'power3.in' }, '<-.18')
-        .to(overlay.querySelector('.fall-transition__copy'), { opacity: 0, y: -26, duration: .2 }, '<-.05')
-        .to(overlay.querySelector('.fall-transition__flash'), { opacity: .94, duration: .08, ease: 'power2.in' }, '>-0.02')
-        .to(overlay.querySelector('.fall-transition__flash'), { opacity: 0, duration: .14, ease: 'power2.out' });
+        .to(scene, { progress: .15, duration: .65, ease: 'power2.in' })
+        .to(scene, { progress: .65, duration: 1.25, ease: 'power4.in' })
+        .to(scene, { progress: 1, duration: 1.05, ease: 'expo.in' })
+        .to(overlay.querySelector('.fall-transition__iris'), { scale: 5, duration: .5, ease: 'power3.in' }, '<-.35')
+        .to(overlay.querySelector('.fall-transition__copy'), { opacity: 0, y: -26, duration: .3 }, '<-.06')
+        .to(overlay.querySelector('.fall-transition__flash'), { opacity: .94, duration: .1, ease: 'power2.in' }, '>-0.02')
+        .to(overlay.querySelector('.fall-transition__flash'), { opacity: 0, duration: .2, ease: 'power2.out' });
     } else {
       fallbackFlight().then(() => {
         overlay.classList.add('is-black');

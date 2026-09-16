@@ -965,7 +965,7 @@ body::after {
   height: 28vmax;
   border: 1px solid rgba(255,247,231,.42);
   border-radius: 50%;
-  box-shadow: 0 0 70px rgba(217,180,109,.18), inset 0 0 44px rgba(181,18,60,.2);
+  box-shadow: 0 0 70px rgba(255,255,255,.16), inset 0 0 44px rgba(255,255,255,.12);
   opacity: .8;
   transform: translate(-50%, -50%) scale(.02);
 }
@@ -988,7 +988,7 @@ body::after {
 .fall-transition__copy span {
   display: block;
   margin-top: 18px;
-  color: var(--card-gold);
+  color: rgba(255,255,255,.72);
   font: 800 10px/1 Georgia, "Times New Roman", serif;
   letter-spacing: .28em;
   text-transform: uppercase;
@@ -1005,7 +1005,7 @@ body::after {
   transition: none;
 }
 .fall-transition.is-live .fall-transition__copy {
-  animation: fall-copy-arrive .82s .18s cubic-bezier(.2,.8,.2,1) both;
+  animation: fall-copy-arrive 2.25s .22s cubic-bezier(.2,.8,.2,1) both;
 }
 .fall-transition.is-black {
   background: #000;
@@ -1493,9 +1493,9 @@ body.rabbit-fall { overflow: hidden; }
   50% { opacity: .38; transform: translateX(-50%) scale(1.08); }
 }
 @keyframes fall-copy-arrive {
-  0%, 14% { opacity: 0; transform: translate(-50%, -50%) translateY(12px) rotate(-4deg) scale(.8); }
-  28%, 67% { opacity: 1; transform: translate(-50%, -50%) translateY(0) rotate(-4deg) scale(1); }
-  84%, 100% { opacity: 0; transform: translate(-50%, -50%) translateY(-18px) rotate(3deg) scale(1.15); }
+  0%, 12% { opacity: 0; transform: translate(-50%, -50%) translateY(12px) rotate(-4deg) scale(.8); }
+  26%, 76% { opacity: 1; transform: translate(-50%, -50%) translateY(0) rotate(-4deg) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -50%) translateY(-18px) rotate(3deg) scale(1.15); }
 }
 @keyframes cue-nudge {
   50% { transform: translateY(5px); }
