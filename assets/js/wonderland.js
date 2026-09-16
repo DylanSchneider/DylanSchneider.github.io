@@ -88,6 +88,8 @@
       window.setTimeout(() => { falling = false; }, 2000);
     };
 
+    // The 3D homepage owns its handoff; the old sentinel must not submit.
+    if (document.body.classList.contains('homepage-v2')) return;
     if (sentinel && 'IntersectionObserver' in window) {
       const observer = new IntersectionObserver((entries) => {
         if (entries.some((entry) => entry.isIntersecting)) fall();

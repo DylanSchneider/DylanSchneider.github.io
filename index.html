@@ -12,8 +12,9 @@
 <title>Down the Rabbit Hole · Costume Contest</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐰</text></svg>">
 <link rel="stylesheet" href="assets/css/app.css">
+<link rel="stylesheet" href="assets/css/tunnel.css">
 </head>
-<body>
+<body class="homepage-v2">
 <div class="bg-fx"></div>
 
 <main id="app">
@@ -77,6 +78,8 @@
             <p class="err" id="err-phone"></p>
           </div>
 
+          <button id="btn-name" class="btn btn--primary btn--block" type="submit">Begin the descent ↓</button>
+          <button class="tunnel-skip" type="submit" data-skip-tunnel="true">Skip the journey · enter directly</button>
         </form>
 
         <div class="scroll-cue" id="scroll-cue" aria-live="polite">
@@ -180,7 +183,6 @@
 <script src="config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/gsap.min.js" defer></script>
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/ScrollTrigger.min.js" defer></script>
-<script src="assets/js/rabbit-fall.js" defer></script>
 <script src="assets/js/rabbit-v2-loader.js" defer></script>
 <script src="assets/js/wonderland.js" defer></script>
 <script type="module" src="assets/js/app.js"></script>
