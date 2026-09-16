@@ -707,6 +707,51 @@ begin
   return json_build_object('deleted', p_entry);
 end $$;
 
+-- Correct a guest's master name and/or their current-party costume role.
+-- The real name intentionally updates the persistent guest record, so a
+-- typo correction is reflected in future guest lists and costume history.
+create or replace function public.admin_update_guest(
+  p_party text, p_pin text, p_guest uuid, p_full_name text, p_costume_name text
+) returns json language plpgsql security definer set search_path = public as $$
+declare
+  v_name    text;
+  v_costume text;
+  em        public.entry_members;
+begin
+  perform assert_admin(p_party, p_pin);
+
+  if not exists (select 1 from public.guests where id = p_guest) then
+    raise exception 'That guest could not be found.';
+  end if;
+
+  v_name := clean_text(p_full_name);
+  if length(v_name) < 2 or position(' ' in v_name) = 0 then
+    raise exception 'Please enter the guest’s first and last name.';
+  end if;
+
+  update public.guests set full_name = v_name where id = p_guest;
+
+  select * into em
+    from public.entry_members
+   where party_id = p_party and guest_id = p_guest;
+
+  if em.entry_id is not null then
+    v_costume := clean_text(p_costume_name);
+    if length(v_costume) < 1 then
+      raise exception 'Please enter this guest’s costume or role.';
+    end if;
+    update public.entry_members
+       set costume_name = v_costume
+     where party_id = p_party and guest_id = p_guest;
+  end if;
+
+  return json_build_object(
+    'guest_id', p_guest,
+    'full_name', v_name,
+    'costume_name', case when em.entry_id is not null then v_costume else null end
+  );
+end $$;
+
 -- Testing reset: clear only the selected party's user activity. Guests who
 -- have attendance in another party remain in the master guest list.
 create or replace function public.admin_clear_all(p_party text, p_pin text)
@@ -834,6 +879,7 @@ grant execute on function public.get_results(text, text)                  to ano
 grant execute on function public.admin_set_close(text, text, timestamptz) to anon, authenticated;
 grant execute on function public.admin_set_reveal(text, text, boolean)    to anon, authenticated;
 grant execute on function public.admin_delete_entry(text, text, uuid)     to anon, authenticated;
+grant execute on function public.admin_update_guest(text, text, uuid, text, text) to anon, authenticated;
 grant execute on function public.admin_clear_all(text, text)              to anon, authenticated;
 grant execute on function public.admin_guests(text, text)                 to anon, authenticated;
 grant execute on function public.admin_guest_history(text, uuid)          to anon, authenticated;

@@ -367,6 +367,10 @@ async function renderChooser(slot) {
   }
 
   nodes.push(h('div', { class: 'choice-divider', text: list.length ? 'or start your own' : 'start your own' }));
+  nodes.push(h('div', { class: 'note note--warn', style: 'margin-top:14px' },
+    h('b', { text: 'Starting a group?' }),
+    ' Wait until everyone in the group has arrived. A group entry uses one shared photo.'
+  ));
   nodes.push(h('div', { class: 'stack', style: 'margin-top:0' },
     h('button', { class: 'btn btn--primary btn--block', type: 'button', onclick: () => renderCostume('solo') },
       '🧍 Going solo'),
@@ -442,12 +446,16 @@ function renderGroupForm(slot) {
 
   slot.replaceChildren(
     h('p', { class: 'eyebrow', style: 'margin-top:0' }, 'Group costume'),
+    h('div', { class: 'note note--warn', style: 'margin-top:8px' },
+      h('b', { text: 'Please wait until the full group is here.' }),
+      ' This entry gets one shared photo, so start it when everyone is ready to be pictured together.'
+    ),
     h('div', { class: 'panel', style: 'margin-top:8px' },
       field('Group costume name', groupName, errG, 'e.g. Alice in Wonderland'),
       field('Your costume in the group', yourRole, errR, 'e.g. Mad Hatter'),
       photo.node,
       h('p', { class: 'hint' },
-        'Once the rest of your group checks in, they can find and join this group from their own phone — you only need to enter your own costume here.'),
+        'After you start it, the rest of your group can check in and join this entry from their own phones.'),
       h('div', { class: 'stack' }, btn)
     )
   );

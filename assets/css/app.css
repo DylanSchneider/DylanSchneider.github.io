@@ -1451,6 +1451,10 @@ body.rabbit-fall .wonderland-layer { animation: portal-fall 2.2s cubic-bezier(.5
 .sheet__item--close { justify-content: center; border-style: dashed; color: var(--muted); }
 .sheet__item:last-child { margin-bottom: 0; }
 
+.admin-edit { color: var(--text); }
+.admin-edit__hint { margin: 8px 0 16px; }
+.admin-edit .field + .field { margin-top: 14px; }
+
 .sr-only {
   position: absolute;
   width: 1px; height: 1px;

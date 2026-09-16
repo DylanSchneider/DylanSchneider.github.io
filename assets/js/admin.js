@@ -27,7 +27,7 @@ function h(tag, attrs, ...kids) {
   return n;
 }
 
-const state = { pin: '', data: null, guests: [], skew: 0, closesAt: null, lastCloseSeen: null };
+const state = { pin: '', data: null, guests: [], editingGuest: null, skew: 0, closesAt: null, lastCloseSeen: null };
 const serverNow = () => new Date(Date.now() + state.skew);
 
 function show(id) {
@@ -127,7 +127,7 @@ async function loadGuests() {
     paintGuests();
   } catch (err) {
     $('guest-rows').replaceChildren(
-      h('tr', {}, h('td', { colspan: '6', class: 'wrap-cell', text: err.message }))
+      h('tr', {}, h('td', { colspan: '7', class: 'wrap-cell', text: err.message }))
     );
   }
 }
@@ -270,7 +270,7 @@ function paintGuests() {
   const rows = state.guests;
   if (!rows.length) {
     $('guest-rows').replaceChildren(
-      h('tr', {}, h('td', { colspan: '6', text: 'Nobody has checked in yet.' }))
+      h('tr', {}, h('td', { colspan: '7', text: 'Nobody has checked in yet.' }))
     );
     return;
   }
@@ -281,7 +281,11 @@ function paintGuests() {
       h('td', { text: (g.years || []).join(', ') }),
       h('td', { class: 'wrap-cell', text: g.entry || '—' }),
       h('td', { class: 'wrap-cell', text: (g.costume_name && g.costume_name !== g.entry) ? g.costume_name : '—' }),
-      h('td', { text: g.voted ? '✅' : '—' })
+      h('td', { text: g.voted ? '✅' : '—' }),
+      h('td', {}, h('button', {
+        class: 'btn btn--ghost btn--sm', type: 'button',
+        onclick: () => openGuestEditor(g)
+      }, 'Edit'))
     )
   ));
 }
@@ -290,6 +294,69 @@ const prettyPhone = (p) => {
   const d = String(p || '').replace(/\D/g, '');
   return d.length === 10 ? `(${d.slice(0, 3)}) ${d.slice(3, 6)}-${d.slice(6)}` : d;
 };
+
+function openGuestEditor(guest) {
+  state.editingGuest = guest;
+  $('edit-guest-name').value = guest.full_name || '';
+  $('edit-guest-costume').value = guest.costume_name || '';
+  $('edit-guest-costume').disabled = !guest.entry;
+  $('edit-guest-costume-hint').textContent = guest.entry
+    ? `Current entry: ${guest.entry}`
+    : 'This guest has not entered a costume for this party.';
+  $('edit-guest-name-error').textContent = '';
+  $('edit-guest-costume-error').textContent = '';
+  const dialog = $('edit-guest-dialog');
+  if (typeof dialog.showModal === 'function') dialog.showModal();
+  else dialog.setAttribute('open', '');
+  $('edit-guest-name').focus();
+}
+
+function closeGuestEditor() {
+  const dialog = $('edit-guest-dialog');
+  if (typeof dialog.close === 'function') dialog.close();
+  else dialog.removeAttribute('open');
+  state.editingGuest = null;
+}
+
+$('btn-edit-guest-cancel').addEventListener('click', closeGuestEditor);
+$('edit-guest-dialog').addEventListener('click', (ev) => {
+  if (ev.target === $('edit-guest-dialog')) closeGuestEditor();
+});
+
+$('form-edit-guest').addEventListener('submit', async (ev) => {
+  ev.preventDefault();
+  const guest = state.editingGuest;
+  if (!guest) return;
+
+  const name = $('edit-guest-name').value.trim().replace(/\s+/g, ' ');
+  const costume = $('edit-guest-costume').value.trim().replace(/\s+/g, ' ');
+  let bad = false;
+  $('edit-guest-name-error').textContent = '';
+  $('edit-guest-costume-error').textContent = '';
+  if (name.length < 2 || !name.includes(' ')) {
+    $('edit-guest-name-error').textContent = 'Enter a first and last name.';
+    bad = true;
+  }
+  if (guest.entry && costume.length < 1) {
+    $('edit-guest-costume-error').textContent = 'Enter this guest’s costume or role.';
+    bad = true;
+  }
+  if (bad) return;
+
+  const btn = $('btn-edit-guest-save');
+  loading(btn, true);
+  try {
+    await api.adminUpdateGuest(state.pin, guest.id, name, costume);
+    closeGuestEditor();
+    await refresh(true);
+    await loadGuests();
+    toast('Guest details updated.', 'good');
+  } catch (err) {
+    toast(err.message, 'bad');
+  } finally {
+    loading(btn, false);
+  }
+});
 
 
 /* ── Controls ────────────────────────────────────────────────────────── */

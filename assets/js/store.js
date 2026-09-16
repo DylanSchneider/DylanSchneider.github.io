@@ -445,6 +445,16 @@ const demo = {
       };
     }).sort((a, b) => a.full_name.localeCompare(b.full_name));
   },
+  updateGuest(id, fullName, costumeName) {
+    const db = demoRead();
+    const guest = db.guests.find((g) => g.id === id);
+    if (!guest) throw new Error('That guest could not be found.');
+    guest.full_name = cleanText(fullName);
+    const member = db.members.find((m) => m.guest_id === id);
+    if (member && cleanText(costumeName)) member.costume_name = cleanText(costumeName);
+    demoWrite(db);
+    return { guest_id: id, full_name: guest.full_name, costume_name: member?.costume_name || null };
+  },
   wipe() { try { localStorage.removeItem(DEMO_KEY); } catch { /* private mode */ } }
 };
 
@@ -549,5 +559,14 @@ export const api = {
     return IS_LIVE
       ? rpc('admin_guests', { p_party: PARTY_ID, p_pin: pin })
       : Promise.resolve(demo.guests());
+  },
+
+  adminUpdateGuest(pin, guestId, fullName, costumeName) {
+    return IS_LIVE
+      ? rpc('admin_update_guest', {
+          p_party: PARTY_ID, p_pin: pin, p_guest: guestId,
+          p_full_name: fullName, p_costume_name: costumeName || ''
+        })
+      : Promise.resolve(demo.updateGuest(guestId, fullName, costumeName));
   }
 };

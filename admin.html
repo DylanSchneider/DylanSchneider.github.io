@@ -103,7 +103,7 @@
           </div>
           <div class="tbl-scroll">
             <table class="tbl">
-              <thead><tr><th>Name</th><th>Phone</th><th>Years</th><th>Group/Costume</th><th>Their role</th><th>Voted</th></tr></thead>
+              <thead><tr><th>Name</th><th>Phone</th><th>Years</th><th>Group/Costume</th><th>Their role</th><th>Voted</th><th>Edit</th></tr></thead>
               <tbody id="guest-rows"></tbody>
             </table>
           </div>
@@ -135,6 +135,34 @@
 </main>
 
 <div id="toast" aria-live="polite"></div>
+
+<dialog class="sheet admin-edit" id="edit-guest-dialog" aria-labelledby="edit-guest-title">
+  <div class="sheet__inner">
+    <div class="sheet__grip"></div>
+    <p class="eyebrow">Host correction</p>
+    <h2 class="section-title" id="edit-guest-title" style="margin-top:6px">Edit guest</h2>
+    <p class="hint admin-edit__hint">
+      The real name is the master guest record and updates this guest’s history too.
+    </p>
+    <form id="form-edit-guest" novalidate>
+      <div class="field">
+        <label class="label" for="edit-guest-name">Real name</label>
+        <input class="input" id="edit-guest-name" type="text" autocomplete="name" maxlength="60" enterkeyhint="next">
+        <p class="err" id="edit-guest-name-error"></p>
+      </div>
+      <div class="field">
+        <label class="label" for="edit-guest-costume">Costume or role</label>
+        <input class="input" id="edit-guest-costume" type="text" maxlength="80" enterkeyhint="done">
+        <p class="hint" id="edit-guest-costume-hint">Only filled in when this guest has entered a costume.</p>
+        <p class="err" id="edit-guest-costume-error"></p>
+      </div>
+      <div class="stack" style="margin-top:18px">
+        <button class="btn btn--primary btn--block" id="btn-edit-guest-save" type="submit">Save correction</button>
+        <button class="btn btn--ghost btn--block" id="btn-edit-guest-cancel" type="button">Cancel</button>
+      </div>
+    </form>
+  </div>
+</dialog>
 
 <script src="config.js"></script>
 <script type="module" src="assets/js/admin.js"></script>
