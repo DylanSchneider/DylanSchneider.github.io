@@ -26,6 +26,7 @@ const BASE = String(CFG.SUPABASE_URL || '').replace(/\/+$/, '').replace(/\/rest\
 // called the "anon" key — same public, RLS-scoped key, used the same way.
 const KEY = CFG.SUPABASE_PUBLISHABLE_KEY || '';
 const BUCKET = 'costumes';
+const PARTY_PHOTO_BUCKET = 'party-photos';
 
 
 /* ── Supabase REST ───────────────────────────────────────────────────── */
@@ -84,10 +85,10 @@ function friendlyError(msg, status) {
 /* ── Photos ──────────────────────────────────────────────────────────── */
 
 /** Public URL for a stored photo (or the data URL itself, in demo mode). */
-export function photoUrl(path) {
+export function photoUrl(path, bucket = BUCKET) {
   if (!path) return '';
   if (path.startsWith('data:') || path.startsWith('http')) return path;
-  return `${BASE}/storage/v1/object/public/${BUCKET}/${path.split('/').map(encodeURIComponent).join('/')}`;
+  return `${BASE}/storage/v1/object/public/${bucket}/${path.split('/').map(encodeURIComponent).join('/')}`;
 }
 
 async function decode(file) {
@@ -112,13 +113,13 @@ async function decode(file) {
 }
 
 /**
- * Shrink a phone photo before it ever leaves the device: a 12MB HEIC/JPEG
- * off a modern camera becomes a ~200KB JPEG, which matters a lot when
- * thirty people upload at once over house wifi.
+ * Resize one phone photo into two useful, printable copies before it leaves
+ * the device. The film copy is derived from the same pixels as the normal
+ * copy, so we never make guests upload the original camera file twice.
  */
 export async function shrinkPhoto(file, maxEdge, quality) {
-  maxEdge = maxEdge || CFG.PHOTO_MAX_EDGE || 1400;
-  quality = quality || CFG.PHOTO_QUALITY || 0.82;
+  maxEdge = maxEdge || CFG.PHOTO_MAX_EDGE || 2800;
+  quality = quality || CFG.PHOTO_QUALITY || 0.88;
 
   const { src, free } = await decode(file);
   try {
@@ -144,6 +145,70 @@ export async function shrinkPhoto(file, maxEdge, quality) {
   }
 }
 
+function blobFromCanvas(canvas, quality) {
+  return new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', quality));
+}
+
+function applyFilmLook(ctx, width, height) {
+  const image = ctx.getImageData(0, 0, width, height);
+  const px = image.data;
+  const cx = width / 2, cy = height / 2;
+  const maxDist = Math.sqrt(cx * cx + cy * cy);
+
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const i = (y * width + x) * 4;
+      const dx = x - cx, dy = y - cy;
+      const vignette = Math.max(0, Math.min(1, Math.sqrt(dx * dx + dy * dy) / maxDist));
+      const leak = Math.max(0, 1 - (x / width) * 2.5) * Math.max(0, 1 - y / height);
+      const grain = ((Math.sin((x + 17) * 12.9898 + (y + 31) * 78.233) * 43758.5453) % 1) * 7;
+      const faded = 0.92;
+
+      let r = px[i] * faded + 8 + leak * 18;
+      let g = px[i + 1] * faded + 3 + leak * 5;
+      let b = px[i + 2] * faded - 3;
+      const contrast = 0.94;
+      r = ((r - 128) * contrast + 128) + grain;
+      g = ((g - 128) * contrast + 128) + grain;
+      b = ((b - 128) * contrast + 128) + grain;
+      const edge = 1 - vignette * vignette * 0.28;
+
+      px[i] = Math.max(0, Math.min(255, r * edge));
+      px[i + 1] = Math.max(0, Math.min(255, g * edge));
+      px[i + 2] = Math.max(0, Math.min(255, b * edge));
+    }
+  }
+  ctx.putImageData(image, 0, 0);
+}
+
+export async function processPhotoVariants(file, maxEdge, quality, filmQuality) {
+  maxEdge = maxEdge || CFG.PHOTO_MAX_EDGE || 2800;
+  quality = quality || CFG.PHOTO_QUALITY || 0.88;
+  filmQuality = filmQuality || CFG.FILM_QUALITY || quality;
+
+  const { src, free } = await decode(file);
+  try {
+    const w0 = src.width, h0 = src.height;
+    if (!w0 || !h0) throw new Error('That image looks empty.');
+    const scale = Math.min(1, maxEdge / Math.max(w0, h0));
+    const w = Math.max(1, Math.round(w0 * scale));
+    const h = Math.max(1, Math.round(h0 * scale));
+    const canvas = document.createElement('canvas');
+    canvas.width = w; canvas.height = h;
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(src, 0, 0, w, h);
+    const normal = await blobFromCanvas(canvas, quality);
+    if (!normal) throw new Error('Could not process that photo.');
+    applyFilmLook(ctx, w, h);
+    const film = await blobFromCanvas(canvas, filmQuality);
+    if (!film) throw new Error('Could not create the film version.');
+    return { normal, film };
+  } finally {
+    try { free(src); } catch { /* nothing to free */ }
+  }
+}
+
 function blobToDataUrl(blob) {
   return new Promise((ok, fail) => {
     const fr = new FileReader();
@@ -153,11 +218,10 @@ function blobToDataUrl(blob) {
   });
 }
 
-async function uploadPhoto(guestId, blob) {
-  const name = `${PARTY_ID}/${guestId}-${Date.now()}.jpg`;
+async function uploadObject(bucket, name, blob) {
   let res;
   try {
-    res = await fetch(`${BASE}/storage/v1/object/${BUCKET}/${name}`, {
+    res = await fetch(`${BASE}/storage/v1/object/${bucket}/${name}`, {
       method: 'POST',
       headers: authHeaders({ 'Content-Type': 'image/jpeg', 'cache-control': 'public, max-age=31536000' }),
       body: blob
@@ -168,11 +232,26 @@ async function uploadPhoto(guestId, blob) {
   if (!res.ok) {
     const t = await res.text().catch(() => '');
     if (/Bucket not found/i.test(t)) {
-      throw new Error('The "costumes" storage bucket is missing — run supabase/schema.sql.');
+      throw new Error(`The "${bucket}" storage bucket is missing — run supabase/schema.sql.`);
     }
     throw new Error(friendlyError(t || `Photo upload failed (${res.status}).`, res.status));
   }
   return name;
+}
+
+async function uploadPhotoPair(ownerId, variants, bucket = BUCKET, prefix = PARTY_ID) {
+  const stamp = `${ownerId}-${Date.now()}-${crypto.randomUUID?.() || Math.random().toString(36).slice(2)}`;
+  const normalPath = `${prefix}/${stamp}-normal.jpg`;
+  const filmPath = `${prefix}/${stamp}-film.jpg`;
+  await uploadObject(bucket, normalPath, variants.normal);
+  try {
+    await uploadObject(bucket, filmPath, variants.film);
+  } catch (err) {
+    // The database never receives a partial pair. The orphaned first object
+    // can be cleared from Storage by the host if a phone loses connection.
+    throw err;
+  }
+  return { normalPath, filmPath };
 }
 
 
@@ -204,8 +283,9 @@ function demoRead() {
   if (!db) {
     db = {
       guests: [],
-      entries: [],    // {id, owner_id, title, photo_path}
+      entries: [],    // {id, owner_id, title, photo_path, photo_path_film}
       members: [],    // {guest_id, entry_id, costume_name, is_owner}
+      party_photos: [],
       votes: {},      // voter_id -> entry_id
       closes_at: CFG.FALLBACK_CLOSES_AT || '2026-10-24T22:00:00-04:00',
       results_public: false
@@ -246,7 +326,8 @@ function demoMembership(db, guestId) {
   const e = db.entries.find((x) => x.id === m.entry_id);
   if (!e) return null;
   return {
-    entry_id: e.id, entry_type: e.entry_type || 'solo', title: e.title, photo_path: e.photo_path,
+    entry_id: e.id, entry_type: e.entry_type || 'solo', title: e.title,
+    photo_path: e.photo_path, photo_path_film: e.photo_path_film,
     is_owner: m.is_owner, costume_name: m.costume_name, members: demoRoster(db, e.id)
   };
 }
@@ -288,21 +369,25 @@ const demo = {
     };
   },
 
-  createEntry(guestId, title, costumeName, photoPath, entryType) {
+  createEntry(guestId, title, costumeName, photoPaths, entryType) {
     const db = demoRead();
     if (db.members.some((m) => m.guest_id === guestId)) {
       throw new Error('You already have a costume entered this year — edit it from the menu instead.');
     }
     const t = cleanText(title);
     if (t.length < 2) throw new Error('Give your costume (or group) a name.');
+    if (!photoPaths?.normal || !photoPaths?.film) throw new Error('Both normal and film photo versions are required.');
     const costume = cleanText(costumeName) || t;
 
     const type = entryType === 'group' ? 'group' : 'solo';
-    const e = { id: uid(), owner_id: guestId, entry_type: type, title: t, photo_path: photoPath || null };
+    const e = { id: uid(), owner_id: guestId, entry_type: type, title: t,
+      photo_path: photoPaths.normal, photo_path_film: photoPaths.film };
     db.entries.push(e);
     db.members.push({ guest_id: guestId, entry_id: e.id, costume_name: costume, is_owner: true });
     demoWrite(db);
-    return { entry_id: e.id, entry_type: e.entry_type, title: e.title, photo_path: e.photo_path, costume_name: costume, is_owner: true, members: demoRoster(db, e.id) };
+    return { entry_id: e.id, entry_type: e.entry_type, title: e.title,
+      photo_path: e.photo_path, photo_path_film: e.photo_path_film,
+      costume_name: costume, is_owner: true, members: demoRoster(db, e.id) };
   },
 
   joinEntry(guestId, entryId, costumeName) {
@@ -320,22 +405,27 @@ const demo = {
 
     db.members.push({ guest_id: guestId, entry_id: e.id, costume_name: costume, is_owner: false });
     demoWrite(db);
-    return { entry_id: e.id, entry_type: e.entry_type || 'group', title: e.title, photo_path: e.photo_path, costume_name: costume, is_owner: false, members: demoRoster(db, e.id) };
+    return { entry_id: e.id, entry_type: e.entry_type || 'group', title: e.title,
+      photo_path: e.photo_path, photo_path_film: e.photo_path_film,
+      costume_name: costume, is_owner: false, members: demoRoster(db, e.id) };
   },
 
-  updateEntry(guestId, title, photoPath) {
+  updateEntry(guestId, title, photoPaths) {
     const db = demoRead();
     const m = db.members.find((x) => x.guest_id === guestId);
     if (!m) throw new Error('You have not entered a costume yet.');
     if (!m.is_owner) throw new Error('Only the person who started this group can rename it or change its photo.');
     const t = cleanText(title);
     if (t.length < 2) throw new Error('Give your costume (or group) a name.');
+    if (!photoPaths?.normal || !photoPaths?.film) throw new Error('Both normal and film photo versions are required.');
 
     const e = db.entries.find((x) => x.id === m.entry_id);
     e.title = t;
-    e.photo_path = photoPath || null;
+    e.photo_path = photoPaths.normal;
+    e.photo_path_film = photoPaths.film;
     demoWrite(db);
-    return { entry_id: e.id, title: e.title, photo_path: e.photo_path, members: demoRoster(db, e.id) };
+    return { entry_id: e.id, title: e.title, photo_path: e.photo_path,
+      photo_path_film: e.photo_path_film, members: demoRoster(db, e.id) };
   },
 
   updateMyCostume(guestId, costumeName) {
@@ -379,6 +469,7 @@ const demo = {
         id: e.id,
         title: e.title,
         photo_path: e.photo_path,
+        photo_path_film: e.photo_path_film,
         members,
         entry_type: e.entry_type || (members.length > 1 ? 'group' : 'solo'),
         is_group: e.entry_type ? e.entry_type === 'group' : members.length > 1,
@@ -455,6 +546,21 @@ const demo = {
     demoWrite(db);
     return { guest_id: id, full_name: guest.full_name, costume_name: member?.costume_name || null };
   },
+  addPartyPhoto(guestId, photoPaths, caption) {
+    const db = demoRead();
+    const photo = {
+      id: uid(), normal_path: photoPaths.normal, film_path: photoPaths.film,
+      caption: cleanText(caption), uploader: (db.guests.find((g) => g.id === guestId) || {}).full_name || 'Guest',
+      created_at: new Date().toISOString()
+    };
+    db.party_photos = db.party_photos || [];
+    db.party_photos.unshift(photo);
+    demoWrite(db);
+    return photo;
+  },
+  partyPhotos() {
+    return (demoRead().party_photos || []).slice();
+  },
   wipe() { try { localStorage.removeItem(DEMO_KEY); } catch { /* private mode */ } }
 };
 
@@ -474,11 +580,20 @@ export const api = {
       : Promise.resolve(demo.joinParty(name, phone));
   },
 
-  /** Start a brand-new solo or group entry. photoBlob may be null (no photo). */
-  async createEntry(guestId, title, costumeName, photoBlob, entryType) {
-    if (!IS_LIVE) return demo.createEntry(guestId, title, costumeName, photoBlob ? await blobToDataUrl(photoBlob) : null, entryType);
-    const path = photoBlob ? await uploadPhoto(guestId, photoBlob) : null;
-    return rpc('create_entry', { p_party: PARTY_ID, p_guest: guestId, p_title: title, p_costume_name: costumeName, p_entry_type: entryType || 'solo', p_photo_path: path });
+  /** Start a brand-new solo or group entry with normal + film photo copies. */
+  async createEntry(guestId, title, costumeName, photoVariants, entryType) {
+    if (!photoVariants?.normal || !photoVariants?.film) throw new Error('Both normal and film photo versions are required.');
+    if (!IS_LIVE) {
+      return demo.createEntry(guestId, title, costumeName, {
+        normal: await blobToDataUrl(photoVariants.normal),
+        film: await blobToDataUrl(photoVariants.film)
+      }, entryType);
+    }
+    const paths = await uploadPhotoPair(guestId, photoVariants);
+    return rpc('create_entry', {
+      p_party: PARTY_ID, p_guest: guestId, p_title: title, p_costume_name: costumeName,
+      p_entry_type: entryType || 'solo', p_photo_path: paths.normalPath, p_photo_path_film: paths.filmPath
+    });
   },
 
   /** Join an existing group with your own costume/role inside it. */
@@ -489,15 +604,25 @@ export const api = {
   },
 
   /** Owner-only: rename the group/solo title and/or replace its photo.
-   *  photoBlob: a new Blob to upload, null to clear the photo, or
-   *  undefined to keep whatever's already there. */
-  async updateEntry(guestId, title, photoBlob, existingPath) {
+   *  photoVariants: new {normal, film} Blobs, or undefined to keep existing
+   *  required photo. Clearing a photo is not allowed. */
+  async updateEntry(guestId, title, photoVariants, existingPath, existingFilmPath) {
     if (!IS_LIVE) {
-      const path = photoBlob === undefined ? existingPath : (photoBlob ? await blobToDataUrl(photoBlob) : null);
-      return demo.updateEntry(guestId, title, path);
+      const paths = photoVariants === undefined
+        ? { normal: existingPath, film: existingFilmPath || existingPath }
+        : (photoVariants ? {
+            normal: await blobToDataUrl(photoVariants.normal),
+            film: await blobToDataUrl(photoVariants.film)
+          } : null);
+      return demo.updateEntry(guestId, title, paths);
     }
-    const path = photoBlob === undefined ? existingPath : (photoBlob ? await uploadPhoto(guestId, photoBlob) : null);
-    return rpc('update_entry', { p_party: PARTY_ID, p_guest: guestId, p_title: title, p_photo_path: path });
+    const paths = photoVariants === undefined
+      ? { normalPath: existingPath, filmPath: existingFilmPath || existingPath }
+      : (photoVariants ? await uploadPhotoPair(guestId, photoVariants) : null);
+    return rpc('update_entry', {
+      p_party: PARTY_ID, p_guest: guestId, p_title: title,
+      p_photo_path: paths?.normalPath, p_photo_path_film: paths?.filmPath
+    });
   },
 
   /** Anyone: change your own individual costume/role. */
@@ -568,5 +693,33 @@ export const api = {
           p_full_name: fullName, p_costume_name: costumeName || ''
         })
       : Promise.resolve(demo.updateGuest(guestId, fullName, costumeName));
+  },
+
+  async uploadPartyPhoto(guestId, photoVariants, caption) {
+    if (!photoVariants?.normal || !photoVariants?.film) throw new Error('Both normal and film photo versions are required.');
+    if (!IS_LIVE) {
+      return demo.addPartyPhoto(guestId, {
+        normal: await blobToDataUrl(photoVariants.normal),
+        film: await blobToDataUrl(photoVariants.film)
+      }, caption);
+    }
+    const paths = await uploadPhotoPair(guestId, photoVariants, PARTY_PHOTO_BUCKET, PARTY_ID);
+    return rpc('create_party_photo', {
+      p_party: PARTY_ID, p_guest: guestId,
+      p_normal_path: paths.normalPath, p_film_path: paths.filmPath,
+      p_caption: caption || null
+    });
+  },
+
+  listPartyPhotos(guestId) {
+    return IS_LIVE
+      ? rpc('list_party_photos', { p_party: PARTY_ID, p_guest: guestId })
+      : Promise.resolve(demo.partyPhotos());
+  },
+
+  adminPartyPhotos(pin) {
+    return IS_LIVE
+      ? rpc('admin_party_photos', { p_party: PARTY_ID, p_pin: pin })
+      : Promise.resolve(demo.partyPhotos());
   }
 };

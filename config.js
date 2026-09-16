@@ -38,6 +38,10 @@ window.PARTY_CONFIG = {
   FALLBACK_CLOSES_AT: '2026-10-24T22:00:00-04:00',
 
   // Longest edge of an uploaded photo, in pixels, after phone-side resizing.
-  PHOTO_MAX_EDGE: 1400,
-  PHOTO_QUALITY: 0.82
+  // Large enough for ordinary 8x11 prints while still reasonable on party Wi-Fi.
+  PHOTO_MAX_EDGE: 2800,
+  PHOTO_QUALITY: 0.88,
+
+  // The film copy is derived from the same resized pixels as the normal copy.
+  FILM_QUALITY: 0.88
 };

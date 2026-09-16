@@ -4,7 +4,7 @@
    here is read-only for anyone without it.
    ===================================================================== */
 
-import { api, IS_LIVE, PARTY_ID } from './store.js';
+import { api, photoUrl, IS_LIVE, PARTY_ID } from './store.js';
 
 const CFG = window.PARTY_CONFIG || {};
 const RESET_ENABLED = CFG.ENABLE_TEST_RESET !== false;
@@ -27,7 +27,7 @@ function h(tag, attrs, ...kids) {
   return n;
 }
 
-const state = { pin: '', data: null, guests: [], editingGuest: null, skew: 0, closesAt: null, lastCloseSeen: null };
+const state = { pin: '', data: null, guests: [], partyPhotos: [], editingGuest: null, skew: 0, closesAt: null, lastCloseSeen: null };
 const serverNow = () => new Date(Date.now() + state.skew);
 
 function show(id) {
@@ -88,6 +88,7 @@ async function enter(pin) {
   $('reset-control').hidden = !RESET_ENABLED;
   show('v-admin');
   loadGuests();
+  loadPartyPhotos();
   paintAll();
 }
 
@@ -113,6 +114,7 @@ async function refresh(quiet) {
   try {
     adopt(await api.results(state.pin));
     paintAll();
+    loadPartyPhotos();
   } catch (err) {
     if (!quiet) toast(err.message, 'bad');
   } finally {
@@ -290,6 +292,41 @@ function paintGuests() {
   ));
 }
 
+async function loadPartyPhotos() {
+  try {
+    const photos = await api.adminPartyPhotos(state.pin);
+    state.partyPhotos = Array.isArray(photos) ? photos : [];
+    paintPartyPhotos();
+  } catch (err) {
+    $('party-photo-admin').replaceChildren(h('p', { class: 'err', text: err.message }));
+  }
+}
+
+function paintPartyPhotos() {
+  const box = $('party-photo-admin');
+  const count = $('party-photo-count');
+  count.textContent = `${state.partyPhotos.length} photo${state.partyPhotos.length === 1 ? '' : 's'}`;
+  if (!state.partyPhotos.length) {
+    box.replaceChildren(h('p', { class: 'hint', text: 'No party photos have been uploaded yet.' }));
+    return;
+  }
+  box.replaceChildren(...state.partyPhotos.map((photo) => {
+    const normal = photoUrl(photo.normal_path, 'party-photos');
+    const film = photoUrl(photo.film_path, 'party-photos');
+    return h('div', { class: 'admin-photo-row' },
+      h('img', { src: normal, alt: photo.caption || 'Party photo', loading: 'lazy' }),
+      h('div', { class: 'rank__main' },
+        h('div', { class: 'rank__title', text: photo.caption || 'Party photo' }),
+        h('div', { class: 'rank__sub', text: `📸 ${photo.uploader || 'Guest'}` }),
+        h('div', { class: 'party-photo-tile__actions' },
+          h('a', { class: 'btn btn--ghost btn--sm', href: normal, download: `party-${photo.id}-normal.jpg`, target: '_blank', rel: 'noopener' }, 'Save normal'),
+          h('a', { class: 'btn btn--ghost btn--sm', href: film, download: `party-${photo.id}-film.jpg`, target: '_blank', rel: 'noopener' }, 'Save film')
+        )
+      )
+    );
+  }));
+}
+
 const prettyPhone = (p) => {
   const d = String(p || '').replace(/\D/g, '');
   return d.length === 10 ? `(${d.slice(0, 3)}) ${d.slice(3, 6)}-${d.slice(6)}` : d;
@@ -431,6 +468,7 @@ $('btn-clear-all').addEventListener('click', async (ev) => {
     await api.adminClearAll(state.pin);
     await refresh(true);
     await loadGuests();
+    await loadPartyPhotos();
     toast('All testing data for this party was cleared.', 'good');
   } catch (err) {
     toast(err.message, 'bad');

@@ -55,8 +55,21 @@ create table if not exists public.entries (
   entry_type    text        not null default 'solo' check (entry_type in ('solo', 'group')),
   title         text        not null,
   photo_path    text,                                   -- path inside the 'costumes' bucket
+  photo_path_film text,                                  -- matching film-look copy
   created_at    timestamptz not null default now(),
   updated_at    timestamptz not null default now()
+);
+
+-- Temporary candid party photos. The files live in the separate
+-- 'party-photos' Storage bucket; these rows only keep ownership and paths.
+create table if not exists public.party_photos (
+  id            uuid        primary key default gen_random_uuid(),
+  party_id      text        not null references public.parties(id) on delete cascade,
+  uploader_id   uuid        not null references public.guests(id) on delete cascade,
+  normal_path   text        not null,
+  film_path     text        not null,
+  caption       text,
+  created_at    timestamptz not null default now()
 );
 
 -- One row per guest per entry: their own individual costume/role (e.g.
@@ -113,6 +126,7 @@ create table if not exists public.winners (
 create index if not exists entries_party_idx       on public.entries       (party_id);
 create index if not exists entry_members_entry_idx on public.entry_members (entry_id);
 create index if not exists votes_entry_idx         on public.votes         (entry_id);
+create index if not exists party_photos_party_idx on public.party_photos (party_id, created_at desc);
 
 
 -- ---------------------------------------------------------------------
@@ -137,6 +151,7 @@ alter table public.parties alter column testing_reset_enabled set not null;
 -- inferred this from member count, so classify those rows before enforcing
 -- the new type and before exposing group-only join options.
 alter table public.entries add column if not exists entry_type text;
+alter table public.entries add column if not exists photo_path_film text;
 update public.entries e
    set entry_type = case when (
      select count(*) from public.entry_members em where em.entry_id = e.id
@@ -169,6 +184,7 @@ alter table public.entries       enable row level security;
 alter table public.entry_members enable row level security;
 alter table public.votes         enable row level security;
 alter table public.winners       enable row level security;
+alter table public.party_photos enable row level security;
 
 
 -- ---------------------------------------------------------------------
@@ -293,6 +309,7 @@ begin
            'entry_type',   e.entry_type,
            'title',        e.title,
            'photo_path',   e.photo_path,
+           'photo_path_film', e.photo_path_film,
            'is_owner',     em.is_owner,
            'costume_name', em.costume_name,
            'members',      entry_roster(e.id)
@@ -313,10 +330,10 @@ end $$;
 -- group. p_costume_name is this guest's own individual costume/role — for
 -- a solo entry that's usually the same as p_title, so it defaults to it
 -- when left blank.
-drop function if exists public.create_entry(text, uuid, text, text, text);
+drop function if exists public.create_entry(text, uuid, text, text, text, text);
 create or replace function public.create_entry(
   p_party text, p_guest uuid, p_title text,
-  p_costume_name text, p_entry_type text, p_photo_path text
+  p_costume_name text, p_entry_type text, p_photo_path text, p_photo_path_film text
 ) returns json language plpgsql security definer set search_path = public as $$
 declare
   p         public.parties;
@@ -345,21 +362,27 @@ begin
   if p_entry_type not in ('solo', 'group') then
     raise exception 'Choose either a solo or group costume.';
   end if;
+  if nullif(btrim(p_photo_path), '') is null
+     or nullif(btrim(p_photo_path_film), '') is null then
+    raise exception 'Both normal and film photo versions are required to start a costume entry.';
+  end if;
 
   v_costume := clean_text(p_costume_name);
   if length(v_costume) < 1 then
     v_costume := v_title;
   end if;
 
-  insert into public.entries (party_id, owner_id, entry_type, title, photo_path)
-  values (p_party, p_guest, p_entry_type, v_title, nullif(p_photo_path, ''))
+  insert into public.entries (party_id, owner_id, entry_type, title, photo_path, photo_path_film)
+  values (p_party, p_guest, p_entry_type, v_title,
+          nullif(p_photo_path, ''), nullif(p_photo_path_film, ''))
   returning * into e;
 
   insert into public.entry_members (party_id, guest_id, entry_id, costume_name, is_owner)
   values (p_party, p_guest, e.id, v_costume, true);
 
   return json_build_object(
-    'entry_id', e.id, 'entry_type', e.entry_type, 'title', e.title, 'photo_path', e.photo_path,
+    'entry_id', e.id, 'entry_type', e.entry_type, 'title', e.title,
+    'photo_path', e.photo_path, 'photo_path_film', e.photo_path_film,
     'costume_name', v_costume, 'is_owner', true, 'members', entry_roster(e.id)
   );
 end $$;
@@ -405,7 +428,8 @@ begin
   values (p_party, p_guest, e.id, v_costume, false);
 
   return json_build_object(
-    'entry_id', e.id, 'entry_type', e.entry_type, 'title', e.title, 'photo_path', e.photo_path,
+    'entry_id', e.id, 'entry_type', e.entry_type, 'title', e.title,
+    'photo_path', e.photo_path, 'photo_path_film', e.photo_path_film,
     'costume_name', v_costume, 'is_owner', false, 'members', entry_roster(e.id)
   );
 end $$;
@@ -413,8 +437,9 @@ end $$;
 -- Rename the entry's group/solo title and/or swap its photo. Only the
 -- person who started it can do this — everyone else edits their own
 -- costume name with update_my_costume instead.
+drop function if exists public.update_entry(text, uuid, text, text);
 create or replace function public.update_entry(
-  p_party text, p_guest uuid, p_title text, p_photo_path text
+  p_party text, p_guest uuid, p_title text, p_photo_path text, p_photo_path_film text
 ) returns json language plpgsql security definer set search_path = public as $$
 declare
   p       public.parties;
@@ -442,16 +467,23 @@ begin
   if length(v_title) < 2 then
     raise exception 'Give your costume (or group) a name.';
   end if;
+  if nullif(btrim(p_photo_path), '') is null
+     or nullif(btrim(p_photo_path_film), '') is null then
+    raise exception 'Both normal and film photo versions are required for every costume entry.';
+  end if;
 
   update public.entries
      set title      = v_title,
          photo_path = nullif(p_photo_path, ''),
+         photo_path_film = nullif(p_photo_path_film, ''),
          updated_at = now()
    where id = em.entry_id
   returning * into e;
 
   return json_build_object(
-    'entry_id', e.id, 'entry_type', e.entry_type, 'title', e.title, 'photo_path', e.photo_path, 'members', entry_roster(e.id)
+    'entry_id', e.id, 'entry_type', e.entry_type, 'title', e.title,
+    'photo_path', e.photo_path, 'photo_path_film', e.photo_path_film,
+    'members', entry_roster(e.id)
   );
 end $$;
 
@@ -553,6 +585,7 @@ begin
                'id',         e.id,
                'title',      e.title,
                'photo_path', e.photo_path,
+               'photo_path_film', e.photo_path_film,
                'entry_type', e.entry_type,
                'is_group',   e.entry_type = 'group',
                'is_mine',    exists (
@@ -654,6 +687,7 @@ begin
                  'id',         e.id,
                  'title',      e.title,
                  'photo_path', e.photo_path,
+                 'photo_path_film', e.photo_path_film,
                  'entry_type', e.entry_type,
                  'members',    entry_roster(e.id),
                  'votes',      coalesce(vc.c, 0),
@@ -675,6 +709,94 @@ begin
         where e.party_id = p.id
       ) s
     )
+  );
+end $$;
+
+
+-- ---------------------------------------------------------------------
+--  PARTY PHOTO API
+-- ---------------------------------------------------------------------
+
+-- Candid photos are separate from costume entries and are intended to be
+-- downloaded by the host after the party, then cleared from Storage.
+create or replace function public.create_party_photo(
+  p_party text, p_guest uuid, p_normal_path text, p_film_path text, p_caption text default null
+) returns json language plpgsql security definer set search_path = public as $$
+declare
+  p public.parties;
+  v_id uuid;
+  v_caption text;
+begin
+  select * into p from public.parties where id = p_party;
+  if p.id is null then
+    raise exception 'Unknown party "%".', p_party;
+  end if;
+  if now() > p.voting_closes_at then
+    raise exception 'The party photo wall is closed.';
+  end if;
+  if not exists (select 1 from public.attendance where party_id = p_party and guest_id = p_guest) then
+    raise exception 'Check in with your name and number first.';
+  end if;
+  if nullif(btrim(p_normal_path), '') is null or nullif(btrim(p_film_path), '') is null then
+    raise exception 'Both normal and film photo versions are required.';
+  end if;
+
+  v_caption := nullif(clean_text(p_caption), '');
+  insert into public.party_photos (party_id, uploader_id, normal_path, film_path, caption)
+  values (p_party, p_guest, p_normal_path, p_film_path, v_caption)
+  returning id into v_id;
+
+  return json_build_object('id', v_id, 'normal_path', p_normal_path,
+                           'film_path', p_film_path, 'caption', v_caption);
+end $$;
+
+create or replace function public.list_party_photos(p_party text, p_guest uuid)
+returns json language plpgsql security definer set search_path = public as $$
+declare
+  p public.parties;
+begin
+  select * into p from public.parties where id = p_party;
+  if p.id is null then
+    raise exception 'Unknown party "%".', p_party;
+  end if;
+  if now() > p.voting_closes_at then
+    raise exception 'The party photo wall is closed. Use the host page to download the photos.';
+  end if;
+  if not exists (select 1 from public.attendance where party_id = p_party and guest_id = p_guest) then
+    raise exception 'Check in with your name and number first.';
+  end if;
+
+  return (
+    select coalesce(json_agg(json_build_object(
+             'id', pp.id,
+             'normal_path', pp.normal_path,
+             'film_path', pp.film_path,
+             'caption', pp.caption,
+             'created_at', pp.created_at,
+             'uploader', g.full_name
+           ) order by pp.created_at desc), '[]'::json)
+    from public.party_photos pp
+    join public.guests g on g.id = pp.uploader_id
+    where pp.party_id = p_party
+  );
+end $$;
+
+create or replace function public.admin_party_photos(p_party text, p_pin text)
+returns json language plpgsql security definer set search_path = public as $$
+begin
+  perform assert_admin(p_party, p_pin);
+  return (
+    select coalesce(json_agg(json_build_object(
+             'id', pp.id,
+             'normal_path', pp.normal_path,
+             'film_path', pp.film_path,
+             'caption', pp.caption,
+             'created_at', pp.created_at,
+             'uploader', g.full_name
+           ) order by pp.created_at desc), '[]'::json)
+    from public.party_photos pp
+    join public.guests g on g.id = pp.uploader_id
+    where pp.party_id = p_party
   );
 end $$;
 
@@ -762,6 +884,7 @@ declare
   n_members     integer;
   n_entries     integer;
   n_attendance  integer;
+  n_party_photos integer;
   n_guests      integer;
 begin
   perform assert_admin(p_party, p_pin);
@@ -772,6 +895,8 @@ begin
 
   delete from public.votes where party_id = p_party;
   get diagnostics n_votes = row_count;
+  delete from public.party_photos where party_id = p_party;
+  get diagnostics n_party_photos = row_count;
   delete from public.entry_members where party_id = p_party;
   get diagnostics n_members = row_count;
   delete from public.entries where party_id = p_party;
@@ -788,6 +913,7 @@ begin
 
   return json_build_object(
     'votes', n_votes,
+    'party_photos', n_party_photos,
     'entry_members', n_members,
     'entries', n_entries,
     'attendance', n_attendance,
@@ -868,9 +994,9 @@ revoke all on function public.assert_admin(text, text) from public, anon, authen
 
 grant execute on function public.party_info(text)                          to anon, authenticated;
 grant execute on function public.join_party(text, text, text)              to anon, authenticated;
-grant execute on function public.create_entry(text, uuid, text, text, text, text) to anon, authenticated;
+grant execute on function public.create_entry(text, uuid, text, text, text, text, text) to anon, authenticated;
 grant execute on function public.join_entry(text, uuid, uuid, text)        to anon, authenticated;
-grant execute on function public.update_entry(text, uuid, text, text)      to anon, authenticated;
+grant execute on function public.update_entry(text, uuid, text, text, text) to anon, authenticated;
 grant execute on function public.update_my_costume(text, uuid, text)       to anon, authenticated;
 grant execute on function public.leave_entry(text, uuid)                  to anon, authenticated;
 grant execute on function public.list_entries(text, uuid)                 to anon, authenticated;
@@ -883,6 +1009,9 @@ grant execute on function public.admin_update_guest(text, text, uuid, text, text
 grant execute on function public.admin_clear_all(text, text)              to anon, authenticated;
 grant execute on function public.admin_guests(text, text)                 to anon, authenticated;
 grant execute on function public.admin_guest_history(text, uuid)          to anon, authenticated;
+grant execute on function public.create_party_photo(text, uuid, text, text, text) to anon, authenticated;
+grant execute on function public.list_party_photos(text, uuid)             to anon, authenticated;
+grant execute on function public.admin_party_photos(text, text)            to anon, authenticated;
 
 
 -- ---------------------------------------------------------------------
@@ -907,6 +1036,24 @@ drop policy if exists "guests may upload costume photos" on storage.objects;
 create policy "guests may upload costume photos"
   on storage.objects for insert
   with check (bucket_id = 'costumes');
+
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values ('party-photos', 'party-photos', true, 5242880,
+        array['image/jpeg', 'image/png', 'image/webp'])
+on conflict (id) do update
+  set public             = true,
+      file_size_limit    = 5242880,
+      allowed_mime_types = array['image/jpeg', 'image/png', 'image/webp'];
+
+drop policy if exists "party photos are readable" on storage.objects;
+create policy "party photos are readable"
+  on storage.objects for select
+  using (bucket_id = 'party-photos');
+
+drop policy if exists "guests may upload party photos" on storage.objects;
+create policy "guests may upload party photos"
+  on storage.objects for insert
+  with check (bucket_id = 'party-photos');
 
 
 -- =====================================================================

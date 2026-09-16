@@ -12,10 +12,10 @@ Live at whatever URL GitHub Pages serves this repo from (Settings → Pages).
 1. **Check in** — real name + phone number. This builds a master guest list
    that persists across years.
 2. **Enter a costume.** Three ways in:
-   - **Going solo** — just a costume name and an optional photo.
+   - **Going solo** — just a costume name and a required photo.
    - **Starting a group** — a group name (e.g. "Alice in Wonderland") and
      your own individual costume/role within it (e.g. "Mad Hatter"), plus
-     an optional photo for the whole group.
+     a photo for the whole group.
    - **Joining a group** — see everyone already entered on your check-in
      screen; tap "Join" on your group and enter your own costume/role
      (e.g. "White Rabbit"). No need to know who's starting it in advance —
@@ -28,18 +28,24 @@ Live at whatever URL GitHub Pages serves this repo from (Settings → Pages).
    vote for your own costume, solo or group (nor for anyone else in your
    group). Results stay hidden until voting closes, when the countdown
    flips the page over to show them.
+4. **Take party photos** — after checking in, open **Party photos** from the
+   menu. The camera page makes a normal copy and a film-look copy of each
+   candid photo, uploads both, and provides explicit save links for the phone.
 
 ## The host page (`admin.html`)
 
 PIN-gated. Shows live vote counts (even while hidden from guests), the
 master guest list with a "voted?" column, a CSV export, controls to push
-the deadline or reveal results early, the ability to delete a bad entry, and
-a PIN-protected "Clear all testing data" control for pre-party testing.
+the deadline or reveal results early, the ability to delete a bad entry, a
+PIN-protected party-photo download section, and a PIN-protected "Clear all
+testing data" control for pre-party testing.
 After the deadline it needs no PIN — anyone (i.e. you) can open it and see
 the winner.
 
 The testing reset clears the selected party's attendance, entries,
-entry-members, votes, and guests who are not associated with another party.
+entry-members, votes, party-photo records, and guests who are not associated
+with another party. It does not remove uploaded Storage objects, so delete
+test photos from the Supabase Storage dashboard when needed.
 It leaves party settings intact. Set `ENABLE_TEST_RESET: false` in
 [`config.js`](config.js), and set `testing_reset_enabled = false` on the
 party row in Supabase, before the event.
@@ -100,6 +106,27 @@ so old years are simply never touched by a new one:
   "what was I last year?" view; it's not wired into the host page yet.
 - **`attendance`** — who actually showed up each year (vs. just being on
   the invite list from a prior year).
+- **Costume photos** — each costume entry keeps a normal JPEG and a film-look
+  JPEG in the `costumes` Storage bucket. They are resized to a maximum edge of
+  2800 pixels, which is suitable for ordinary 8×11 prints while still being
+  reasonable for phone gallery cards.
+
+Party candids are intentionally separate from the durable costume/history
+data:
+
+- **`party_photos`** — lightweight metadata for the temporary party-photo
+  wall. The image files live in the `party-photos` Storage bucket, with both
+  normal and film versions. After the party, use the host page's download
+  links to save the versions you want to your computer, then remove the
+  temporary files from Storage. This bucket is public while it is in use so
+  the photo wall can load for checked-in guests. The guest photo wall and
+  upload API close at the party deadline; treat the download-and-delete step
+  as the end of the online life of those photos.
+
+The browser cannot silently write into a phone's Photos library. The app
+therefore gives the person who took each photo clear **Save normal** and
+**Save film** actions. On iPhone, the browser may show the normal share/save
+sheet; that extra tap is required by the phone's security model.
 
 **`votes` is the one table that's deliberately *not* meant to be kept
 forever** — it's per-party ballots, not part of anyone's personal record.
@@ -164,6 +191,7 @@ Supabase.
 | Path | What it is |
 |---|---|
 | `index.html` / `assets/js/app.js` | The guest-facing app: check in → costume → vote |
+| `party.html` / `assets/js/party.js` | The separate temporary party camera and photo wall |
 | `admin.html` / `assets/js/admin.js` | The PIN-gated host page |
 | `assets/js/store.js` | All data access — Supabase REST calls, plus the localStorage demo-mode fallback |
 | `assets/css/app.css` | Shared mobile-first styling for both pages |
@@ -178,8 +206,10 @@ Supabase.
 - Every party rule (one vote each, no self-voting, results hidden until
   close, PIN-gated admin actions) is enforced in Postgres functions, not
   just in the browser — a guest editing the page's JS can't cheat.
-- Photos are resized to ~1400px on the phone before upload, so a 10MB
-  camera photo becomes a few hundred KB.
+- Photos are resized to a maximum 2800px edge on the phone before upload.
+  Each upload gets a normal JPEG and a film-look JPEG; this keeps the files
+  useful for ordinary 8×11 prints without sending original 10MB camera files
+  to the server.
 - Tap targets, type sizes, and layout are tuned for one-handed phone use in
   a dark room; the countdown clock's numbers come from the Supabase
   server clock, not the phone's, so a wrong device clock can't lie about

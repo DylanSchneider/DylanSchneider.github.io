@@ -3,7 +3,7 @@
    Screens: check in → costume (join / start solo / start group / edit) → vote
    ===================================================================== */
 
-import { api, session, photoUrl, shrinkPhoto, IS_LIVE, PARTY_ID } from './store.js';
+import { api, session, photoUrl, processPhotoVariants, IS_LIVE, PARTY_ID } from './store.js';
 
 const CFG = window.PARTY_CONFIG || {};
 const $ = (id) => document.getElementById(id);
@@ -33,10 +33,11 @@ const state = {
   closesAt: null,      // Date
   revealed: false,
   entries: [],
-  membership: null,    // { entry_id, title, photo_path, is_owner, costume_name, members }
+  membership: null,    // { entry_id, title, photo_path, photo_path_film, is_owner, costume_name, members }
   votedId: null,
   costumeReturn: 'v-name',
   costumeMode: 'chooser', // chooser | solo | group | join | edit
+  photoSave: null,
   busy: false
 };
 
@@ -191,6 +192,9 @@ function adoptJoin(res) {
   state.me = res.guest;
   state.membership = res.membership || null;
   state.votedId = res.voted_entry_id || null;
+  state.photoSave = state.membership?.photo_path
+    ? { normal: state.membership.photo_path, film: state.membership.photo_path_film || state.membership.photo_path }
+    : null;
   session.set(res.guest);
 }
 
@@ -205,10 +209,17 @@ function mergeMembership(partial) {
     entry_type: partial.entry_type ?? cur.entry_type,
     title: partial.title ?? cur.title,
     photo_path: 'photo_path' in partial ? partial.photo_path : cur.photo_path,
+    photo_path_film: 'photo_path_film' in partial ? partial.photo_path_film : cur.photo_path_film,
     is_owner: 'is_owner' in partial ? partial.is_owner : cur.is_owner,
     costume_name: partial.costume_name ?? cur.costume_name,
     members: partial.members ?? cur.members
   };
+  if ('photo_path' in partial && partial.photo_path) {
+    state.photoSave = {
+      normal: partial.photo_path,
+      film: partial.photo_path_film || partial.photo_path
+    };
+  }
 }
 
 
@@ -260,10 +271,8 @@ function field(labelText, inputEl, errEl, placeholder, hintText) {
   );
 }
 
-/** A photo <label>+<input type=file> with resize-on-pick. get() returns:
- *  undefined = no change (only meaningful when existingUrl was given),
- *  null = photo cleared, or a Blob = a new photo to upload. */
-function buildPhotoField(existingUrl) {
+/** A photo picker that produces normal + film print-friendly JPEG blobs. */
+function buildPhotoField(existingUrl, required = false) {
   let picked = existingUrl ? undefined : null;
   let objectUrl = null;
 
@@ -275,7 +284,9 @@ function buildPhotoField(existingUrl) {
   }, 'Remove photo');
   removeBtn.style.display = existingUrl ? '' : 'none';
 
-  const fileInput = h('input', { type: 'file', accept: 'image/*' });
+  const fileInput = h('input', {
+    type: 'file', accept: 'image/*', capture: 'environment', required: required && !existingUrl
+  });
   const box = h('label', { class: 'photo' },
     fileInput,
     h('span', { class: 'photo__empty' },
@@ -300,9 +311,13 @@ function buildPhotoField(existingUrl) {
     err.textContent = '';
     box.classList.add('is-busy');
     try {
-      const blob = await shrinkPhoto(file, CFG.PHOTO_MAX_EDGE, IS_LIVE ? CFG.PHOTO_QUALITY : 0.7);
-      picked = blob;
-      objectUrl = URL.createObjectURL(blob);
+      const variants = await processPhotoVariants(
+        file, CFG.PHOTO_MAX_EDGE,
+        IS_LIVE ? CFG.PHOTO_QUALITY : 0.78,
+        CFG.FILM_QUALITY
+      );
+      picked = variants;
+      objectUrl = URL.createObjectURL(variants.normal);
       setPreview(objectUrl);
     } catch (e) {
       ev.target.value = '';
@@ -316,10 +331,13 @@ function buildPhotoField(existingUrl) {
 
   return {
     node: h('div', { class: 'field' },
-      h('span', { class: 'label' }, 'Photo ', h('span', { class: 'opt', text: '— optional, but photos win votes' })),
+      h('span', { class: 'label' }, 'Photo ', h('span', {
+        class: 'opt', text: required ? '— normal + film copies required' : '— normal + film copies'
+      })),
       box, err, removeBtn
     ),
-    get: () => picked
+    get: () => picked,
+    setError: (msg) => { err.textContent = msg || ''; }
   };
 }
 
@@ -372,10 +390,10 @@ async function renderChooser(slot) {
     ' Wait until everyone in the group has arrived. A group entry uses one shared photo.'
   ));
   nodes.push(h('div', { class: 'stack', style: 'margin-top:0' },
-    h('button', { class: 'btn btn--primary btn--block', type: 'button', onclick: () => renderCostume('solo') },
-      '🧍 Going solo'),
     h('button', { class: 'btn btn--ghost btn--block', type: 'button', onclick: () => renderCostume('group') },
-      '👥 Starting a group costume')
+      '👥 Starting a group costume'),
+    h('button', { class: 'btn btn--primary btn--block', type: 'button', onclick: () => renderCostume('solo') },
+      '🧍 Going solo')
   ));
 
   slot.replaceChildren(...nodes);
@@ -384,16 +402,23 @@ async function renderChooser(slot) {
 function renderSoloForm(slot) {
   const title = h('input', {});
   const err = h('p', { class: 'err' });
-  const photo = buildPhotoField('');
+  const photo = buildPhotoField('', true);
 
   const btn = h('button', { class: 'btn btn--primary btn--block', type: 'button' }, 'Enter my costume');
   btn.addEventListener('click', async () => {
     const t = title.value.trim().replace(/\s+/g, ' ');
     if (t.length < 2) { err.textContent = 'Give your costume a name.'; buzz(40); return; }
+    const photoBlob = photo.get();
+    if (!photoBlob) {
+      photo.setError('Add a photo before entering your costume.');
+      buzz(40);
+      return;
+    }
     loading(btn, true);
     try {
-      const saved = await api.createEntry(state.me.id, t, t, photo.get() || null, 'solo');
+      const saved = await api.createEntry(state.me.id, t, t, photoBlob, 'solo');
       mergeMembership(saved);
+      state.photoSave = { normal: saved.photo_path, film: saved.photo_path_film || saved.photo_path };
       await goDash();
       toast('Costume entered. Good luck!', 'good');
       buzz(30);
@@ -419,7 +444,7 @@ function renderGroupForm(slot) {
   const yourRole = h('input', {});
   const errG = h('p', { class: 'err' });
   const errR = h('p', { class: 'err' });
-  const photo = buildPhotoField('');
+  const photo = buildPhotoField('', true);
 
   const btn = h('button', { class: 'btn btn--primary btn--block', type: 'button' }, 'Start this group');
   btn.addEventListener('click', async () => {
@@ -428,12 +453,18 @@ function renderGroupForm(slot) {
     let bad = false;
     if (g.length < 2) { errG.textContent = 'Give your group a name.'; bad = true; }
     if (r.length < 1) { errR.textContent = 'What are you dressed as in the group?'; bad = true; }
+    const photoBlob = photo.get();
+    if (!photoBlob) {
+      photo.setError('Add the shared group photo before starting this entry.');
+      bad = true;
+    }
     if (bad) { buzz(40); return; }
 
     loading(btn, true);
     try {
-      const saved = await api.createEntry(state.me.id, g, r, photo.get() || null, 'group');
+      const saved = await api.createEntry(state.me.id, g, r, photoBlob, 'group');
       mergeMembership(saved);
+      state.photoSave = { normal: saved.photo_path, film: saved.photo_path_film || saved.photo_path };
       await goDash();
       toast('Group started. Send the rest of your group to check in and join it!', 'good');
       buzz(30);
@@ -503,7 +534,7 @@ function renderEditForm(slot) {
   const errTitle = h('p', { class: 'err' });
   const roleInput = h('input', { value: m.costume_name });
   const errRole = h('p', { class: 'err' });
-  const photo = isOwner ? buildPhotoField(m.photo_path ? photoUrl(m.photo_path) : '') : null;
+  const photo = isOwner ? buildPhotoField(m.photo_path ? photoUrl(m.photo_path) : '', true) : null;
 
   const saveBtn = h('button', { class: 'btn btn--primary btn--block', type: 'button' }, 'Save changes');
   saveBtn.addEventListener('click', async () => {
@@ -511,6 +542,17 @@ function renderEditForm(slot) {
     errRole.textContent = '';
     const role = roleInput.value.trim().replace(/\s+/g, ' ');
     if (role.length < 1) { errRole.textContent = 'What are you dressed as?'; buzz(40); return; }
+    const photoValue = isOwner ? photo.get() : undefined;
+    if (isOwner && photoValue === null) {
+      photo.setError('An entry must keep a photo. Add one before saving.');
+      buzz(40);
+      return;
+    }
+    if (isOwner && photoValue === undefined && !m.photo_path) {
+      photo.setError('Add a photo before saving this entry.');
+      buzz(40);
+      return;
+    }
     let title;
     if (isOwner) {
       title = titleInput.value.trim().replace(/\s+/g, ' ');
@@ -519,7 +561,13 @@ function renderEditForm(slot) {
 
     loading(saveBtn, true);
     try {
-      if (isOwner) mergeMembership(await api.updateEntry(state.me.id, title, photo.get(), m.photo_path));
+      if (isOwner) {
+        const saved = await api.updateEntry(state.me.id, title, photoValue, m.photo_path, m.photo_path_film);
+        mergeMembership(saved);
+        if (photoValue) state.photoSave = {
+          normal: saved.photo_path, film: saved.photo_path_film || saved.photo_path
+        };
+      }
       if (role !== m.costume_name) mergeMembership(await api.updateMyCostume(state.me.id, role));
       await goDash();
       toast('Costume updated.', 'good');
@@ -584,6 +632,24 @@ async function goDash() {
   show('v-dash');
   paintMenuLabel();
   await refresh();
+  paintPhotoSave();
+}
+
+function paintPhotoSave() {
+  const box = $('photo-save');
+  const p = state.photoSave;
+  if (!p) { box.replaceChildren(); return; }
+  const normal = photoUrl(p.normal, 'costumes');
+  const film = photoUrl(p.film, 'costumes');
+  box.replaceChildren(h('div', { class: 'note note--good photo-save' },
+    h('b', { text: 'Save your photo to your phone' }),
+    h('span', { class: 'fine', text: 'The database has both print-friendly versions. Tap a button to keep a copy in your photos or downloads.' }),
+    h('div', { class: 'party-photo-tile__actions' },
+      h('a', { class: 'btn btn--ghost btn--sm', href: normal, download: `${PARTY_ID}-costume-normal.jpg`, target: '_blank', rel: 'noopener' }, 'Save normal'),
+      h('a', { class: 'btn btn--ghost btn--sm', href: film, download: `${PARTY_ID}-costume-film.jpg`, target: '_blank', rel: 'noopener' }, 'Save film'),
+      h('button', { class: 'btn btn--ghost btn--sm', type: 'button', onclick: () => { state.photoSave = null; paintPhotoSave(); } }, 'Dismiss')
+    )
+  ));
 }
 
 function paintMenuLabel() {
@@ -844,6 +910,11 @@ $('sheet').addEventListener('click', (ev) => { if (ev.target === $('sheet')) clo
 $('menu-edit').addEventListener('click', () => {
   closeSheet();
   openCostume('v-dash');
+});
+
+$('menu-photos').addEventListener('click', () => {
+  closeSheet();
+  location.href = 'party.html';
 });
 
 $('menu-results').addEventListener('click', () => { closeSheet(); location.href = 'admin.html'; });

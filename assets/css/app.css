@@ -301,6 +301,54 @@ h1, h2, h3 { margin: 0; line-height: 1.15; font-weight: 800; }
 .photo.has-img .photo__swap { display: block; }
 .photo.is-busy { opacity: .6; }
 
+/* ── Party camera ───────────────────────────────────────────────────── */
+
+.party-wrap { padding-bottom: calc(48px + var(--safe-b)); }
+.party-camera-panel { margin-top: 16px; }
+.party-preview {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin: 14px 0;
+}
+.party-preview div { display: grid; gap: 6px; }
+.party-preview img {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+}
+.party-gallery-head {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 28px 0 12px;
+}
+.party-photo-grid { display: grid; gap: 14px; }
+.party-photo-tile {
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  background: var(--surface);
+}
+.party-photo-tile > img { display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: cover; }
+.party-photo-tile__body { padding: 12px; }
+.party-photo-tile__meta { display: grid; gap: 3px; min-height: 34px; }
+.party-photo-tile__actions { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 10px; }
+.party-photo-tile__actions .btn { text-decoration: none; }
+.admin-photo-row {
+  display: grid;
+  grid-template-columns: 74px 1fr;
+  gap: 12px;
+  align-items: center;
+  padding: 10px 0;
+  border-top: 1px solid var(--line);
+}
+.admin-photo-row:first-child { border-top: 0; }
+.admin-photo-row img { width: 74px; height: 58px; border-radius: 8px; object-fit: cover; }
+
 
 /* ── Buttons ─────────────────────────────────────────────────────────── */
 
@@ -688,6 +736,7 @@ h1, h2, h3 { margin: 0; line-height: 1.15; font-weight: 800; }
   line-height: 1.5;
 }
 .note--warn { border-color: rgba(244, 192, 74, .45); background: rgba(224, 38, 77, .1); }
+.note--good { border-color: rgba(45, 212, 191, .42); background: rgba(45, 212, 191, .08); }
 .note b { display: block; margin-bottom: 3px; }
 .note code {
   padding: 2px 6px;
