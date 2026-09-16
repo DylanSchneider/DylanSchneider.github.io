@@ -1452,8 +1452,8 @@ body { background: #000; }
   font: 400 clamp(25px, 7vw, 54px)/.95 Georgia, "Times New Roman", serif;
   letter-spacing: -.06em;
   text-align: center;
-  background: linear-gradient(110deg, #ff4d6d, #ff9f43, #ffe66d, #8ee28e, #65d6ff, #9d8cff, #ff4d6d);
-  background-size: 400% 100%;
+  background: linear-gradient(110deg, #ffffff, #888888, #f4f4f4, #5f5f5f, #ffffff);
+  background-size: 300% 100%;
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-stroke: 1px rgba(0,0,0,.78);
@@ -1469,8 +1469,8 @@ body { background: #000; }
   font-style: italic;
   letter-spacing: .12em;
   text-transform: uppercase;
-  background: linear-gradient(110deg, #ff4d6d, #ff9f43, #ffe66d, #8ee28e, #65d6ff, #9d8cff, #ff4d6d);
-  background-size: 400% 100%;
+  background: linear-gradient(110deg, #ffffff, #777777, #ededed, #555555, #ffffff);
+  background-size: 300% 100%;
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-stroke: .5px rgba(0,0,0,.8);
@@ -1510,7 +1510,7 @@ body.rabbit-fall { overflow: hidden; }
 }
 @keyframes rainbow-shift {
   0% { background-position: 0% 50%; }
-  100% { background-position: 400% 50%; }
+  100% { background-position: 300% 50%; }
 }
 @keyframes card-rainbow {
   to { transform: rotate(360deg) translateZ(0); }
