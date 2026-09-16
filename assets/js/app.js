@@ -47,13 +47,8 @@ const serverNow = () => new Date(Date.now() + state.skew);
 /* ── Chrome: views, toasts, haptics ──────────────────────────────────── */
 
 function show(viewId) {
-  for (const v of document.querySelectorAll('.view')) {
-    v.classList.toggle('is-active', v.id === viewId);
-    v.inert = v.id !== viewId;
-    v.setAttribute('aria-hidden', String(v.id !== viewId));
-  }
+  for (const v of document.querySelectorAll('.view')) v.classList.toggle('is-active', v.id === viewId);
   window.scrollTo(0, 0);
-  window.dispatchEvent(new CustomEvent('party:view', { detail: { id: viewId } }));
 }
 
 let toastTimer;
@@ -159,10 +154,8 @@ function fieldError(errId, inputId, msg) {
 
 $('in-name').addEventListener('input', () => fieldError('err-name', 'in-name', ''));
 
-let checkingIn = false;
 $('form-name').addEventListener('submit', async (ev) => {
   ev.preventDefault();
-  if (checkingIn) return;
   const name = $('in-name').value.trim().replace(/\s+/g, ' ');
   const phone = $('in-phone').value;
   const digits = phoneDigits(phone);
@@ -176,37 +169,26 @@ $('form-name').addEventListener('submit', async (ev) => {
     fieldError('err-phone', 'in-phone', 'Please enter all 10 digits of your mobile number.');
     bad = true;
   }
-  if (bad) {
-    buzz(40);
-    window.openTunnelInvitation?.();
-    document.querySelector('#form-name [aria-invalid="true"]')?.focus();
-    return;
-  }
-  const skip = ev.submitter?.dataset.skipTunnel === 'true';
-  if (!skip && window.rabbitFall?.explore?.()) return;
+  if (bad) { buzz(40); return; }
 
-  checkingIn = true;
   const btn = $('btn-name');
-  const transition = window.rabbitFall;
   if (btn) loading(btn, true);
+  const flight = window.rabbitFall?.start?.() || Promise.resolve();
   try {
-    const flight = transition?.start?.({ skip }) || Promise.resolve();
-    const [res] = await Promise.all([api.joinParty(name, phone), flight]);
+    const res = await api.joinParty(name, phone);
     // The tunnel reaches black before the destination view is revealed. This
     // prevents the costume page from flashing underneath the handoff while
     // Supabase is finishing the check-in request.
+    await flight;
     adoptJoin(res);
     if (state.membership) { await goDash(); toast('Welcome back, ' + firstName() + '!'); }
     else openCostume('v-name');
-    await transition?.finish?.();
-    const destination = document.querySelector('.view.is-active h1, .view.is-active h2');
-    if (destination) { destination.tabIndex = -1; destination.focus({ preventScroll: true }); }
+    window.rabbitFall?.finish?.();
   } catch (err) {
-    transition?.cancel?.();
+    window.rabbitFall?.cancel?.();
     toast(err.message, 'bad');
     buzz(60);
   } finally {
-    checkingIn = false;
     if (btn) loading(btn, false);
   }
 });
@@ -1008,16 +990,6 @@ document.addEventListener('visibilitychange', () => {
   adoptInfo(info);
 
   const saved = session.get();
-  // Replay is a preview convenience; it retains the guest's saved identity.
-  if (new URLSearchParams(location.search).get('replayTunnel') === '1') {
-    if (saved?.id) {
-      $('in-name').value = saved.full_name || '';
-      $('in-phone').value = saved.phone || '';
-      $('in-name').dispatchEvent(new Event('input'));
-    }
-    show('v-name');
-    return;
-  }
   if (!saved || !saved.id) {
     show('v-name');
     return;

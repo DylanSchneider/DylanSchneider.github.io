@@ -6,6 +6,3 @@ Thumbs.db
 secrets.local.md
 .env
 .env.*
-
-# Local browser screenshots and profiling output
-.tmp/
