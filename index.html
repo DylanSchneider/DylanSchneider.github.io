@@ -144,13 +144,17 @@
 
 </main>
 
-<!-- Full-screen descent layer: it covers the old and new views during the
-     transition so the tunnel is always the first thing the guest sees. -->
+<!-- Full-screen descent layer. Canvas renders the tunnel; the timeline keeps
+     the old and new views completely separate during the handoff. -->
 <div class="fall-transition" id="fall-transition" aria-hidden="true">
-  <div class="fall-transition__tunnel"></div>
-  <div class="fall-transition__glow"></div>
-  <div class="fall-transition__dust"></div>
-  <div class="fall-transition__copy">Down we go<span>follow the White Rabbit</span></div>
+  <canvas id="fall-canvas"></canvas>
+  <div class="fall-transition__veil"></div>
+  <div class="fall-transition__iris"></div>
+  <div class="fall-transition__copy">
+    <strong>Down we go</strong>
+    <span>follow the White Rabbit</span>
+  </div>
+  <div class="fall-transition__flash"></div>
 </div>
 
 <!-- Bottom sheet menu -->
@@ -174,6 +178,8 @@
 </noscript>
 
 <script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/gsap.min.js" defer></script>
+<script src="assets/js/rabbit-fall.js" defer></script>
 <script src="assets/js/wonderland.js" defer></script>
 <script type="module" src="assets/js/app.js"></script>
 </body>

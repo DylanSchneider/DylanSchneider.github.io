@@ -171,20 +171,25 @@ $('form-name').addEventListener('submit', async (ev) => {
   }
   if (bad) { buzz(40); return; }
 
-  document.body.classList.add('rabbit-fall');
   const btn = $('btn-name');
   if (btn) loading(btn, true);
+  const flight = window.rabbitFall?.start?.() || Promise.resolve();
   try {
     const res = await api.joinParty(name, phone);
+    // The tunnel reaches black before the destination view is revealed. This
+    // prevents the costume page from flashing underneath the handoff while
+    // Supabase is finishing the check-in request.
+    await flight;
     adoptJoin(res);
     if (state.membership) { await goDash(); toast('Welcome back, ' + firstName() + '!'); }
     else openCostume('v-name');
+    window.rabbitFall?.finish?.();
   } catch (err) {
+    window.rabbitFall?.cancel?.();
     toast(err.message, 'bad');
     buzz(60);
   } finally {
     if (btn) loading(btn, false);
-    window.setTimeout(() => document.body.classList.remove('rabbit-fall'), 2250);
   }
 });
 
