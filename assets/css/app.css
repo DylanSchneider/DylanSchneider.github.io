@@ -1477,6 +1477,90 @@ body { background: #000; }
   animation: rainbow-shift 5s linear infinite;
 }
 
+/* ── Experimental v2: one persistent 3D tunnel from scroll to handoff ── */
+body.homepage-v2 .landing-hero::before {
+  border-color: rgba(255,255,255,.18);
+  box-shadow: 0 0 0 32px rgba(255,255,255,.018), 0 0 0 68px rgba(255,255,255,.012), inset 0 0 80px rgba(255,255,255,.04);
+}
+body.homepage-v2 .landing-hero__kicker,
+body.homepage-v2 .landing-hero__title em,
+body.homepage-v2 .landing-hero__rule,
+body.homepage-v2 .entry-stage__label,
+body.homepage-v2 .fall-sentinel b { color: #e8e8e8; }
+body.homepage-v2 .landing-hero__rule i,
+body.homepage-v2 .landing-hero__rule i:last-child { background: linear-gradient(90deg, transparent, rgba(255,255,255,.36), transparent); }
+body.homepage-v2 .fall-tunnel {
+  min-height: 230svh;
+  overflow: visible;
+  background: #000;
+}
+body.homepage-v2 .fall-tunnel::before,
+body.homepage-v2 .fall-tunnel::after { display: none; }
+.v2-tunnel-stage {
+  position: sticky;
+  top: 0;
+  width: 100%;
+  height: 100svh;
+  overflow: hidden;
+  isolation: isolate;
+  background: #000;
+}
+.v2-tunnel-stage canvas {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.v2-tunnel-stage::after {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  content: "";
+  pointer-events: none;
+  background: radial-gradient(ellipse at center, transparent 0 27%, rgba(0,0,0,.08) 45%, rgba(0,0,0,.74) 100%);
+}
+.v2-tunnel-stage__topline {
+  position: absolute;
+  z-index: 2;
+  top: 22px;
+  left: clamp(18px, 5vw, 56px);
+  right: clamp(18px, 5vw, 56px);
+  display: flex;
+  justify-content: space-between;
+  color: rgba(255,255,255,.58);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 2.2px;
+}
+.v2-tunnel-stage__topline span { color: rgba(255,255,255,.28); }
+.v2-tunnel-stage__title {
+  position: absolute;
+  z-index: 2;
+  right: 0;
+  bottom: 9%;
+  left: 0;
+  color: rgba(255,255,255,.86);
+  font: 400 clamp(34px, 9vw, 76px)/.86 Georgia, "Times New Roman", serif;
+  letter-spacing: -.075em;
+  text-align: center;
+  text-shadow: 0 6px 28px rgba(0,0,0,.95);
+  transform: rotate(-3deg);
+}
+.v2-tunnel-stage__title small {
+  display: block;
+  margin-top: 16px;
+  color: rgba(255,255,255,.48);
+  font: 800 10px/1 Georgia, "Times New Roman", serif;
+  letter-spacing: .3em;
+  text-transform: uppercase;
+}
+body.homepage-v2 .fall-sentinel {
+  min-height: 35svh;
+  color: rgba(255,255,255,.48);
+}
+body.homepage-v2 .fall-sentinel b { color: #fff; }
+
 .view--landing,
 .landing-shell { touch-action: pan-y; }
 .view--costume { min-height: 100svh; touch-action: pan-y; }

@@ -1,6 +1,8 @@
 /* Cinematic rabbit-hole handoff. The canvas is deliberately self-contained:
    if GSAP is unavailable, the same scene falls back to requestAnimationFrame. */
 (function () {
+  if (new URLSearchParams(window.location.search).get('v2') === '1') return;
+
   const overlay = document.getElementById('fall-transition');
   const canvas = document.getElementById('fall-canvas');
   if (!overlay || !canvas) return;
