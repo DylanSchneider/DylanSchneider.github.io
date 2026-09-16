@@ -1,15 +1,16 @@
-/* Load the experimental 3D landing scene only when the v2 test URL is used. */
+/* The original v2 tunnel is the main homepage scene. Load it immediately so
+   the first visit starts in the same experience that used to require ?v2=1. */
 (function () {
-  if (new URLSearchParams(window.location.search).get('v2') !== '1') return;
-
   let modulePromise;
   const load = () => modulePromise || (modulePromise = import('./rabbit-v2.js'));
-  window.rabbitFall = {
-    start: async () => {
-      await load();
-      return window.rabbitFall.start();
-    },
-    finish: () => load().then(() => window.rabbitFall.finish()),
-    cancel: () => load().then(() => window.rabbitFall.cancel())
+  const api = {
+    start: () => load().then(() => window.rabbitFall?.start?.()),
+    finish: () => load().then(() => window.rabbitFall?.finish?.()),
+    cancel: () => load().then(() => window.rabbitFall?.cancel?.())
   };
+  window.rabbitFall = api;
+  load().catch((error) => {
+    console.warn('The v2 tunnel could not load; the check-in form remains available.', error);
+    if (window.rabbitFall === api) window.rabbitFall = null;
+  });
 }());
