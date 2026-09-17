@@ -435,7 +435,7 @@ function renderSoloForm(slot) {
     try {
       const saved = await api.createEntry(state.me.id, t, t, photoBlob, 'solo');
       mergeMembership(saved);
-      await goDash();
+      goHub();
       toast('Costume entered. Good luck!', 'good');
       buzz(30);
     } catch (e) {
@@ -480,7 +480,7 @@ function renderGroupForm(slot) {
     try {
       const saved = await api.createEntry(state.me.id, g, r, photoBlob, 'group');
       mergeMembership(saved);
-      await goDash();
+      goHub();
       toast('Group started. Send the rest of your group to check in and join it!', 'good');
       buzz(30);
     } catch (e) {
@@ -519,7 +519,7 @@ function renderJoinForm(slot, entry) {
     try {
       const saved = await api.joinEntry(state.me.id, entry.id, v);
       mergeMembership(saved);
-      await goDash();
+      goHub();
       toast(`Joined "${entry.title}". Good luck!`, 'good');
       buzz(30);
     } catch (e) {
@@ -645,6 +645,14 @@ async function goDash() {
   paintMenuLabel();
   await refresh();
 }
+
+function goHub() {
+  $('hub-name').textContent = firstName() || 'friend';
+  show('v-hub');
+}
+
+$('hub-vote').addEventListener('click', () => goDash());
+$('hub-photos').addEventListener('click', () => { location.href = 'party.html'; });
 
 function paintMenuLabel() {
   $('menu-edit').textContent = state.membership ? '✏️ Edit my costume' : '🎭 Enter a costume';

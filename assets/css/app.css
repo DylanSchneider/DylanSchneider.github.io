@@ -1574,6 +1574,48 @@ body.homepage-v2 .fall-sentinel b { color: #fff; }
 }
 .view--costume .panel { scroll-margin-top: 16px; }
 
+.view--hub { min-height: 100svh; }
+.view--hub .wrap {
+  display: grid;
+  align-content: center;
+  min-height: 100svh;
+  padding-bottom: calc(40px + var(--safe-b));
+}
+.hub__hero { text-align: center; }
+.hub__mark {
+  display: grid;
+  place-items: center;
+  width: 66px;
+  height: 66px;
+  margin: 0 auto 18px;
+  border: 1px solid rgba(217,180,109,.36);
+  border-radius: 50%;
+  color: var(--card-red);
+  font-size: 30px;
+  box-shadow: 0 0 34px rgba(181,18,60,.18);
+}
+.hub__title {
+  margin-top: 9px;
+  color: var(--wonder-cream);
+  font: 400 clamp(34px, 9vw, 56px)/1 Georgia, "Times New Roman", serif;
+  letter-spacing: -.055em;
+}
+.hub__copy {
+  max-width: 430px;
+  margin: 16px auto 0;
+  color: var(--muted);
+  font-size: 15px;
+  line-height: 1.6;
+  text-wrap: balance;
+}
+.hub__panel {
+  width: 100%;
+  max-width: 430px;
+  margin: 28px auto 0;
+  padding: 20px;
+}
+.hub__actions { display: grid; gap: 10px; margin-top: 14px; }
+
 body.rabbit-fall { overflow: hidden; }
 
 @keyframes portal-breathe {
