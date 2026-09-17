@@ -581,7 +581,7 @@ function renderEditForm(slot) {
         mergeMembership(saved);
       }
       if (role !== m.costume_name) mergeMembership(await api.updateMyCostume(state.me.id, role));
-      await goDash();
+      goHub();
       toast('Costume updated.', 'good');
     } catch (e) {
       toast(e.message, 'bad');
@@ -995,7 +995,7 @@ document.addEventListener('visibilitychange', () => {
   try {
     const res = await api.joinParty(saved.full_name, saved.phone);
     adoptJoin(res);
-    if (state.membership) await goDash();
+    if (state.membership) goHub();
     else openCostume('v-name');
   } catch {
     session.clear();
