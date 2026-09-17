@@ -226,13 +226,13 @@ function mergeMembership(partial) {
 
 function updateBackButton() {
   const btn = $('btn-back');
-  if (state.costumeMode === 'edit') btn.textContent = '← Back to voting';
+  if (state.costumeMode === 'edit') btn.textContent = state.costumeReturn === 'v-hub' ? '← Back to party' : '← Back to voting';
   else if (state.costumeMode === 'chooser') btn.textContent = state.costumeReturn === 'v-dash' ? '← Back to voting' : '← Back to choices';
   else btn.textContent = '← Choose differently';
 }
 
 $('btn-back').addEventListener('click', () => {
-  if (state.costumeMode === 'edit') goDash();
+  if (state.costumeMode === 'edit') state.costumeReturn === 'v-hub' ? goHub() : goDash();
   else if (state.costumeMode === 'chooser') {
     if (state.costumeReturn === 'v-dash') goDash();
     else show(state.costumeReturn || 'v-name');
@@ -542,12 +542,13 @@ function renderJoinForm(slot, entry) {
 
 function renderEditForm(slot) {
   const m = state.membership;
-  const isGroup = m.entry_type === 'group' || (m.members || []).length > 1;
+  const members = Array.isArray(m.members) ? m.members : [];
+  const isGroup = m.entry_type === 'group' || members.length > 1;
   const isOwner = Boolean(m.is_owner);
 
   const titleInput = isOwner ? h('input', { value: m.title }) : null;
   const errTitle = h('p', { class: 'err' });
-  const roleInput = h('input', { value: m.costume_name });
+  const roleInput = isGroup ? h('input', { value: m.costume_name }) : null;
   const errRole = h('p', { class: 'err' });
   const photo = isOwner ? buildPhotoField(m.photo_path ? photoUrl(m.photo_path) : '', true) : null;
 
@@ -555,8 +556,12 @@ function renderEditForm(slot) {
   saveBtn.addEventListener('click', async () => {
     errTitle.textContent = '';
     errRole.textContent = '';
-    const role = roleInput.value.trim().replace(/\s+/g, ' ');
-    if (role.length < 1) { errRole.textContent = 'What are you dressed as?'; buzz(40); return; }
+    const role = (isGroup ? roleInput.value : titleInput.value).trim().replace(/\s+/g, ' ');
+    if (role.length < 1) {
+      (isGroup ? errRole : errTitle).textContent = isGroup ? 'What are you dressed as?' : 'Give your costume a name.';
+      buzz(40);
+      return;
+    }
     const photoValue = isOwner ? photo.get() : undefined;
     if (isOwner && photoValue === null) {
       photo.setError('An entry must keep a photo. Add one before saving.');
@@ -622,14 +627,14 @@ function renderEditForm(slot) {
             h('p', { class: 'fine', style: 'margin-top:6px' },
               m.title, ' ', h('span', { class: 'opt', text: '— only the person who started it can rename it' }))
           ),
-      field('Your costume', roleInput, errRole),
+      isGroup ? field('Your costume', roleInput, errRole) : null,
       isOwner ? photo.node : null,
       h('div', { class: 'stack' }, saveBtn)
     ),
     isGroup ? h('div', { class: 'panel', style: 'margin-top:14px' },
       h('p', { class: 'eyebrow' }, 'Who’s in this group'),
       h('div', { class: 'chips', style: 'margin-top:10px' },
-        ...m.members.map((x) => h('span', { class: 'chip', style: 'cursor:default' },
+        ...members.map((x) => h('span', { class: 'chip', style: 'cursor:default' },
           `${x.name} — ${x.costume_name}${x.is_owner ? ' (started it)' : ''}`)))
     ) : null,
     h('div', { style: 'margin-top:14px' }, leaveBtn)
@@ -640,9 +645,7 @@ function renderEditForm(slot) {
 /* ── Dashboard ───────────────────────────────────────────────────────── */
 
 async function goDash() {
-  $('me-name').textContent = state.me?.full_name || '—';
   show('v-dash');
-  paintMenuLabel();
   await refresh();
 }
 
@@ -653,11 +656,7 @@ function goHub() {
 
 $('hub-vote').addEventListener('click', () => goDash());
 $('hub-photos').addEventListener('click', () => { location.href = 'party.html'; });
-
-function paintMenuLabel() {
-  $('menu-edit').textContent = state.membership ? '✏️ Edit my costume' : '🎭 Enter a costume';
-  $('menu-switch').hidden = Boolean(state.info?.open);
-}
+$('hub-edit').addEventListener('click', () => openCostume('v-hub'));
 
 async function refresh(quiet, repaint = true) {
   const spin = $('btn-refresh');
@@ -682,7 +681,6 @@ function adoptInfo(info) {
   state.skew = new Date(info.server_now).getTime() - Date.now();
   state.closesAt = new Date(info.closes_at);
   state.revealed = Boolean(info.revealed);
-  if ($('menu-switch')) $('menu-switch').hidden = Boolean(info.open);
   if (CFG.PARTY_TITLE && info.name) document.title = `${info.name} · Costume Contest`;
 }
 
@@ -894,49 +892,7 @@ async function tapCard(e) {
 $('btn-refresh').addEventListener('click', () => refresh(false));
 
 
-/* ── Menu sheet ──────────────────────────────────────────────────────── */
-
-function openSheet() {
-  const s = $('sheet');
-  if (typeof s.showModal === 'function') s.showModal();
-  else s.setAttribute('open', '');
-}
-function closeSheet() {
-  const s = $('sheet');
-  if (typeof s.close === 'function') s.close();
-  else s.removeAttribute('open');
-}
-
-$('btn-menu').addEventListener('click', openSheet);
-$('menu-close').addEventListener('click', closeSheet);
-$('sheet').addEventListener('click', (ev) => { if (ev.target === $('sheet')) closeSheet(); });
-
-$('menu-edit').addEventListener('click', () => {
-  closeSheet();
-  openCostume('v-dash');
-});
-
-$('menu-photos').addEventListener('click', () => {
-  closeSheet();
-  location.href = 'party.html';
-});
-
-$('menu-switch').addEventListener('click', () => {
-  if (state.info?.open) {
-    closeSheet();
-    toast('Identity switching is disabled during the party.', 'bad');
-    return;
-  }
-  closeSheet();
-  session.clear();
-  Object.assign(state, {
-    me: null, membership: null, votedId: null, entries: []
-  });
-  $('in-name').value = '';
-  $('in-phone').value = '';
-  show('v-name');
-  $('in-name').focus();
-});
+$('btn-hub-back').addEventListener('click', () => goHub());
 
 
 /* ── Timers ──────────────────────────────────────────────────────────── */

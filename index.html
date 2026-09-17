@@ -121,6 +121,7 @@
       <div class="panel hub__panel">
         <p class="eyebrow">Choose your next adventure</p>
         <div class="hub__actions">
+          <button class="btn btn--ghost btn--block" id="hub-edit" type="button">Edit your costume</button>
           <button class="btn btn--primary btn--block" id="hub-vote" type="button">🗳️ Vote for costumes</button>
           <button class="btn btn--ghost btn--block" id="hub-photos" type="button">📸 Party pictures</button>
         </div>
@@ -133,12 +134,8 @@
   <section id="v-dash" class="view">
     <div class="wrap wrap--dash">
       <div class="topbar">
-        <div class="topbar__who">
-          <span class="eyebrow">Checked in as</span>
-          <b id="me-name">&mdash;</b>
-        </div>
+        <button class="icon-btn" id="btn-hub-back" type="button" aria-label="Back to party home">←</button>
         <button class="icon-btn" id="btn-refresh" type="button" aria-label="Refresh costumes">↻</button>
-        <button class="icon-btn" id="btn-menu" type="button" aria-label="Open menu">⋯</button>
       </div>
 
       <div id="mode-note-2"></div>
@@ -175,17 +172,6 @@
   </div>
   <div class="fall-transition__flash"></div>
 </div>
-
-<!-- Bottom sheet menu -->
-<dialog class="sheet" id="sheet">
-  <div class="sheet__inner">
-    <div class="sheet__grip"></div>
-    <button class="sheet__item" id="menu-edit" type="button">✏️ Edit my costume</button>
-    <button class="sheet__item" id="menu-photos" type="button">📸 Party photos</button>
-    <button class="sheet__item" id="menu-switch" type="button">👤 Not you? Check in as someone else</button>
-    <button class="sheet__item sheet__item--close" id="menu-close" type="button">Close</button>
-  </div>
-</dialog>
 
 <div id="toast" aria-live="polite"></div>
 
