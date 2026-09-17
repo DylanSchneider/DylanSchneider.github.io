@@ -180,8 +180,9 @@ $('form-name').addEventListener('submit', async (ev) => {
     // Supabase is finishing the check-in request.
     await flight;
     adoptJoin(res);
+    await recoverMembership();
     if (state.membership) {
-      await goDash();
+      goHub();
       toast('Welcome back, ' + firstName() + '!', 'good');
     } else {
       openCostume('v-name');
@@ -201,6 +202,27 @@ function adoptJoin(res) {
   state.membership = res.membership || null;
   state.votedId = res.voted_entry_id || null;
   session.set(res.guest);
+}
+
+async function recoverMembership() {
+  if (state.membership || !state.me?.id) return;
+  try {
+    const entries = await api.listEntries(state.me.id);
+    const mine = (Array.isArray(entries) ? entries : []).find((entry) => entry.is_mine);
+    if (!mine) return;
+    const member = (Array.isArray(mine.members) ? mine.members : [])
+      .find((item) => item.name === state.me.full_name);
+    state.membership = {
+      entry_id: mine.id,
+      entry_type: mine.entry_type || (mine.is_group ? 'group' : 'solo'),
+      title: mine.title,
+      photo_path: mine.photo_path,
+      photo_path_film: mine.photo_path_film || null,
+      is_owner: Boolean(member?.is_owner),
+      costume_name: member?.costume_name || mine.title,
+      members: mine.members
+    };
+  } catch { /* the normal join response remains the source of truth */ }
 }
 
 const firstName = () => String(state.me?.full_name || '').split(' ')[0];
@@ -961,6 +983,7 @@ document.addEventListener('visibilitychange', () => {
   try {
     const res = await api.joinParty(saved.full_name, saved.phone);
     adoptJoin(res);
+    await recoverMembership();
     if (state.membership) goHub();
     else openCostume('v-name');
   } catch {
