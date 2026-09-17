@@ -282,35 +282,100 @@ function buildPhotoField(existingUrl, required = false) {
   const err = h('p', { class: 'err' });
   const cameraInput = h('input', { type: 'file', accept: 'image/*', capture: 'environment' });
   const libraryInput = h('input', { type: 'file', accept: 'image/*' });
+  const fileInput = h('input', { type: 'file', accept: 'image/*' });
+
+  for (const input of [cameraInput, libraryInput, fileInput]) {
+    input.hidden = true;
+    input.setAttribute('aria-hidden', 'true');
+  }
+
+  let sourceDialog;
+  function closeSourceDialog() {
+    if (typeof sourceDialog?.close === 'function') sourceDialog.close();
+    else sourceDialog?.removeAttribute('open');
+  }
+
+  function chooseSource(input) {
+    closeSourceDialog();
+    input.value = '';
+    input.click();
+  }
+
+  sourceDialog = h('dialog', { class: 'photo-source' },
+    h('div', { class: 'photo-source__inner' },
+      h('div', { class: 'photo-source__grip' }),
+      h('p', { class: 'eyebrow', text: 'Add a costume photo' }),
+      h('p', { class: 'photo-source__hint', text: 'Choose where the picture should come from.' }),
+      h('button', {
+        class: 'photo-source__option', type: 'button',
+        onclick: () => chooseSource(cameraInput)
+      }, '📸 Take a photo'),
+      h('button', {
+        class: 'photo-source__option', type: 'button',
+        onclick: () => chooseSource(libraryInput)
+      }, '🖼️ Choose from Photos'),
+      h('button', {
+        class: 'photo-source__option', type: 'button',
+        onclick: () => chooseSource(fileInput)
+      }, '📁 Upload a file'),
+      h('button', {
+        class: 'photo-source__cancel', type: 'button',
+        onclick: closeSourceDialog
+      }, 'Cancel')
+    )
+  );
+
+  function openSourceDialog() {
+    if (typeof sourceDialog.showModal === 'function') sourceDialog.showModal();
+    else sourceDialog.setAttribute('open', '');
+  }
+
   const removeBtn = h('button', {
     class: 'btn btn--ghost btn--sm', type: 'button', style: 'margin-top:10px',
     onclick: () => {
       picked = null;
       cameraInput.value = '';
       libraryInput.value = '';
+      fileInput.value = '';
       setPreview(null);
     }
   }, 'Remove photo');
   removeBtn.style.display = existingUrl ? '' : 'none';
 
-  const box = h('label', { class: 'photo' },
+  const box = h('div', {
+    class: 'photo', role: 'button', tabindex: '0',
+    onclick: openSourceDialog,
+    onkeydown: (ev) => {
+      if (ev.key === 'Enter' || ev.key === ' ') {
+        ev.preventDefault();
+        openSourceDialog();
+      }
+    }
+  },
     cameraInput,
+    libraryInput,
+    fileInput,
     h('span', { class: 'photo__empty' },
       h('span', { class: 'photo__icon', text: '📸' }),
-      h('b', { text: 'Take a photo now' }),
-      h('span', { class: 'fine', text: 'Use the photo-op board on the back patio' })
+      h('b', { text: 'Add a costume photo' }),
+      h('span', { class: 'fine', text: 'Tap to take one, choose from Photos, or upload a file' })
     ),
     img,
     h('span', { class: 'photo__swap', text: 'Change' })
   );
-  const libraryButton = h('label', { class: 'btn btn--ghost btn--block photo-library' },
-    libraryInput, '🖼️ Upload an existing photo'
-  );
+  sourceDialog.addEventListener('click', (ev) => {
+    if (ev.target === sourceDialog) closeSourceDialog();
+  });
   if (existingUrl) { img.src = existingUrl; box.classList.add('has-img'); }
 
   function setPreview(url) {
     if (objectUrl && objectUrl !== url) { URL.revokeObjectURL(objectUrl); objectUrl = null; }
-    if (url) { img.src = url; box.classList.add('has-img'); removeBtn.style.display = ''; }
+    if (url) {
+      img.src = url;
+      objectUrl = url.startsWith('blob:') ? url : null;
+      box.classList.add('has-img');
+      removeBtn.style.display = '';
+    }
     else { img.removeAttribute('src'); box.classList.remove('has-img'); removeBtn.style.display = 'none'; }
   }
 
@@ -337,12 +402,13 @@ function buildPhotoField(existingUrl, required = false) {
 
   cameraInput.addEventListener('change', handleFile);
   libraryInput.addEventListener('change', handleFile);
+  fileInput.addEventListener('change', handleFile);
 
   return {
     node: h('div', { class: 'field' },
       h('span', { class: 'label' }, 'Photo ', h('span', { class: 'opt', text: required ? '— required' : '— optional' })),
-      h('p', { class: 'hint photo-instructions', text: 'Taking it now? Please use the photo-op board on the back patio. Already have a picture? Upload it from your phone.' }),
-      box, libraryButton, err, removeBtn
+      h('p', { class: 'hint photo-instructions', text: 'Taking it now? Please use the photo-op board on the back patio.' }),
+      box, sourceDialog, err, removeBtn
     ),
     get: () => picked,
     setError: (msg) => { err.textContent = msg || ''; }
@@ -446,7 +512,7 @@ function renderSoloForm(slot) {
   slot.replaceChildren(
     h('p', { class: 'eyebrow', style: 'margin-top:0' }, 'Solo costume'),
     h('div', { class: 'panel', style: 'margin-top:8px' },
-      field('Costume name', title, err, 'e.g. Mad Hatter', 'Try an Alice character: Mad Hatter, White Rabbit, Cheshire Cat, or Queen of Hearts.'),
+      field('Costume name', title, err, 'e.g. Mad Hatter'),
       photo.node,
       h('div', { class: 'stack' }, btn)
     )
