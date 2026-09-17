@@ -14,11 +14,12 @@
   <section class="view is-active">
     <div class="wrap wrap--dash party-wrap">
       <div class="topbar">
+        <a class="icon-btn" href="index.html" aria-label="Back to party home">←</a>
         <div class="topbar__who">
           <span class="eyebrow">Wonderland camera</span>
           <b>Party photos</b>
         </div>
-        <a class="icon-btn" href="index.html" aria-label="Back to party page">←</a>
+        <button class="icon-btn" id="party-refresh" type="button" aria-label="Refresh party pictures">↻</button>
       </div>
 
       <div id="party-mode"></div>
@@ -61,7 +62,6 @@
             <p class="eyebrow">The party wall</p>
             <h2 class="section-title" style="margin-top:6px">Recent party pictures</h2>
           </div>
-          <button class="btn btn--ghost btn--sm" id="party-refresh" type="button">Refresh</button>
         </div>
         <div class="party-photo-grid" id="party-gallery"></div>
         <div id="party-empty"></div>
