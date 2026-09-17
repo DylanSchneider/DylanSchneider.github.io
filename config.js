@@ -42,6 +42,7 @@ window.PARTY_CONFIG = {
   PHOTO_MAX_EDGE: 2800,
   PHOTO_QUALITY: 0.88,
 
-  // The film copy is derived from the same resized pixels as the normal copy.
+  // Party photos get a film copy derived from the same resized pixels as the
+  // normal copy. Costume entries keep the normal copy only.
   FILM_QUALITY: 0.88
 };

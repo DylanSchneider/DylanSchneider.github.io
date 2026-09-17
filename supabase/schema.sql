@@ -55,7 +55,7 @@ create table if not exists public.entries (
   entry_type    text        not null default 'solo' check (entry_type in ('solo', 'group')),
   title         text        not null,
   photo_path    text,                                   -- path inside the 'costumes' bucket
-  photo_path_film text,                                  -- matching film-look copy
+  photo_path_film text,                                  -- optional legacy film-look copy
   created_at    timestamptz not null default now(),
   updated_at    timestamptz not null default now()
 );
@@ -362,9 +362,8 @@ begin
   if p_entry_type not in ('solo', 'group') then
     raise exception 'Choose either a solo or group costume.';
   end if;
-  if nullif(btrim(p_photo_path), '') is null
-     or nullif(btrim(p_photo_path_film), '') is null then
-    raise exception 'Both normal and film photo versions are required to start a costume entry.';
+  if nullif(btrim(p_photo_path), '') is null then
+    raise exception 'A normal costume photo is required to start a costume entry.';
   end if;
 
   v_costume := clean_text(p_costume_name);
@@ -467,9 +466,8 @@ begin
   if length(v_title) < 2 then
     raise exception 'Give your costume (or group) a name.';
   end if;
-  if nullif(btrim(p_photo_path), '') is null
-     or nullif(btrim(p_photo_path_film), '') is null then
-    raise exception 'Both normal and film photo versions are required for every costume entry.';
+  if nullif(btrim(p_photo_path), '') is null then
+    raise exception 'A normal costume photo is required for every costume entry.';
   end if;
 
   update public.entries
@@ -758,9 +756,6 @@ begin
   select * into p from public.parties where id = p_party;
   if p.id is null then
     raise exception 'Unknown party "%".', p_party;
-  end if;
-  if now() > p.voting_closes_at then
-    raise exception 'The party photo wall is closed. Use the host page to download the photos.';
   end if;
   if not exists (select 1 from public.attendance where party_id = p_party and guest_id = p_guest) then
     raise exception 'Check in with your name and number first.';

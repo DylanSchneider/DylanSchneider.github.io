@@ -37,23 +37,27 @@ function saveLink(url, filename, label) {
   return h('a', { class: 'btn btn--ghost btn--sm', href: url, download: filename, target: '_blank', rel: 'noopener' }, label);
 }
 
-function photoTile(photo) {
-  const normal = photoUrl(photo.normal_path, 'party-photos');
-  const film = photoUrl(photo.film_path, 'party-photos');
-  const img = h('img', { src: normal, alt: photo.caption || 'Party photo', loading: 'lazy', decoding: 'async' });
+function photoTile(photo, bucket, kind) {
+  const normal = photoUrl(photo.normal_path, bucket);
+  const film = photo.film_path ? photoUrl(photo.film_path, bucket) : null;
+  const title = kind === 'costume'
+    ? `🎭 ${photo.title || 'Costume photo'}`
+    : (photo.uploader ? `📸 ${photo.uploader}` : 'Party photo');
+  const filePrefix = kind === 'costume' ? 'costume' : 'party';
+  const img = h('img', { src: normal, alt: photo.caption || photo.title || 'Party photo', loading: 'lazy', decoding: 'async' });
   const show = (url) => { img.src = url; };
   return h('article', { class: 'party-photo-tile' },
     img,
     h('div', { class: 'party-photo-tile__body' },
       h('div', { class: 'party-photo-tile__meta' },
-        h('b', { text: photo.uploader ? `📸 ${photo.uploader}` : 'Party photo' }),
-        h('span', { class: 'fine', text: photo.caption || '' })
+        h('b', { text: title }),
+        h('span', { class: 'fine', text: photo.caption || photo.owner || '' })
       ),
       h('div', { class: 'party-photo-tile__actions' },
-        h('button', { class: 'btn btn--ghost btn--sm', type: 'button', onclick: () => show(normal) }, 'Normal'),
-        h('button', { class: 'btn btn--ghost btn--sm', type: 'button', onclick: () => show(film) }, 'Film'),
-        saveLink(normal, `party-${photo.id}-normal.jpg`, 'Save normal'),
-        saveLink(film, `party-${photo.id}-film.jpg`, 'Save film')
+        film ? h('button', { class: 'btn btn--ghost btn--sm', type: 'button', onclick: () => show(normal) }, 'Normal') : null,
+        film ? h('button', { class: 'btn btn--ghost btn--sm', type: 'button', onclick: () => show(film) }, 'Film') : null,
+        saveLink(normal, `${filePrefix}-${photo.id}-normal.jpg`, 'Save normal'),
+        film ? saveLink(film, `${filePrefix}-${photo.id}-film.jpg`, 'Save film') : null
       )
     )
   );
@@ -61,13 +65,36 @@ function photoTile(photo) {
 
 async function loadGallery() {
   try {
-    const raw = await api.listPartyPhotos(me.id);
+    const [raw, entries, info] = await Promise.all([
+      api.listPartyPhotos(me.id), api.listEntries(me.id), api.partyInfo()
+    ]);
     const photos = Array.isArray(raw) ? raw : [];
-    $('party-gallery').replaceChildren(...photos.map(photoTile));
+    const costumes = (Array.isArray(entries) ? entries : [])
+      .filter((entry) => entry.photo_path)
+      .map((entry) => ({
+        id: entry.id,
+        title: entry.title,
+        normal_path: entry.photo_path,
+        film_path: entry.photo_path_film || null,
+        owner: entry.members?.find((member) => member.is_owner)?.name || ''
+      }));
+
+    $('costume-gallery').replaceChildren(...costumes.map((photo) => photoTile(photo, 'costumes', 'costume')));
+    $('costume-empty').replaceChildren();
+    if (!costumes.length) $('costume-empty').append(h('div', { class: 'empty' },
+      h('div', { class: 'empty__icon', text: '🎭' }), h('b', { text: 'No costume photos yet' }),
+      h('p', { class: 'fine', text: 'Costume photos will appear here after someone enters one.' })
+    ));
+
+    $('party-gallery').replaceChildren(...photos.map((photo) => photoTile(photo, 'party-photos', 'party')));
     $('party-empty').replaceChildren();
     if (!photos.length) $('party-empty').append(h('div', { class: 'empty' },
       h('div', { class: 'empty__icon', text: '📸' }), h('b', { text: 'No party photos yet' }),
       h('p', { class: 'fine', text: 'Be the first person to capture a curious moment.' })
+    ));
+    $('party-camera-panel').hidden = !info.open;
+    if (!info.open) $('party-mode').replaceChildren(h('div', { class: 'note note--warn' },
+      h('b', { text: 'The party camera is closed.' }), ' Costume photos remain available above for downloading.'
     ));
   } catch (err) { toast(err.message, 'bad'); }
 }
@@ -106,18 +133,25 @@ if (!me) {
   $('party-upload').addEventListener('click', async (ev) => {
     if (!variants) return;
     const btn = ev.currentTarget;
+    const status = $('party-upload-status');
     loading(btn, true);
+    btn.textContent = 'Uploading…';
+    status.textContent = 'Uploading both photo versions…';
     try {
       await api.uploadPartyPhoto(me.id, variants, $('party-caption').value.trim());
       toast('Photo saved to the party wall.', 'good');
+      status.textContent = 'Saved. You can download either version below.';
       $('party-photo-file').value = '';
       $('party-caption').value = '';
       variants = null;
       $('party-preview').hidden = true;
       btn.disabled = true;
       await loadGallery();
-    } catch (err) { toast(err.message, 'bad'); }
-    finally { loading(btn, false); btn.disabled = !variants; }
+    } catch (err) {
+      status.textContent = 'Upload did not finish. Check your connection and try again.';
+      toast(err.message, 'bad');
+    }
+    finally { loading(btn, false); btn.textContent = 'Save party photo'; btn.disabled = !variants; }
   });
 
   $('party-refresh').addEventListener('click', loadGallery);

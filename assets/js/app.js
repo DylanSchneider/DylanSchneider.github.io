@@ -3,7 +3,7 @@
    Screens: check in → costume (join / start solo / start group / edit) → vote
    ===================================================================== */
 
-import { api, session, photoUrl, processPhotoVariants, IS_LIVE, PARTY_ID } from './store.js';
+import { api, session, photoUrl, shrinkPhoto, IS_LIVE, PARTY_ID } from './store.js';
 
 const CFG = window.PARTY_CONFIG || {};
 const $ = (id) => document.getElementById(id);
@@ -37,7 +37,6 @@ const state = {
   votedId: null,
   costumeReturn: 'v-name',
   costumeMode: 'chooser', // chooser | solo | group | join | edit
-  photoSave: null,
   busy: false
 };
 
@@ -181,8 +180,9 @@ $('form-name').addEventListener('submit', async (ev) => {
     // Supabase is finishing the check-in request.
     await flight;
     adoptJoin(res);
-    if (state.membership) { await goDash(); toast('Welcome back, ' + firstName() + '!'); }
-    else openCostume('v-name');
+    paintHub();
+    show('v-hub');
+    toast('Welcome, ' + firstName() + '!', 'good');
     window.rabbitFall?.finish?.();
   } catch (err) {
     window.rabbitFall?.cancel?.();
@@ -197,13 +197,25 @@ function adoptJoin(res) {
   state.me = res.guest;
   state.membership = res.membership || null;
   state.votedId = res.voted_entry_id || null;
-  state.photoSave = state.membership?.photo_path
-    ? { normal: state.membership.photo_path, film: state.membership.photo_path_film || state.membership.photo_path }
-    : null;
   session.set(res.guest);
 }
 
 const firstName = () => String(state.me?.full_name || '').split(' ')[0];
+
+function paintHub() {
+  $('hub-title').textContent = `Welcome, ${firstName() || 'friend'}`;
+  const hasCostume = Boolean(state.membership);
+  $('hub-actions').replaceChildren(
+    h('button', {
+      class: 'btn btn--primary btn--block', type: 'button',
+      onclick: () => hasCostume ? goDash() : openCostume('v-hub')
+    }, hasCostume ? '🏆 Go to costume contest & voting' : '🎭 Set up my costume'),
+    h('button', {
+      class: 'btn btn--ghost btn--block', type: 'button',
+      onclick: () => { location.href = 'party.html'; }
+    }, '📸 Open Party Pictures')
+  );
+}
 
 /** Merge a create/join/update result into state.membership (each call only
  *  returns the fields it actually changed). */
@@ -219,12 +231,6 @@ function mergeMembership(partial) {
     costume_name: partial.costume_name ?? cur.costume_name,
     members: partial.members ?? cur.members
   };
-  if ('photo_path' in partial && partial.photo_path) {
-    state.photoSave = {
-      normal: partial.photo_path,
-      film: partial.photo_path_film || partial.photo_path
-    };
-  }
 }
 
 
@@ -233,13 +239,16 @@ function mergeMembership(partial) {
 function updateBackButton() {
   const btn = $('btn-back');
   if (state.costumeMode === 'edit') btn.textContent = '← Back to voting';
-  else if (state.costumeMode === 'chooser') btn.textContent = state.costumeReturn === 'v-dash' ? '← Back to voting' : '← Back';
+  else if (state.costumeMode === 'chooser') btn.textContent = state.costumeReturn === 'v-dash' ? '← Back to voting' : '← Back to choices';
   else btn.textContent = '← Choose differently';
 }
 
 $('btn-back').addEventListener('click', () => {
   if (state.costumeMode === 'edit') goDash();
-  else if (state.costumeMode === 'chooser') { if (state.costumeReturn === 'v-dash') goDash(); else show('v-name'); }
+  else if (state.costumeMode === 'chooser') {
+    if (state.costumeReturn === 'v-dash') goDash();
+    else show(state.costumeReturn || 'v-name');
+  }
   else renderCostume('chooser');
 });
 
@@ -276,31 +285,38 @@ function field(labelText, inputEl, errEl, placeholder, hintText) {
   );
 }
 
-/** A photo picker that produces normal + film print-friendly JPEG blobs. */
+/** A photo picker that produces a normal, print-friendly JPEG blob. */
 function buildPhotoField(existingUrl, required = false) {
   let picked = existingUrl ? undefined : null;
   let objectUrl = null;
 
   const img = h('img', { class: 'photo__img', alt: 'Costume' });
   const err = h('p', { class: 'err' });
+  const cameraInput = h('input', { type: 'file', accept: 'image/*', capture: 'environment' });
+  const libraryInput = h('input', { type: 'file', accept: 'image/*' });
   const removeBtn = h('button', {
     class: 'btn btn--ghost btn--sm', type: 'button', style: 'margin-top:10px',
-    onclick: () => { picked = null; fileInput.value = ''; setPreview(null); }
+    onclick: () => {
+      picked = null;
+      cameraInput.value = '';
+      libraryInput.value = '';
+      setPreview(null);
+    }
   }, 'Remove photo');
   removeBtn.style.display = existingUrl ? '' : 'none';
 
-  const fileInput = h('input', {
-    type: 'file', accept: 'image/*', capture: 'environment', required: required && !existingUrl
-  });
   const box = h('label', { class: 'photo' },
-    fileInput,
+    cameraInput,
     h('span', { class: 'photo__empty' },
       h('span', { class: 'photo__icon', text: '📸' }),
-      h('b', { text: 'Add a photo' }),
-      h('span', { class: 'fine', text: 'Take one now or pick from your library' })
+      h('b', { text: 'Take a photo now' }),
+      h('span', { class: 'fine', text: 'Use the photo-op board on the back patio' })
     ),
     img,
     h('span', { class: 'photo__swap', text: 'Change' })
+  );
+  const libraryButton = h('label', { class: 'btn btn--ghost btn--block photo-library' },
+    libraryInput, '🖼️ Upload an existing photo'
   );
   if (existingUrl) { img.src = existingUrl; box.classList.add('has-img'); }
 
@@ -310,36 +326,35 @@ function buildPhotoField(existingUrl, required = false) {
     else { img.removeAttribute('src'); box.classList.remove('has-img'); removeBtn.style.display = 'none'; }
   }
 
-  fileInput.addEventListener('change', async (ev) => {
+  async function handleFile(ev) {
     const file = ev.target.files && ev.target.files[0];
     if (!file) return;
     err.textContent = '';
     box.classList.add('is-busy');
     try {
-      const variants = await processPhotoVariants(
-        file, CFG.PHOTO_MAX_EDGE,
-        IS_LIVE ? CFG.PHOTO_QUALITY : 0.78,
-        CFG.FILM_QUALITY
+      const normal = await shrinkPhoto(
+        file, CFG.PHOTO_MAX_EDGE, IS_LIVE ? CFG.PHOTO_QUALITY : 0.78
       );
-      picked = variants;
-      objectUrl = URL.createObjectURL(variants.normal);
-      setPreview(objectUrl);
+      picked = { normal };
+      setPreview(URL.createObjectURL(normal));
     } catch (e) {
       ev.target.value = '';
       err.textContent = /empty|read as an image/i.test(e.message)
-        ? 'That file could not be read as a photo. Try taking a new one with the camera.'
+        ? 'That file could not be read as a photo. Try another image.'
         : e.message;
     } finally {
       box.classList.remove('is-busy');
     }
-  });
+  }
+
+  cameraInput.addEventListener('change', handleFile);
+  libraryInput.addEventListener('change', handleFile);
 
   return {
     node: h('div', { class: 'field' },
-      h('span', { class: 'label' }, 'Photo ', h('span', {
-        class: 'opt', text: required ? '— normal + film copies required' : '— normal + film copies'
-      })),
-      box, err, removeBtn
+      h('span', { class: 'label' }, 'Photo ', h('span', { class: 'opt', text: required ? '— required' : '— optional' })),
+      h('p', { class: 'hint photo-instructions', text: 'Taking it now? Please use the photo-op board on the back patio. Already have a picture? Upload it from your phone.' }),
+      box, libraryButton, err, removeBtn
     ),
     get: () => picked,
     setError: (msg) => { err.textContent = msg || ''; }
@@ -392,7 +407,7 @@ async function renderChooser(slot) {
   nodes.push(h('div', { class: 'choice-divider', text: list.length ? 'or start your own' : 'start your own' }));
   nodes.push(h('div', { class: 'note note--warn', style: 'margin-top:14px' },
     h('b', { text: 'Starting a group?' }),
-    ' Wait until everyone in the group has arrived. A group entry uses one shared photo.'
+    ' Only one person needs to upload the group photo. If you already have one, start the group now — no need to wait for everyone to arrive.'
   ));
   // Keep the group path first: it is the intended shared-costume flow, and
   // the solo option is the fallback below it.
@@ -430,7 +445,6 @@ function renderSoloForm(slot) {
     try {
       const saved = await api.createEntry(state.me.id, t, t, photoBlob, 'solo');
       mergeMembership(saved);
-      state.photoSave = { normal: saved.photo_path, film: saved.photo_path_film || saved.photo_path };
       await goDash();
       toast('Costume entered. Good luck!', 'good');
       buzz(30);
@@ -444,7 +458,7 @@ function renderSoloForm(slot) {
   slot.replaceChildren(
     h('p', { class: 'eyebrow', style: 'margin-top:0' }, 'Solo costume'),
     h('div', { class: 'panel', style: 'margin-top:8px' },
-      field('Costume name', title, err, 'e.g. Beetlejuice'),
+      field('Costume name', title, err, 'e.g. Mad Hatter', 'Try an Alice character: Mad Hatter, White Rabbit, Cheshire Cat, or Queen of Hearts.'),
       photo.node,
       h('div', { class: 'stack' }, btn)
     )
@@ -476,7 +490,6 @@ function renderGroupForm(slot) {
     try {
       const saved = await api.createEntry(state.me.id, g, r, photoBlob, 'group');
       mergeMembership(saved);
-      state.photoSave = { normal: saved.photo_path, film: saved.photo_path_film || saved.photo_path };
       await goDash();
       toast('Group started. Send the rest of your group to check in and join it!', 'good');
       buzz(30);
@@ -490,8 +503,8 @@ function renderGroupForm(slot) {
   slot.replaceChildren(
     h('p', { class: 'eyebrow', style: 'margin-top:0' }, 'Group costume'),
     h('div', { class: 'note note--warn', style: 'margin-top:8px' },
-      h('b', { text: 'Please wait until the full group is here.' }),
-      ' This entry gets one shared photo, so start it when everyone is ready to be pictured together.'
+      h('b', { text: 'Only one person uploads the group photo.' }),
+      ' If you already have a group picture, start this entry now — you do not need to wait for everyone to arrive.'
     ),
     h('div', { class: 'panel', style: 'margin-top:8px' },
       field('Group costume name', groupName, errG, 'e.g. Alice in Wonderland'),
@@ -576,9 +589,6 @@ function renderEditForm(slot) {
       if (isOwner) {
         const saved = await api.updateEntry(state.me.id, title, photoValue, m.photo_path, m.photo_path_film);
         mergeMembership(saved);
-        if (photoValue) state.photoSave = {
-          normal: saved.photo_path, film: saved.photo_path_film || saved.photo_path
-        };
       }
       if (role !== m.costume_name) mergeMembership(await api.updateMyCostume(state.me.id, role));
       await goDash();
@@ -644,28 +654,11 @@ async function goDash() {
   show('v-dash');
   paintMenuLabel();
   await refresh();
-  paintPhotoSave();
-}
-
-function paintPhotoSave() {
-  const box = $('photo-save');
-  const p = state.photoSave;
-  if (!p) { box.replaceChildren(); return; }
-  const normal = photoUrl(p.normal, 'costumes');
-  const film = photoUrl(p.film, 'costumes');
-  box.replaceChildren(h('div', { class: 'note note--good photo-save' },
-    h('b', { text: 'Save your photo to your phone' }),
-    h('span', { class: 'fine', text: 'The database has both print-friendly versions. Tap a button to keep a copy in your photos or downloads.' }),
-    h('div', { class: 'party-photo-tile__actions' },
-      h('a', { class: 'btn btn--ghost btn--sm', href: normal, download: `${PARTY_ID}-costume-normal.jpg`, target: '_blank', rel: 'noopener' }, 'Save normal'),
-      h('a', { class: 'btn btn--ghost btn--sm', href: film, download: `${PARTY_ID}-costume-film.jpg`, target: '_blank', rel: 'noopener' }, 'Save film'),
-      h('button', { class: 'btn btn--ghost btn--sm', type: 'button', onclick: () => { state.photoSave = null; paintPhotoSave(); } }, 'Dismiss')
-    )
-  ));
 }
 
 function paintMenuLabel() {
   $('menu-edit').textContent = state.membership ? '✏️ Edit my costume' : '🎭 Enter a costume';
+  $('menu-switch').hidden = Boolean(state.info?.open);
 }
 
 async function refresh(quiet, repaint = true) {
@@ -691,6 +684,7 @@ function adoptInfo(info) {
   state.skew = new Date(info.server_now).getTime() - Date.now();
   state.closesAt = new Date(info.closes_at);
   state.revealed = Boolean(info.revealed);
+  if ($('menu-switch')) $('menu-switch').hidden = Boolean(info.open);
   if (CFG.PARTY_TITLE && info.name) document.title = `${info.name} · Costume Contest`;
 }
 
@@ -929,9 +923,12 @@ $('menu-photos').addEventListener('click', () => {
   location.href = 'party.html';
 });
 
-$('menu-results').addEventListener('click', () => { closeSheet(); location.href = 'admin.html'; });
-
 $('menu-switch').addEventListener('click', () => {
+  if (state.info?.open) {
+    closeSheet();
+    toast('Identity switching is disabled during the party.', 'bad');
+    return;
+  }
   closeSheet();
   session.clear();
   Object.assign(state, {

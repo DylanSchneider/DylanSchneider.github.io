@@ -243,15 +243,20 @@ async function uploadPhotoPair(ownerId, variants, bucket = BUCKET, prefix = PART
   const stamp = `${ownerId}-${Date.now()}-${crypto.randomUUID?.() || Math.random().toString(36).slice(2)}`;
   const normalPath = `${prefix}/${stamp}-normal.jpg`;
   const filmPath = `${prefix}/${stamp}-film.jpg`;
-  await uploadObject(bucket, normalPath, variants.normal);
-  try {
-    await uploadObject(bucket, filmPath, variants.film);
-  } catch (err) {
-    // The database never receives a partial pair. The orphaned first object
-    // can be cleared from Storage by the host if a phone loses connection.
-    throw err;
-  }
+  // Upload both copies together so the submit button does not sit idle while
+  // the normal version finishes before the film version starts.
+  await Promise.all([
+    uploadObject(bucket, normalPath, variants.normal),
+    uploadObject(bucket, filmPath, variants.film)
+  ]);
   return { normalPath, filmPath };
+}
+
+async function uploadPhotoSingle(ownerId, blob, bucket = BUCKET, prefix = PARTY_ID) {
+  const stamp = `${ownerId}-${Date.now()}-${crypto.randomUUID?.() || Math.random().toString(36).slice(2)}`;
+  const path = `${prefix}/${stamp}-normal.jpg`;
+  await uploadObject(bucket, path, blob);
+  return path;
 }
 
 
@@ -376,12 +381,12 @@ const demo = {
     }
     const t = cleanText(title);
     if (t.length < 2) throw new Error('Give your costume (or group) a name.');
-    if (!photoPaths?.normal || !photoPaths?.film) throw new Error('Both normal and film photo versions are required.');
+    if (!photoPaths?.normal) throw new Error('A photo is required.');
     const costume = cleanText(costumeName) || t;
 
     const type = entryType === 'group' ? 'group' : 'solo';
     const e = { id: uid(), owner_id: guestId, entry_type: type, title: t,
-      photo_path: photoPaths.normal, photo_path_film: photoPaths.film };
+      photo_path: photoPaths.normal, photo_path_film: photoPaths.film || null };
     db.entries.push(e);
     db.members.push({ guest_id: guestId, entry_id: e.id, costume_name: costume, is_owner: true });
     demoWrite(db);
@@ -417,12 +422,12 @@ const demo = {
     if (!m.is_owner) throw new Error('Only the person who started this group can rename it or change its photo.');
     const t = cleanText(title);
     if (t.length < 2) throw new Error('Give your costume (or group) a name.');
-    if (!photoPaths?.normal || !photoPaths?.film) throw new Error('Both normal and film photo versions are required.');
+    if (!photoPaths?.normal) throw new Error('A photo is required.');
 
     const e = db.entries.find((x) => x.id === m.entry_id);
     e.title = t;
     e.photo_path = photoPaths.normal;
-    e.photo_path_film = photoPaths.film;
+    e.photo_path_film = photoPaths.film || null;
     demoWrite(db);
     return { entry_id: e.id, title: e.title, photo_path: e.photo_path,
       photo_path_film: e.photo_path_film, members: demoRoster(db, e.id) };
@@ -580,19 +585,18 @@ export const api = {
       : Promise.resolve(demo.joinParty(name, phone));
   },
 
-  /** Start a brand-new solo or group entry with normal + film photo copies. */
+  /** Start a brand-new solo or group entry with one resized costume photo. */
   async createEntry(guestId, title, costumeName, photoVariants, entryType) {
-    if (!photoVariants?.normal || !photoVariants?.film) throw new Error('Both normal and film photo versions are required.');
+    if (!photoVariants?.normal) throw new Error('A photo is required.');
     if (!IS_LIVE) {
       return demo.createEntry(guestId, title, costumeName, {
-        normal: await blobToDataUrl(photoVariants.normal),
-        film: await blobToDataUrl(photoVariants.film)
+        normal: await blobToDataUrl(photoVariants.normal)
       }, entryType);
     }
-    const paths = await uploadPhotoPair(guestId, photoVariants);
+    const normalPath = await uploadPhotoSingle(guestId, photoVariants.normal);
     return rpc('create_entry', {
       p_party: PARTY_ID, p_guest: guestId, p_title: title, p_costume_name: costumeName,
-      p_entry_type: entryType || 'solo', p_photo_path: paths.normalPath, p_photo_path_film: paths.filmPath
+      p_entry_type: entryType || 'solo', p_photo_path: normalPath, p_photo_path_film: null
     });
   },
 
@@ -604,21 +608,18 @@ export const api = {
   },
 
   /** Owner-only: rename the group/solo title and/or replace its photo.
-   *  photoVariants: new {normal, film} Blobs, or undefined to keep existing
+   *  photoVariants: new {normal} Blob, or undefined to keep the existing
    *  required photo. Clearing a photo is not allowed. */
   async updateEntry(guestId, title, photoVariants, existingPath, existingFilmPath) {
     if (!IS_LIVE) {
       const paths = photoVariants === undefined
-        ? { normal: existingPath, film: existingFilmPath || existingPath }
-        : (photoVariants ? {
-            normal: await blobToDataUrl(photoVariants.normal),
-            film: await blobToDataUrl(photoVariants.film)
-          } : null);
+        ? { normal: existingPath, film: existingFilmPath || null }
+        : (photoVariants ? { normal: await blobToDataUrl(photoVariants.normal) } : null);
       return demo.updateEntry(guestId, title, paths);
     }
     const paths = photoVariants === undefined
-      ? { normalPath: existingPath, filmPath: existingFilmPath || existingPath }
-      : (photoVariants ? await uploadPhotoPair(guestId, photoVariants) : null);
+      ? { normalPath: existingPath, filmPath: existingFilmPath || null }
+      : (photoVariants ? { normalPath: await uploadPhotoSingle(guestId, photoVariants.normal), filmPath: null } : null);
     return rpc('update_entry', {
       p_party: PARTY_ID, p_guest: guestId, p_title: title,
       p_photo_path: paths?.normalPath, p_photo_path_film: paths?.filmPath

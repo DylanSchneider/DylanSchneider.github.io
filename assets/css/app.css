@@ -264,6 +264,20 @@ h1, h2, h3 { margin: 0; line-height: 1.15; font-weight: 800; }
   opacity: 0;
   cursor: pointer;
 }
+.photo-library {
+  position: relative;
+  margin-top: 9px;
+  overflow: hidden;
+}
+.photo-library input[type="file"] {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+.photo-instructions { margin: 7px 0 9px; }
 .photo__empty {
   position: absolute;
   inset: 0;
@@ -338,6 +352,19 @@ h1, h2, h3 { margin: 0; line-height: 1.15; font-weight: 800; }
 .party-photo-tile__meta { display: grid; gap: 3px; min-height: 34px; }
 .party-photo-tile__actions { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 10px; }
 .party-photo-tile__actions .btn { text-decoration: none; }
+.party-section-note { margin: 22px 0 0; }
+
+/* ── Post-check-in hub ──────────────────────────────────────────────── */
+
+.wrap--hub {
+  display: grid;
+  align-content: center;
+  min-height: 100svh;
+  max-width: 520px;
+}
+.hub-panel { margin-top: 18px; }
+.hub-actions { display: grid; gap: 10px; margin-top: 18px; }
+.hub-photo-hint { margin: 16px 2px 0; }
 .admin-photo-row {
   display: grid;
   grid-template-columns: 74px 1fr;

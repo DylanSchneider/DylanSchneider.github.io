@@ -95,6 +95,24 @@
   </section>
 
 
+  <!-- ─────────────── Post-check-in hub ─────────────── -->
+  <section id="v-hub" class="view">
+    <div class="wrap wrap--hub">
+      <div class="brand">
+        <div class="brand__mark">🐇</div>
+        <h1 class="brand__title" id="hub-title">Welcome to Wonderland</h1>
+        <p class="brand__sub">Choose where you’d like to go next.</p>
+      </div>
+
+      <div class="panel hub-panel">
+        <p class="eyebrow">You’re through the looking glass</p>
+        <div class="hub-actions" id="hub-actions"></div>
+        <p class="hint hub-photo-hint">Costume photos happen at the photo-op board on the back patio. Party pictures can be taken from the Party Pictures page all evening.</p>
+      </div>
+    </div>
+  </section>
+
+
   <!-- ─────────────── Step 2 · costume ─────────────── -->
   <!-- app.js renders whichever sub-screen applies (choose / solo / group /
        join / edit) into #costume-slot — the shape varies too much for one
@@ -135,8 +153,6 @@
         <span id="status-text"></span>
       </div>
 
-      <div id="photo-save"></div>
-
       <div class="cards" id="cards"></div>
       <div id="empty"></div>
     </div>
@@ -163,7 +179,6 @@
     <div class="sheet__grip"></div>
     <button class="sheet__item" id="menu-edit" type="button">✏️ Edit my costume</button>
     <button class="sheet__item" id="menu-photos" type="button">📸 Party photos</button>
-    <button class="sheet__item" id="menu-results" type="button">🏆 Host results (PIN)</button>
     <button class="sheet__item" id="menu-switch" type="button">👤 Not you? Check in as someone else</button>
     <button class="sheet__item sheet__item--close" id="menu-close" type="button">Close</button>
   </div>

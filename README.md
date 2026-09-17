@@ -106,22 +106,21 @@ so old years are simply never touched by a new one:
   "what was I last year?" view; it's not wired into the host page yet.
 - **`attendance`** — who actually showed up each year (vs. just being on
   the invite list from a prior year).
-- **Costume photos** — each costume entry keeps a normal JPEG and a film-look
-  JPEG in the `costumes` Storage bucket. They are resized to a maximum edge of
-  2800 pixels, which is suitable for ordinary 8×11 prints while still being
-  reasonable for phone gallery cards.
+- **Costume photos** — each costume entry keeps a normal JPEG in the
+  `costumes` Storage bucket. It is resized to a maximum edge of 2800 pixels,
+  which is suitable for ordinary 8×11 prints while still being reasonable for
+  phone gallery cards. Older entries may also have a film-look copy.
 
 Party candids are intentionally separate from the durable costume/history
 data:
 
 - **`party_photos`** — lightweight metadata for the temporary party-photo
   wall. The image files live in the `party-photos` Storage bucket, with both
-  normal and film versions. After the party, use the host page's download
-  links to save the versions you want to your computer, then remove the
-  temporary files from Storage. This bucket is public while it is in use so
-  the photo wall can load for checked-in guests. The guest photo wall and
-  upload API close at the party deadline; treat the download-and-delete step
-  as the end of the online life of those photos.
+  normal and film versions. The Party Pictures page also exposes every durable
+  costume photo for download. After the party, use the host page's download
+  links to save the temporary party versions to your computer, then remove
+  those files from Storage. The party camera closes at the party deadline,
+  but the page remains available for costume-photo downloads.
 
 The browser cannot silently write into a phone's Photos library. The app
 therefore gives the person who took each photo clear **Save normal** and
@@ -207,9 +206,9 @@ Supabase.
   close, PIN-gated admin actions) is enforced in Postgres functions, not
   just in the browser — a guest editing the page's JS can't cheat.
 - Photos are resized to a maximum 2800px edge on the phone before upload.
-  Each upload gets a normal JPEG and a film-look JPEG; this keeps the files
-  useful for ordinary 8×11 prints without sending original 10MB camera files
-  to the server.
+  Costume entries upload one normal JPEG; party candids upload both a normal
+  JPEG and a film-look JPEG. This keeps the files useful for ordinary 8×11
+  prints without sending original 10MB camera files to the server.
 - Tap targets, type sizes, and layout are tuned for one-handed phone use in
   a dark room; the countdown clock's numbers come from the Supabase
   server clock, not the phone's, so a wrong device clock can't lie about
