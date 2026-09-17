@@ -428,6 +428,21 @@ h1, h2, h3 { margin: 0; line-height: 1.15; font-weight: 800; }
   margin-bottom: 14px;
 }
 .topbar__refresh { margin-left: auto; }
+.topbar--guest {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) 44px;
+}
+.topbar--guest .topbar__refresh { margin-left: 0; justify-self: end; }
+.topbar__title {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 800;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .topbar__who { flex: 1 1 auto; min-width: 0; }
 .topbar__who b { display: block; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .icon-btn {

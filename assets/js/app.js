@@ -257,18 +257,12 @@ function mergeMembership(partial) {
 function updateBackButton() {
   const btn = $('btn-back');
   const isEdit = state.costumeMode === 'edit';
-  btn.classList.toggle('icon-btn', isEdit);
-  btn.classList.toggle('linkback', !isEdit);
-  if (isEdit) {
-    btn.textContent = '←';
-    btn.setAttribute('aria-label', state.costumeReturn === 'v-hub' ? 'Back to party home' : 'Back to voting');
-  } else if (state.costumeMode === 'chooser') {
-    btn.textContent = state.costumeReturn === 'v-dash' ? '← Back to voting' : '← Back to choices';
-    btn.setAttribute('aria-label', 'Back');
-  } else {
-    btn.textContent = '← Choose differently';
-    btn.setAttribute('aria-label', 'Choose differently');
-  }
+  btn.classList.add('icon-btn');
+  btn.classList.remove('linkback');
+  btn.textContent = '←';
+  btn.setAttribute('aria-label', isEdit
+    ? (state.costumeReturn === 'v-hub' ? 'Back to party home' : 'Back to voting')
+    : (state.costumeMode === 'chooser' ? 'Back' : 'Choose differently'));
 }
 
 $('btn-back').addEventListener('click', () => {
@@ -280,6 +274,24 @@ $('btn-back').addEventListener('click', () => {
   else renderCostume('chooser');
 });
 
+$('btn-costume-refresh').addEventListener('click', async () => {
+  const btn = $('btn-costume-refresh');
+  if (!state.me?.id || state.busy) return;
+  loading(btn, true);
+  try {
+    const res = await api.joinParty(state.me.full_name, state.me.phone);
+    adoptJoin(res);
+    await recoverMembership();
+    if (state.membership) renderCostume('edit');
+    else openCostume('v-name');
+    toast('Costume details refreshed.');
+  } catch (err) {
+    toast(err.message, 'bad');
+  } finally {
+    loading(btn, false);
+  }
+});
+
 function openCostume(returnTo) {
   state.costumeReturn = returnTo || 'v-dash';
   show('v-costume');
@@ -289,6 +301,13 @@ function openCostume(returnTo) {
 function renderCostume(mode, ctx) {
   state.costumeMode = mode;
   updateBackButton();
+  const topTitle = $('costume-top-title');
+  if (topTitle) topTitle.textContent = {
+    chooser: 'Your costume', solo: 'Solo costume', group: 'Group costume',
+    join: 'Join a group', edit: 'Edit costume'
+  }[mode] || 'Costume';
+  const refreshButton = $('btn-costume-refresh');
+  if (refreshButton) refreshButton.hidden = mode !== 'edit';
   const slot = $('costume-slot');
   slot.replaceChildren();
   if (mode === 'chooser') renderChooser(slot);
