@@ -635,7 +635,7 @@ function renderEditForm(slot) {
       h('p', { class: 'eyebrow' }, 'Who’s in this group'),
       h('div', { class: 'chips', style: 'margin-top:10px' },
         ...members.map((x) => h('span', { class: 'chip', style: 'cursor:default' },
-          `${x.name} — ${x.costume_name}${x.is_owner ? ' (started it)' : ''}`)))
+          `${x.name || 'Guest'} — ${x.costume_name || 'Costume not entered'}${x.is_owner ? ' (started it)' : ''}`)))
     ) : null,
     h('div', { style: 'margin-top:14px' }, leaveBtn)
   );
