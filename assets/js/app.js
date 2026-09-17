@@ -280,81 +280,22 @@ function buildPhotoField(existingUrl, required = false) {
 
   const img = h('img', { class: 'photo__img', alt: 'Costume' });
   const err = h('p', { class: 'err' });
-  const cameraInput = h('input', { type: 'file', accept: 'image/*', capture: 'environment' });
-  const libraryInput = h('input', { type: 'file', accept: 'image/*' });
-  const fileInput = h('input', { type: 'file', accept: 'image/*' });
-
-  for (const input of [cameraInput, libraryInput, fileInput]) {
-    input.hidden = true;
-    input.setAttribute('aria-hidden', 'true');
-  }
-
-  let sourceDialog;
-  function closeSourceDialog() {
-    if (typeof sourceDialog?.close === 'function') sourceDialog.close();
-    else sourceDialog?.removeAttribute('open');
-  }
-
-  function chooseSource(input) {
-    closeSourceDialog();
-    input.value = '';
-    input.click();
-  }
-
-  sourceDialog = h('dialog', { class: 'photo-source' },
-    h('div', { class: 'photo-source__inner' },
-      h('div', { class: 'photo-source__grip' }),
-      h('p', { class: 'eyebrow', text: 'Add a costume photo' }),
-      h('p', { class: 'photo-source__hint', text: 'Choose where the picture should come from.' }),
-      h('button', {
-        class: 'photo-source__option', type: 'button',
-        onclick: () => chooseSource(cameraInput)
-      }, '📸 Take a photo'),
-      h('button', {
-        class: 'photo-source__option', type: 'button',
-        onclick: () => chooseSource(libraryInput)
-      }, '🖼️ Choose from Photos'),
-      h('button', {
-        class: 'photo-source__option', type: 'button',
-        onclick: () => chooseSource(fileInput)
-      }, '📁 Upload a file'),
-      h('button', {
-        class: 'photo-source__cancel', type: 'button',
-        onclick: closeSourceDialog
-      }, 'Cancel')
-    )
-  );
-
-  function openSourceDialog() {
-    if (typeof sourceDialog.showModal === 'function') sourceDialog.showModal();
-    else sourceDialog.setAttribute('open', '');
-  }
+  // Leaving capture unset lets the phone's native picker offer its own
+  // Camera / Photos / Files choices from this one large photo control.
+  const photoInput = h('input', { type: 'file', accept: 'image/*' });
 
   const removeBtn = h('button', {
     class: 'btn btn--ghost btn--sm', type: 'button', style: 'margin-top:10px',
     onclick: () => {
       picked = null;
-      cameraInput.value = '';
-      libraryInput.value = '';
-      fileInput.value = '';
+      photoInput.value = '';
       setPreview(null);
     }
   }, 'Remove photo');
   removeBtn.style.display = existingUrl ? '' : 'none';
 
-  const box = h('div', {
-    class: 'photo', role: 'button', tabindex: '0',
-    onclick: openSourceDialog,
-    onkeydown: (ev) => {
-      if (ev.key === 'Enter' || ev.key === ' ') {
-        ev.preventDefault();
-        openSourceDialog();
-      }
-    }
-  },
-    cameraInput,
-    libraryInput,
-    fileInput,
+  const box = h('label', { class: 'photo' },
+    photoInput,
     h('span', { class: 'photo__empty' },
       h('span', { class: 'photo__icon', text: '📸' }),
       h('b', { text: 'Add a costume photo' }),
@@ -363,9 +304,6 @@ function buildPhotoField(existingUrl, required = false) {
     img,
     h('span', { class: 'photo__swap', text: 'Change' })
   );
-  sourceDialog.addEventListener('click', (ev) => {
-    if (ev.target === sourceDialog) closeSourceDialog();
-  });
   if (existingUrl) { img.src = existingUrl; box.classList.add('has-img'); }
 
   function setPreview(url) {
@@ -400,15 +338,13 @@ function buildPhotoField(existingUrl, required = false) {
     }
   }
 
-  cameraInput.addEventListener('change', handleFile);
-  libraryInput.addEventListener('change', handleFile);
-  fileInput.addEventListener('change', handleFile);
+  photoInput.addEventListener('change', handleFile);
 
   return {
     node: h('div', { class: 'field' },
       h('span', { class: 'label' }, 'Photo ', h('span', { class: 'opt', text: required ? '— required' : '— optional' })),
       h('p', { class: 'hint photo-instructions', text: 'Taking it now? Please use the photo-op board on the back patio.' }),
-      box, sourceDialog, err, removeBtn
+      box, err, removeBtn
     ),
     get: () => picked,
     setError: (msg) => { err.textContent = msg || ''; }

@@ -302,66 +302,6 @@ h1, h2, h3 { margin: 0; line-height: 1.15; font-weight: 800; }
 .photo.has-img .photo__swap { display: block; }
 .photo.is-busy { opacity: .6; }
 
-.photo-source {
-  width: min(calc(100% - 28px), 430px);
-  max-width: 430px;
-  margin: auto;
-  padding: 0;
-  border: 0;
-  border-radius: 24px;
-  background: transparent;
-  color: var(--text);
-  overflow: visible;
-}
-.photo-source::backdrop { background: rgba(0, 0, 0, .7); backdrop-filter: blur(4px); }
-.photo-source[open] { animation: photo-source-in .2s ease-out both; }
-.photo-source__inner {
-  padding: 10px 14px calc(14px + var(--safe-b));
-  border: 1px solid var(--line-strong);
-  border-radius: 24px;
-  background: var(--bg-2);
-  box-shadow: 0 18px 60px rgba(0, 0, 0, .7);
-}
-.photo-source__grip {
-  width: 44px;
-  height: 4px;
-  margin: 3px auto 15px;
-  border-radius: var(--r-pill);
-  background: var(--line-strong);
-}
-.photo-source__hint { margin: 6px 2px 14px; color: var(--muted); font-size: 13px; }
-.photo-source__option,
-.photo-source__cancel {
-  display: flex;
-  align-items: center;
-  width: 100%;
-  min-height: var(--tap);
-  margin-top: 8px;
-  padding: 13px 16px;
-  border: 1px solid var(--line);
-  border-radius: var(--r);
-  color: var(--text);
-  background: var(--surface);
-  font: 700 15px/1.2 sans-serif;
-  font-family: inherit;
-  text-align: left;
-  cursor: pointer;
-}
-.photo-source__option:active,
-.photo-source__cancel:active { background: var(--surface-2); transform: scale(.985); }
-.photo-source__cancel {
-  justify-content: center;
-  margin-top: 12px;
-  border-style: dashed;
-  color: var(--muted);
-  background: transparent;
-}
-@keyframes photo-source-in {
-  from { opacity: 0; transform: translateY(14px) scale(.98); }
-  to { opacity: 1; transform: none; }
-}
-@media (prefers-reduced-motion: reduce) { .photo-source[open] { animation: none; } }
-
 /* ── Party camera ───────────────────────────────────────────────────── */
 
 .party-wrap { padding-bottom: calc(48px + var(--safe-b)); }
