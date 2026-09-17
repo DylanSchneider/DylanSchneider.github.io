@@ -354,17 +354,6 @@ h1, h2, h3 { margin: 0; line-height: 1.15; font-weight: 800; }
 .party-photo-tile__actions .btn { text-decoration: none; }
 .party-section-note { margin: 22px 0 0; }
 
-/* ── Post-check-in hub ──────────────────────────────────────────────── */
-
-.wrap--hub {
-  display: grid;
-  align-content: center;
-  min-height: 100svh;
-  max-width: 520px;
-}
-.hub-panel { margin-top: 18px; }
-.hub-actions { display: grid; gap: 10px; margin-top: 18px; }
-.hub-photo-hint { margin: 16px 2px 0; }
 .admin-photo-row {
   display: grid;
   grid-template-columns: 74px 1fr;

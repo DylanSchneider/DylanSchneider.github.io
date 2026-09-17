@@ -99,13 +99,15 @@ async function loadGallery() {
   } catch (err) { toast(err.message, 'bad'); }
 }
 
-if (!me) {
+function partyCostumeGate(message) {
   $('party-gate').replaceChildren(
     h('div', { class: 'note note--warn' },
-      h('b', { text: 'Check in first' }), ' Return to the party page and enter your name and phone number to use the camera.'),
-    h('a', { class: 'btn btn--primary btn--block', href: 'index.html', style: 'margin-top:14px' }, '← Back to check-in')
+      h('b', { text: 'Enter your costume first' }), ` ${message || 'The Party Pictures page opens after your costume data and photo are saved.'}`),
+    h('a', { class: 'btn btn--primary btn--block', href: 'index.html', style: 'margin-top:14px' }, '← Set up my costume')
   );
-} else {
+}
+
+function initializePartyCamera() {
   $('party-content').hidden = false;
   if (!IS_LIVE) $('party-mode').replaceChildren(h('div', { class: 'note note--warn' },
     h('b', { text: 'Demo mode — this phone only' }), ' Party photos are stored in this browser only.'));
@@ -156,4 +158,21 @@ if (!me) {
 
   $('party-refresh').addEventListener('click', loadGallery);
   loadGallery();
+}
+
+if (!me) {
+  $('party-gate').replaceChildren(
+    h('div', { class: 'note note--warn' },
+      h('b', { text: 'Check in first' }), ' Return to the party page and enter your name and phone number to use the camera.'),
+    h('a', { class: 'btn btn--primary btn--block', href: 'index.html', style: 'margin-top:14px' }, '← Back to check-in')
+  );
+} else {
+  api.listEntries(me.id).then((entries) => {
+    const hasCostume = (Array.isArray(entries) ? entries : []).some((entry) => entry.is_mine);
+    if (!hasCostume) {
+      partyCostumeGate();
+      return;
+    }
+    initializePartyCamera();
+  }).catch((err) => partyCostumeGate(err.message));
 }

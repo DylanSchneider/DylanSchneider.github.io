@@ -180,9 +180,12 @@ $('form-name').addEventListener('submit', async (ev) => {
     // Supabase is finishing the check-in request.
     await flight;
     adoptJoin(res);
-    paintHub();
-    show('v-hub');
-    toast('Welcome, ' + firstName() + '!', 'good');
+    if (state.membership) {
+      await goDash();
+      toast('Welcome back, ' + firstName() + '!', 'good');
+    } else {
+      openCostume('v-name');
+    }
     window.rabbitFall?.finish?.();
   } catch (err) {
     window.rabbitFall?.cancel?.();
@@ -201,21 +204,6 @@ function adoptJoin(res) {
 }
 
 const firstName = () => String(state.me?.full_name || '').split(' ')[0];
-
-function paintHub() {
-  $('hub-title').textContent = `Welcome, ${firstName() || 'friend'}`;
-  const hasCostume = Boolean(state.membership);
-  $('hub-actions').replaceChildren(
-    h('button', {
-      class: 'btn btn--primary btn--block', type: 'button',
-      onclick: () => hasCostume ? goDash() : openCostume('v-hub')
-    }, hasCostume ? '🏆 Go to costume contest & voting' : '🎭 Set up my costume'),
-    h('button', {
-      class: 'btn btn--ghost btn--block', type: 'button',
-      onclick: () => { location.href = 'party.html'; }
-    }, '📸 Open Party Pictures')
-  );
-}
 
 /** Merge a create/join/update result into state.membership (each call only
  *  returns the fields it actually changed). */
