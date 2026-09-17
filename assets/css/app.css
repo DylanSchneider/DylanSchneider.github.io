@@ -427,6 +427,7 @@ h1, h2, h3 { margin: 0; line-height: 1.15; font-weight: 800; }
   gap: 10px;
   margin-bottom: 14px;
 }
+.topbar__refresh { margin-left: auto; }
 .topbar__who { flex: 1 1 auto; min-width: 0; }
 .topbar__who b { display: block; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .icon-btn {

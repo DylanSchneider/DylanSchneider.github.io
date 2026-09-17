@@ -226,9 +226,19 @@ function mergeMembership(partial) {
 
 function updateBackButton() {
   const btn = $('btn-back');
-  if (state.costumeMode === 'edit') btn.textContent = state.costumeReturn === 'v-hub' ? '← Party home' : '← Back to voting';
-  else if (state.costumeMode === 'chooser') btn.textContent = state.costumeReturn === 'v-dash' ? '← Back to voting' : '← Back to choices';
-  else btn.textContent = '← Choose differently';
+  const isEdit = state.costumeMode === 'edit';
+  btn.classList.toggle('icon-btn', isEdit);
+  btn.classList.toggle('linkback', !isEdit);
+  if (isEdit) {
+    btn.textContent = '←';
+    btn.setAttribute('aria-label', state.costumeReturn === 'v-hub' ? 'Back to party home' : 'Back to voting');
+  } else if (state.costumeMode === 'chooser') {
+    btn.textContent = state.costumeReturn === 'v-dash' ? '← Back to voting' : '← Back to choices';
+    btn.setAttribute('aria-label', 'Back');
+  } else {
+    btn.textContent = '← Choose differently';
+    btn.setAttribute('aria-label', 'Choose differently');
+  }
 }
 
 $('btn-back').addEventListener('click', () => {
