@@ -120,14 +120,27 @@
         <p class="eyebrow">You’re in Wonderland</p>
         <h1 class="hub__title">Welcome, <span id="hub-name">friend</span></h1>
         <p class="hub__copy">Your costume is entered. The rest of the evening is waiting just beyond the looking glass.</p>
+        <div class="hub__rule" aria-hidden="true"><i></i><span>♠</span><i></i></div>
       </div>
 
       <div class="panel hub__panel">
-        <p class="eyebrow">Choose your next adventure</p>
+        <p class="eyebrow">Where shall we go?</p>
         <div class="hub__actions">
-          <button class="btn btn--ghost btn--block" id="hub-edit" type="button">Edit your costume</button>
-          <button class="btn btn--primary btn--block" id="hub-vote" type="button">🗳️ Vote for costumes</button>
-          <button class="btn btn--ghost btn--block" id="hub-photos" type="button">📸 Party pictures</button>
+          <button class="btn btn--ghost btn--block" id="hub-edit" type="button">
+            <span class="hub__action-glyph" aria-hidden="true">✎</span>
+            <span class="hub__action-copy"><b>Edit your costume</b><small>Change your photo or role</small></span>
+            <span class="hub__action-arrow" aria-hidden="true">↗</span>
+          </button>
+          <button class="btn btn--primary btn--block" id="hub-vote" type="button">
+            <span class="hub__action-glyph" aria-hidden="true">♣</span>
+            <span class="hub__action-copy"><b>Vote for costumes</b><small>Choose the one that steals the show</small></span>
+            <span class="hub__action-arrow" aria-hidden="true">↗</span>
+          </button>
+          <button class="btn btn--ghost btn--block" id="hub-photos" type="button">
+            <span class="hub__action-glyph" aria-hidden="true">📸</span>
+            <span class="hub__action-copy"><b>Party pictures</b><small>See what’s happening beyond the glass</small></span>
+            <span class="hub__action-arrow" aria-hidden="true">↗</span>
+          </button>
         </div>
       </div>
     </div>

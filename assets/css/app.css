@@ -1580,47 +1580,116 @@ body.homepage-v2 .fall-sentinel b { color: #fff; }
 }
 .view--costume .panel { scroll-margin-top: 16px; }
 
-.view--hub { min-height: 100svh; }
+.view--hub {
+  position: relative;
+  min-height: 100svh;
+  overflow: hidden;
+  background:
+    radial-gradient(90% 50% at 50% 10%, rgba(181,18,60,.14), transparent 72%),
+    radial-gradient(70% 48% at 8% 94%, rgba(217,180,109,.08), transparent 72%);
+}
+.view--hub::before,
+.view--hub::after {
+  position: absolute;
+  pointer-events: none;
+  color: rgba(217,180,109,.18);
+  font: 400 150px/1 Georgia, serif;
+}
+.view--hub::before { content: '♦'; top: 5%; left: -38px; transform: rotate(-18deg); }
+.view--hub::after { content: '♥'; right: -28px; bottom: 3%; transform: rotate(14deg); }
 .view--hub .wrap {
+  position: relative;
+  z-index: 1;
   display: grid;
   align-content: center;
   min-height: 100svh;
-  padding-bottom: calc(40px + var(--safe-b));
+  padding-top: clamp(42px, 9svh, 94px);
+  padding-bottom: calc(48px + var(--safe-b));
 }
 .hub__hero { text-align: center; }
 .hub__mark {
   display: grid;
   place-items: center;
-  width: 66px;
-  height: 66px;
-  margin: 0 auto 18px;
-  border: 1px solid rgba(217,180,109,.36);
+  width: 92px;
+  height: 92px;
+  margin: 0 auto 23px;
+  border: 1px solid rgba(217,180,109,.52);
   border-radius: 50%;
   color: var(--card-red);
-  font-size: 30px;
-  box-shadow: 0 0 34px rgba(181,18,60,.18);
+  background: radial-gradient(circle, rgba(181,18,60,.16), transparent 68%);
+  font-size: 43px;
+  box-shadow: 0 0 42px rgba(181,18,60,.22), inset 0 0 24px rgba(217,180,109,.07);
+  transform: rotate(-7deg);
+  animation: hub-mark-bob 4.8s ease-in-out infinite;
 }
 .hub__title {
   margin-top: 9px;
   color: var(--wonder-cream);
-  font: 400 clamp(34px, 9vw, 56px)/1 Georgia, "Times New Roman", serif;
-  letter-spacing: -.055em;
-}
-.hub__copy {
-  max-width: 430px;
-  margin: 16px auto 0;
-  color: var(--muted);
-  font-size: 15px;
-  line-height: 1.6;
+  font: 400 clamp(48px, 12vw, 84px)/.88 Georgia, "Times New Roman", serif;
+  letter-spacing: -.075em;
   text-wrap: balance;
 }
+.hub__title span { display: inline-block; color: var(--card-red); font-style: italic; transform: rotate(-2deg); }
+.hub__copy {
+  max-width: 480px;
+  margin: 22px auto 0;
+  color: var(--muted);
+  font: 400 17px/1.55 Georgia, "Times New Roman", serif;
+  letter-spacing: -.01em;
+  text-wrap: balance;
+}
+.hub__rule {
+  display: flex;
+  width: min(260px, 72%);
+  gap: 13px;
+  margin: 25px auto 0;
+  align-items: center;
+  color: var(--card-gold);
+}
+.hub__rule i { height: 1px; flex: 1; background: linear-gradient(90deg, transparent, rgba(217,180,109,.45)); }
+.hub__rule i:last-child { background: linear-gradient(90deg, rgba(217,180,109,.45), transparent); }
+.hub__rule span { font-size: 18px; transform: rotate(-12deg); }
 .hub__panel {
   width: 100%;
-  max-width: 430px;
-  margin: 28px auto 0;
-  padding: 20px;
+  max-width: 520px;
+  margin: 38px auto 0;
+  padding: 25px 22px 22px;
+  border-radius: 28px 13px 25px 17px;
+  background: linear-gradient(145deg, rgba(18,12,17,.94), rgba(5,5,7,.97));
+  box-shadow: 0 28px 70px rgba(0,0,0,.56), 0 0 0 1px rgba(217,180,109,.05) inset;
+  transform: rotate(-.45deg);
 }
-.hub__actions { display: grid; gap: 10px; margin-top: 14px; }
+.hub__panel > .eyebrow { padding-left: 3px; }
+.hub__actions { display: grid; gap: 12px; margin-top: 16px; }
+.hub__actions .btn {
+  min-height: 76px;
+  justify-content: flex-start;
+  padding: 14px 16px;
+  border-radius: 19px 9px 17px 11px;
+  text-align: left;
+}
+.hub__actions .btn:nth-child(2) { border-radius: 10px 19px 11px 17px; }
+.hub__actions .btn:nth-child(3) { border-radius: 17px 11px 20px 8px; }
+.hub__actions .btn > * { position: relative; z-index: 1; }
+.hub__action-glyph {
+  display: grid;
+  place-items: center;
+  flex: 0 0 38px;
+  width: 38px;
+  height: 38px;
+  border: 1px solid rgba(217,180,109,.28);
+  border-radius: 50%;
+  color: var(--card-gold);
+  font-size: 22px;
+}
+.hub__action-copy { display: grid; flex: 1 1 auto; gap: 4px; min-width: 0; }
+.hub__action-copy b { font: 700 19px/1.1 Georgia, "Times New Roman", serif; }
+.hub__action-copy small { color: var(--muted-2); font-size: 12px; line-height: 1.25; }
+.hub__action-arrow { flex: 0 0 auto; color: var(--card-gold); font-size: 25px; }
+@keyframes hub-mark-bob {
+  0%, 100% { transform: rotate(-7deg) translateY(0); }
+  50% { transform: rotate(3deg) translateY(-5px); }
+}
 
 body.rabbit-fall { overflow: hidden; }
 
