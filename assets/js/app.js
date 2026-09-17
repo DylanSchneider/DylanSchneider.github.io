@@ -74,8 +74,16 @@ function loading(btn, on) {
 function rosterText(e) {
   const members = e.members || [];
   if (!members.length) return '';
-  if (members.length === 1) return members[0].name;
-  return members.map((m) => `${m.name} (${m.costume_name})`).join(', ');
+  const memberName = (m) => displayText(m?.name, 'Guest');
+  const costumeName = (m) => displayText(m?.costume_name, 'Costume not entered');
+  if (members.length === 1) return memberName(members[0]);
+  return members.map((m) => `${memberName(m)} (${costumeName(m)})`).join(', ');
+}
+
+function displayText(value, fallback = '') {
+  if (value == null) return fallback;
+  const text = String(value).trim();
+  return /^(null|undefined)$/i.test(text) ? fallback : text;
 }
 
 
@@ -577,10 +585,12 @@ function renderEditForm(slot) {
   const members = Array.isArray(m.members) ? m.members : [];
   const isGroup = m.entry_type === 'group' || members.length > 1;
   const isOwner = Boolean(m.is_owner);
+  const entryTitle = displayText(m.title, 'Costume');
+  const currentCostume = displayText(m.costume_name, entryTitle);
 
-  const titleInput = isOwner ? h('input', { value: m.title }) : null;
+  const titleInput = isOwner ? h('input', { value: entryTitle }) : null;
   const errTitle = h('p', { class: 'err' });
-  const roleInput = isGroup ? h('input', { value: m.costume_name }) : null;
+  const roleInput = isGroup ? h('input', { value: currentCostume }) : null;
   const errRole = h('p', { class: 'err' });
   const photo = isOwner ? buildPhotoField(m.photo_path ? photoUrl(m.photo_path) : '', true) : null;
 
@@ -617,7 +627,7 @@ function renderEditForm(slot) {
         const saved = await api.updateEntry(state.me.id, title, photoValue, m.photo_path, m.photo_path_film);
         mergeMembership(saved);
       }
-      if (role !== m.costume_name) mergeMembership(await api.updateMyCostume(state.me.id, role));
+      if (role !== currentCostume) mergeMembership(await api.updateMyCostume(state.me.id, role));
       goHub();
       toast('Costume updated.', 'good');
     } catch (e) {
@@ -657,7 +667,7 @@ function renderEditForm(slot) {
         : h('div', { class: 'field' },
             h('span', { class: 'label', text: nameLabel }),
             h('p', { class: 'fine', style: 'margin-top:6px' },
-              m.title, ' ', h('span', { class: 'opt', text: '— only the person who started it can rename it' }))
+              entryTitle, ' ', h('span', { class: 'opt', text: '— only the person who started it can rename it' }))
           ),
       isGroup ? field('Your costume', roleInput, errRole) : null,
       isOwner ? photo.node : null,
@@ -667,7 +677,7 @@ function renderEditForm(slot) {
       h('p', { class: 'eyebrow' }, 'Who’s in this group'),
       h('div', { class: 'chips', style: 'margin-top:10px' },
         ...members.map((x) => h('span', { class: 'chip', style: 'cursor:default' },
-          `${x.name || 'Guest'} — ${x.costume_name || 'Costume not entered'}${x.is_owner ? ' (started it)' : ''}`)))
+          `${displayText(x.name, 'Guest')} — ${displayText(x.costume_name, 'Costume not entered')}${x.is_owner ? ' (started it)' : ''}`)))
     ) : null,
     h('div', { style: 'margin-top:14px' }, leaveBtn)
   );
