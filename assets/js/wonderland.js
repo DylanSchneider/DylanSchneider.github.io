@@ -3,12 +3,42 @@
 (function () {
   const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
   const suits = ['♥', '♠', '♦', '♣', '♥', '♦'];
+  const random = () => {
+    try {
+      const bytes = new Uint32Array(1);
+      crypto.getRandomValues(bytes);
+      return bytes[0] / 4294967296;
+    } catch { return Math.random(); }
+  };
+  const between = (min, max) => min + random() * (max - min);
 
   function init() {
     const layer = document.createElement('div');
     layer.className = 'wonderland-layer';
     layer.setAttribute('aria-hidden', 'true');
-    layer.innerHTML = suits.map((suit) => `<span class="wonderland-card">${suit}</span>`).join('');
+    const count = 5 + Math.floor(random() * 6);
+    for (let i = 0; i < count; i++) {
+      const card = document.createElement('span');
+      const suit = suits[Math.floor(random() * suits.length)];
+      card.className = 'wonderland-card';
+      card.textContent = suit;
+      card.style.left = `${between(4, 92).toFixed(2)}%`;
+      card.style.top = `${between(5, 90).toFixed(2)}%`;
+      card.style.setProperty('--card-width', `${Math.round(between(28, 48))}px`);
+      card.style.setProperty('--card-opacity', between(.28, .58).toFixed(2));
+      card.style.setProperty('--card-duration', `${between(14, 30).toFixed(1)}s`);
+      card.style.setProperty('--card-delay', `${-between(0, 30).toFixed(1)}s`);
+      card.style.setProperty('--card-drift-x', `${Math.round(between(-52, 52))}px`);
+      card.style.setProperty('--card-drift-y', `${Math.round(between(-40, 28))}px`);
+      card.style.setProperty('--card-start-y', `${Math.round(between(8, 28))}px`);
+      card.style.setProperty('--card-end-y', `${Math.round(between(8, 28))}px`);
+      card.style.setProperty('--card-rotate-start', `${Math.round(between(-28, 12))}deg`);
+      card.style.setProperty('--card-rotate-mid', `${Math.round(between(-24, 32))}deg`);
+      card.style.setProperty('--card-rotate-end', `${Math.round(between(18, 68))}deg`);
+      card.style.setProperty('--card-color', ['♥', '♦'].includes(suit)
+        ? 'var(--wonder-heart)' : 'var(--wonder-ink)');
+      layer.append(card);
+    }
     const clock = document.createElement('span');
     clock.className = 'wonderland-clock';
     clock.setAttribute('aria-hidden', 'true');

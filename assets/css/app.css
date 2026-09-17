@@ -1040,11 +1040,11 @@ body::after {
   position: absolute;
   display: grid;
   place-items: center;
-  width: 42px;
+  width: var(--card-width, 42px);
   aspect-ratio: 2 / 3;
   border: 1px solid rgba(255, 247, 231, .55);
   border-radius: 5px;
-  color: var(--wonder-heart);
+  color: var(--card-color, var(--wonder-heart));
   background: linear-gradient(135deg, rgba(255,247,231,.96), rgba(247,203,104,.8));
   box-shadow: 0 8px 20px rgba(0,0,0,.28);
   font: 700 20px/1 Georgia, serif;
@@ -1052,16 +1052,6 @@ body::after {
   transform: translate3d(0, 0, -100px) rotate(0deg);
   animation: card-drift var(--card-duration, 18s) ease-in-out var(--card-delay, 0s) infinite;
 }
-
-.wonderland-card:nth-child(3n) { color: var(--wonder-ink); }
-.wonderland-card:nth-child(2n) { width: 30px; }
-
-.wonderland-card:nth-child(1) { left: 4%; top: 15%; --card-delay: -4s; --card-duration: 20s; }
-.wonderland-card:nth-child(2) { left: 88%; top: 18%; --card-delay: -12s; --card-duration: 23s; }
-.wonderland-card:nth-child(3) { left: 12%; top: 74%; --card-delay: -9s; --card-duration: 25s; }
-.wonderland-card:nth-child(4) { left: 78%; top: 78%; --card-delay: -17s; --card-duration: 21s; }
-.wonderland-card:nth-child(5) { left: 52%; top: 7%; --card-delay: -6s; --card-duration: 28s; }
-.wonderland-card:nth-child(6) { left: 68%; top: 49%; --card-delay: -14s; --card-duration: 26s; }
 
 .wonderland-clock {
   position: absolute;
@@ -1173,10 +1163,10 @@ body::after {
   50% { transform: translateY(-6px) rotate(3deg); }
 }
 @keyframes card-drift {
-  0% { opacity: 0; transform: translate3d(0, 16px, -100px) rotate(-12deg); }
-  15%, 75% { opacity: .6; }
-  50% { transform: translate3d(var(--card-x, 24px), -22px, 20px) rotate(14deg); }
-  100% { opacity: 0; transform: translate3d(calc(var(--card-x, 24px) * -1), 14px, -100px) rotate(40deg); }
+  0% { opacity: 0; transform: translate3d(0, var(--card-start-y, 16px), -100px) rotate(var(--card-rotate-start, -12deg)); }
+  15%, 75% { opacity: var(--card-opacity, .6); }
+  50% { transform: translate3d(var(--card-drift-x, 24px), var(--card-drift-y, -22px), 20px) rotate(var(--card-rotate-mid, 14deg)); }
+  100% { opacity: 0; transform: translate3d(calc(var(--card-drift-x, 24px) * -1), var(--card-end-y, 14px), -100px) rotate(var(--card-rotate-end, 40deg)); }
 }
 @keyframes burst-away {
   from { opacity: 1; transform: translate(-50%, -50%) scale(.65) rotate(-15deg); }
