@@ -1,12 +1,12 @@
 -- =====================================================================
---  Halloween Party Costume Voting — Supabase schema
+--  Halloween Party Costume Voting — database setup and updates
 --  Paste this whole file into the Supabase SQL Editor and press Run.
 --  Safe to re-run: everything is idempotent, including against a database
---  that already has an earlier version of this schema (see MIGRATIONS).
+--  that already has an earlier version of this schema.
 --
---  AFTER RUNNING, edit the two marked lines in the "SEED" block at the
---  bottom to set your party date and admin PIN, then run just that block
---  again. (Or change them later from the admin page on your phone.)
+--  Before the first run, edit the date and admin PIN in the "SEED" block
+--  at the bottom. Existing party settings are preserved on later runs;
+--  change them from the host page or the example UPDATE below the seed.
 -- =====================================================================
 
 create extension if not exists pgcrypto;
@@ -128,7 +128,7 @@ create index if not exists party_photos_party_idx on public.party_photos (party_
 
 
 -- ---------------------------------------------------------------------
---  MIGRATIONS — upgrades an already-deployed database; no-ops on a fresh
+--  UPGRADES — updates an already-deployed database; no-ops on a fresh
 --  install (nothing above created the old column/function, so these
 --  "if exists" statements simply find nothing to do).
 -- ---------------------------------------------------------------------
@@ -696,7 +696,7 @@ begin
                  'id',         e.id,
                  'title',      e.title,
                  'photo_path', e.photo_path,
-                   'entry_type', e.entry_type,
+                 'entry_type', e.entry_type,
                  'members',    entry_roster(e.id),
                  'votes',      coalesce(vc.c, 0),
                  -- who voted for it: admins only

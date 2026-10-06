@@ -6,3 +6,6 @@ Thumbs.db
 secrets.local.md
 .env
 .env.*
+
+# Local experiments, prototypes, SQL migrations, and test seeds
+/r-and-d/

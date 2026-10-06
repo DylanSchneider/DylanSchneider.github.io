@@ -90,22 +90,19 @@ says so on every page in that mode.
 
 ## Updating an existing database
 
-Run
-[`supabase/migrations/20261005_single_photo_paths.sql`](supabase/migrations/20261005_single_photo_paths.sql)
-in the Supabase SQL Editor **before using the updated app**. This replaces
-all photo RPCs with their single-image signatures, renames
-`party_photos.normal_path` to `path`, and drops the obsolete photo columns
-from both costume entries and party photos. The upload API accepts `p_path`.
-It can run against the original schema or either previous single-image
-migration; you do not need to run those older migrations first. It is safe
-to re-run.
-New installations can use the updated `supabase/schema.sql` directly.
+[`supabase/schema.sql`](supabase/schema.sql) is the single database setup
+script for both new and existing installations. Run the whole file in the
+Supabase SQL Editor before using the updated app. It creates the tables,
+photo Storage buckets, access rules, and functions the app needs, and
+applies updates to older installations. It is safe to re-run.
 
-Guest, costume, vote, and original-photo records are preserved. The old
-alternate-image metadata is discarded. The earlier migrations remain in
-this repository as migration history; use the paths migration for the
-current app. Storage files are separate from database columns, so any
-unused alternate images can be removed from the Storage dashboard.
+Existing guests, costumes, votes, original photos, and party settings are
+preserved. Obsolete alternate-image metadata is removed. Storage files are
+separate from database columns, so unused alternate images can be removed
+from the Storage dashboard.
+
+Local experiments, superseded migration scripts, test seeds, and archived
+prototypes belong in `r-and-d/`. That folder is ignored by Git.
 
 ## Multi-year usage
 
@@ -218,8 +215,7 @@ Supabase.
 | `assets/js/store.js` | All data access — Supabase REST calls, plus the localStorage demo-mode fallback |
 | `assets/css/app.css` | Shared mobile-first styling for both pages |
 | `config.js` | The only file you edit per party/year |
-| `supabase/schema.sql` | Paste-once database setup |
-| `supabase/migrations/` | Updates for existing databases |
+| `supabase/schema.sql` | Single database setup and update script |
 
 ## Design notes
 

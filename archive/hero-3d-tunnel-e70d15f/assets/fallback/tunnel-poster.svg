@@ -1,5 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 1400" preserveAspectRatio="xMidYMid slice">
-<defs><radialGradient id="mist"><stop stop-color="#68645f"/><stop offset=".35" stop-color="#292929"/><stop offset="1" stop-color="#050505"/></radialGradient><g id="arch" fill="none"><path d="M-320 700L-290-120Q-240-440 0-620Q270-420 290-100L320 700" stroke="#68645f" stroke-width="12"/><path d="M-300 700L-265-110Q-215-405 0-580Q245-390 263-100L298 700" stroke="#e7e0d2" stroke-opacity=".3" stroke-width="2"/><path d="M-310 0L-285 80M-287-160L-243-130M-206-360L-180-316M-85-544L-63-500M95-540L70-500M220-337L190-310M280-140L250-120" stroke="#e7e0d2" stroke-opacity=".2" stroke-width="3"/></g></defs>
-<rect width="900" height="1400" fill="url(#mist)"/>
-<g transform="translate(450 760)"><use href="#arch" transform="rotate(-7) scale(1.8)"/><use href="#arch" transform="rotate(5) scale(1.2)"/><use href="#arch" transform="rotate(-4) scale(.8)"/><use href="#arch" transform="rotate(6) scale(.51)"/><use href="#arch" transform="rotate(-3) scale(.32)"/><path d="M-17 0a28 28 0 1 1 34 0l12 65h-58z" fill="#fffdf5" opacity=".75"/></g>
-</svg>
