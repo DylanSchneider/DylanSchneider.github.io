@@ -207,7 +207,7 @@ function demoRead() {
   if (!db) {
     db = {
       guests: [],
-      entries: [],    // {id, owner_id, title, photo_path, photo_path_film}
+      entries: [],    // {id, owner_id, title, photo_path}
       members: [],    // {guest_id, entry_id, costume_name, is_owner}
       party_photos: [],
       votes: {},      // voter_id -> entry_id
@@ -251,7 +251,7 @@ function demoMembership(db, guestId) {
   if (!e) return null;
   return {
     entry_id: e.id, entry_type: e.entry_type || 'solo', title: e.title,
-    photo_path: e.photo_path, photo_path_film: e.photo_path_film,
+    photo_path: e.photo_path,
     is_owner: m.is_owner, costume_name: m.costume_name, members: demoRoster(db, e.id)
   };
 }
@@ -305,12 +305,12 @@ const demo = {
 
     const type = entryType === 'group' ? 'group' : 'solo';
     const e = { id: uid(), owner_id: guestId, entry_type: type, title: t,
-      photo_path: photoPaths.normal, photo_path_film: photoPaths.film || null };
+      photo_path: photoPaths.normal };
     db.entries.push(e);
     db.members.push({ guest_id: guestId, entry_id: e.id, costume_name: costume, is_owner: true });
     demoWrite(db);
     return { entry_id: e.id, entry_type: e.entry_type, title: e.title,
-      photo_path: e.photo_path, photo_path_film: e.photo_path_film,
+      photo_path: e.photo_path,
       costume_name: costume, is_owner: true, members: demoRoster(db, e.id) };
   },
 
@@ -330,7 +330,7 @@ const demo = {
     db.members.push({ guest_id: guestId, entry_id: e.id, costume_name: costume, is_owner: false });
     demoWrite(db);
     return { entry_id: e.id, entry_type: e.entry_type || 'group', title: e.title,
-      photo_path: e.photo_path, photo_path_film: e.photo_path_film,
+      photo_path: e.photo_path,
       costume_name: costume, is_owner: false, members: demoRoster(db, e.id) };
   },
 
@@ -346,10 +346,9 @@ const demo = {
     const e = db.entries.find((x) => x.id === m.entry_id);
     e.title = t;
     e.photo_path = photoPaths.normal;
-    e.photo_path_film = photoPaths.film || null;
     demoWrite(db);
     return { entry_id: e.id, title: e.title, photo_path: e.photo_path,
-      photo_path_film: e.photo_path_film, members: demoRoster(db, e.id) };
+      members: demoRoster(db, e.id) };
   },
 
   updateMyCostume(guestId, costumeName) {
@@ -393,7 +392,6 @@ const demo = {
         id: e.id,
         title: e.title,
         photo_path: e.photo_path,
-        photo_path_film: e.photo_path_film,
         members,
         entry_type: e.entry_type || (members.length > 1 ? 'group' : 'solo'),
         is_group: e.entry_type ? e.entry_type === 'group' : members.length > 1,
@@ -515,7 +513,7 @@ export const api = {
     const normalPath = await uploadPhotoSingle(guestId, photoVariants.normal);
     return rpc('create_entry', {
       p_party: PARTY_ID, p_guest: guestId, p_title: title, p_costume_name: costumeName,
-      p_entry_type: entryType || 'solo', p_photo_path: normalPath, p_photo_path_film: null
+      p_entry_type: entryType || 'solo', p_photo_path: normalPath
     });
   },
 
@@ -529,19 +527,19 @@ export const api = {
   /** Owner-only: rename the group/solo title and/or replace its photo.
    *  photoVariants: new {normal} Blob, or undefined to keep the existing
    *  required photo. Clearing a photo is not allowed. */
-  async updateEntry(guestId, title, photoVariants, existingPath, existingFilmPath) {
+  async updateEntry(guestId, title, photoVariants, existingPath) {
     if (!IS_LIVE) {
       const paths = photoVariants === undefined
-        ? { normal: existingPath, film: existingFilmPath || null }
+        ? { normal: existingPath }
         : (photoVariants ? { normal: await blobToDataUrl(photoVariants.normal) } : null);
       return demo.updateEntry(guestId, title, paths);
     }
-    const paths = photoVariants === undefined
-      ? { normalPath: existingPath, filmPath: existingFilmPath || null }
-      : (photoVariants ? { normalPath: await uploadPhotoSingle(guestId, photoVariants.normal), filmPath: null } : null);
+    const path = photoVariants === undefined
+      ? existingPath
+      : (photoVariants ? await uploadPhotoSingle(guestId, photoVariants.normal) : null);
     return rpc('update_entry', {
       p_party: PARTY_ID, p_guest: guestId, p_title: title,
-      p_photo_path: paths?.normalPath, p_photo_path_film: paths?.filmPath
+      p_photo_path: path
     });
   },
 
@@ -625,9 +623,7 @@ export const api = {
     const path = await uploadPhotoSingle(guestId, photo, PARTY_PHOTO_BUCKET, PARTY_ID);
     return rpc('create_party_photo', {
       p_party: PARTY_ID, p_guest: guestId, p_normal_path: path,
-      // Older database versions require this argument. Reuse the same file
-      // until the single-photo migration is applied; never upload a second copy.
-      p_film_path: path, p_caption: caption || null
+      p_caption: caption || null
     });
   },
 

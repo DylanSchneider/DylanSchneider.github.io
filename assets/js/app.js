@@ -3,8 +3,8 @@
    Screens: check in → costume (join / start solo / start group / edit) → vote
    ===================================================================== */
 
-import { api, session, photoUrl, shrinkPhoto, IS_LIVE } from './store.js?v=20261005-8';
-import { messageFor } from './messages.js?v=20261005-8';
+import { api, session, photoUrl, shrinkPhoto, IS_LIVE } from './store.js?v=20261005-9';
+import { messageFor } from './messages.js?v=20261005-9';
 
 const CFG = window.PARTY_CONFIG || {};
 const $ = (id) => document.getElementById(id);
@@ -34,7 +34,7 @@ const state = {
   closesAt: null,      // Date
   revealed: false,
   entries: [],
-  membership: null,    // { entry_id, title, photo_path, photo_path_film, is_owner, costume_name, members }
+  membership: null,    // { entry_id, title, photo_path, is_owner, costume_name, members }
   votedId: null,
   costumeReturn: 'v-name',
   costumeMode: 'chooser', // chooser | solo | groups | group | join | edit
@@ -224,7 +224,6 @@ async function recoverMembership() {
       entry_type: mine.entry_type || (mine.is_group ? 'group' : 'solo'),
       title: mine.title,
       photo_path: mine.photo_path,
-      photo_path_film: mine.photo_path_film || null,
       is_owner: Boolean(member?.is_owner),
       costume_name: member?.costume_name || mine.title,
       members: mine.members
@@ -243,7 +242,6 @@ function mergeMembership(partial) {
     entry_type: partial.entry_type ?? cur.entry_type,
     title: partial.title ?? cur.title,
     photo_path: 'photo_path' in partial ? partial.photo_path : cur.photo_path,
-    photo_path_film: 'photo_path_film' in partial ? partial.photo_path_film : cur.photo_path_film,
     is_owner: 'is_owner' in partial ? partial.is_owner : cur.is_owner,
     costume_name: partial.costume_name ?? cur.costume_name,
     members: partial.members ?? cur.members
@@ -662,7 +660,7 @@ function renderEditForm(slot) {
     loading(saveBtn, true);
     try {
       if (isOwner) {
-        const saved = await api.updateEntry(state.me.id, title, photoValue, m.photo_path, m.photo_path_film);
+        const saved = await api.updateEntry(state.me.id, title, photoValue, m.photo_path);
         mergeMembership(saved);
       }
       if (role !== currentCostume) mergeMembership(await api.updateMyCostume(state.me.id, role));

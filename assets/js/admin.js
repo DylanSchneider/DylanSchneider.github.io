@@ -4,8 +4,8 @@
    here is read-only for anyone without it.
    ===================================================================== */
 
-import { api, photoUrl, IS_LIVE, PARTY_ID } from './store.js?v=20261005-8';
-import { messageFor } from './messages.js?v=20261005-8';
+import { api, photoUrl, IS_LIVE, PARTY_ID } from './store.js?v=20261005-9';
+import { messageFor } from './messages.js?v=20261005-9';
 
 const CFG = window.PARTY_CONFIG || {};
 const RESET_ENABLED = CFG.ENABLE_TEST_RESET !== false;

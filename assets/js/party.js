@@ -1,6 +1,6 @@
 /* Party camera: temporary candid photos, separate from costume entries. */
-import { api, session, photoUrl, shrinkPhoto, IS_LIVE } from './store.js?v=20261005-8';
-import { messageFor } from './messages.js?v=20261005-8';
+import { api, session, photoUrl, shrinkPhoto, IS_LIVE } from './store.js?v=20261005-9';
+import { messageFor } from './messages.js?v=20261005-9';
 
 const CFG = window.PARTY_CONFIG || {};
 const $ = (id) => document.getElementById(id);

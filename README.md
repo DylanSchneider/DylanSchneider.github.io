@@ -90,18 +90,20 @@ says so on every page in that mode.
 
 ## Updating an existing database
 
-For the single-image party-photo update, run
-[`supabase/migrations/20261005_single_party_photo.sql`](supabase/migrations/20261005_single_party_photo.sql)
-in the Supabase SQL Editor. New installations can use the updated
-`supabase/schema.sql` directly.
+Run
+[`supabase/migrations/20261005_single_photo_cleanup.sql`](supabase/migrations/20261005_single_photo_cleanup.sql)
+in the Supabase SQL Editor **before using the updated app**. This replaces
+all photo RPCs with their single-image signatures and drops the obsolete
+photo columns from both costume entries and party photos. It can run
+against either the original schema or the previous single-image migration;
+you do not need to run that older migration first. It is safe to re-run.
+New installations can use the updated `supabase/schema.sql` directly.
 
-The migration removes the two-version requirement and updates the guest
-and host photo APIs. Existing photos and their original images remain
-available. Legacy film-path metadata and Storage files are preserved, but
-the album and host page only display and save the original photo. The
-optional old RPC argument remains for cached clients. The updated app also
-works before the migration by passing the same image path for both legacy
-arguments; it uploads only one file.
+Guest, costume, vote, and original-photo records are preserved. The old
+alternate-image metadata is discarded. The earlier migration remains in
+this repository as migration history; use the cleanup migration for the
+current app. Storage files are separate from database columns, so any
+unused alternate images can be removed from the Storage dashboard.
 
 ## Multi-year usage
 
@@ -128,7 +130,7 @@ so old years are simply never touched by a new one:
 - **Costume photos** — each costume entry keeps a normal JPEG in the
   `costumes` Storage bucket. It is resized to a maximum edge of 2800 pixels,
   which is suitable for ordinary 8×11 prints while still being reasonable for
-  phone gallery cards. Older entries may also have a film-look copy.
+  phone gallery cards.
 
 Party candids are intentionally separate from the durable costume/history
 data:

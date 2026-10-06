@@ -55,7 +55,6 @@ create table if not exists public.entries (
   entry_type    text        not null default 'solo' check (entry_type in ('solo', 'group')),
   title         text        not null,
   photo_path    text,                                   -- path inside the 'costumes' bucket
-  photo_path_film text,                                  -- optional legacy film-look copy
   created_at    timestamptz not null default now(),
   updated_at    timestamptz not null default now()
 );
@@ -67,7 +66,6 @@ create table if not exists public.party_photos (
   party_id      text        not null references public.parties(id) on delete cascade,
   uploader_id   uuid        not null references public.guests(id) on delete cascade,
   normal_path   text        not null,
-  film_path     text,                                    -- legacy metadata; new uploads use normal_path only
   caption       text,
   created_at    timestamptz not null default now()
 );
@@ -135,8 +133,9 @@ create index if not exists party_photos_party_idx on public.party_photos (party_
 --  "if exists" statements simply find nothing to do).
 -- ---------------------------------------------------------------------
 
--- Keep existing photo rows while removing the old two-version requirement.
-alter table public.party_photos alter column film_path drop not null;
+-- Remove the obsolete photo fields from existing installations.
+alter table public.entries drop column if exists photo_path_film;
+alter table public.party_photos drop column if exists film_path;
 
 -- Replaced by entry_members: each guest's own costume now has its own row
 -- instead of being a free-text name in the group owner's entry.
@@ -154,7 +153,6 @@ alter table public.parties alter column testing_reset_enabled set not null;
 -- inferred this from member count, so classify those rows before enforcing
 -- the new type and before exposing group-only join options.
 alter table public.entries add column if not exists entry_type text;
-alter table public.entries add column if not exists photo_path_film text;
 update public.entries e
    set entry_type = case when (
      select count(*) from public.entry_members em where em.entry_id = e.id
@@ -312,7 +310,6 @@ begin
            'entry_type',   e.entry_type,
            'title',        e.title,
            'photo_path',   e.photo_path,
-           'photo_path_film', e.photo_path_film,
            'is_owner',     em.is_owner,
            'costume_name', em.costume_name,
            'members',      entry_roster(e.id)
@@ -333,10 +330,11 @@ end $$;
 -- group. p_costume_name is this guest's own individual costume/role — for
 -- a solo entry that's usually the same as p_title, so it defaults to it
 -- when left blank.
+drop function if exists public.create_entry(text, uuid, text, text, text, text, text);
 drop function if exists public.create_entry(text, uuid, text, text, text, text);
 create or replace function public.create_entry(
   p_party text, p_guest uuid, p_title text,
-  p_costume_name text, p_entry_type text, p_photo_path text, p_photo_path_film text
+  p_costume_name text, p_entry_type text, p_photo_path text
 ) returns json language plpgsql security definer set search_path = public as $$
 declare
   p         public.parties;
@@ -366,7 +364,7 @@ begin
     raise exception 'Choose either a solo or group costume.';
   end if;
   if nullif(btrim(p_photo_path), '') is null then
-    raise exception 'A normal costume photo is required to start a costume entry.';
+    raise exception 'A costume photo is required to start a costume entry.';
   end if;
 
   v_costume := clean_text(p_costume_name);
@@ -374,9 +372,9 @@ begin
     v_costume := v_title;
   end if;
 
-  insert into public.entries (party_id, owner_id, entry_type, title, photo_path, photo_path_film)
+  insert into public.entries (party_id, owner_id, entry_type, title, photo_path)
   values (p_party, p_guest, p_entry_type, v_title,
-          nullif(p_photo_path, ''), nullif(p_photo_path_film, ''))
+          nullif(p_photo_path, ''))
   returning * into e;
 
   insert into public.entry_members (party_id, guest_id, entry_id, costume_name, is_owner)
@@ -384,7 +382,7 @@ begin
 
   return json_build_object(
     'entry_id', e.id, 'entry_type', e.entry_type, 'title', e.title,
-    'photo_path', e.photo_path, 'photo_path_film', e.photo_path_film,
+    'photo_path', e.photo_path,
     'costume_name', v_costume, 'is_owner', true, 'members', entry_roster(e.id)
   );
 end $$;
@@ -431,7 +429,7 @@ begin
 
   return json_build_object(
     'entry_id', e.id, 'entry_type', e.entry_type, 'title', e.title,
-    'photo_path', e.photo_path, 'photo_path_film', e.photo_path_film,
+    'photo_path', e.photo_path,
     'costume_name', v_costume, 'is_owner', false, 'members', entry_roster(e.id)
   );
 end $$;
@@ -439,9 +437,9 @@ end $$;
 -- Rename the entry's group/solo title and/or swap its photo. Only the
 -- person who started it can do this — everyone else edits their own
 -- costume name with update_my_costume instead.
-drop function if exists public.update_entry(text, uuid, text, text);
+drop function if exists public.update_entry(text, uuid, text, text, text);
 create or replace function public.update_entry(
-  p_party text, p_guest uuid, p_title text, p_photo_path text, p_photo_path_film text
+  p_party text, p_guest uuid, p_title text, p_photo_path text
 ) returns json language plpgsql security definer set search_path = public as $$
 declare
   p       public.parties;
@@ -470,20 +468,19 @@ begin
     raise exception 'Give your costume (or group) a name.';
   end if;
   if nullif(btrim(p_photo_path), '') is null then
-    raise exception 'A normal costume photo is required for every costume entry.';
+    raise exception 'A costume photo is required for every costume entry.';
   end if;
 
   update public.entries
      set title      = v_title,
          photo_path = nullif(p_photo_path, ''),
-         photo_path_film = nullif(p_photo_path_film, ''),
          updated_at = now()
    where id = em.entry_id
   returning * into e;
 
   return json_build_object(
     'entry_id', e.id, 'entry_type', e.entry_type, 'title', e.title,
-    'photo_path', e.photo_path, 'photo_path_film', e.photo_path_film,
+    'photo_path', e.photo_path,
     'members', entry_roster(e.id)
   );
 end $$;
@@ -586,7 +583,6 @@ begin
                'id',         e.id,
                'title',      e.title,
                'photo_path', e.photo_path,
-               'photo_path_film', e.photo_path_film,
                'entry_type', e.entry_type,
                'is_group',   e.entry_type = 'group',
                'is_mine',    exists (
@@ -688,8 +684,7 @@ begin
                  'id',         e.id,
                  'title',      e.title,
                  'photo_path', e.photo_path,
-                 'photo_path_film', e.photo_path_film,
-                 'entry_type', e.entry_type,
+                   'entry_type', e.entry_type,
                  'members',    entry_roster(e.id),
                  'votes',      coalesce(vc.c, 0),
                  -- who voted for it: admins only
@@ -720,9 +715,9 @@ end $$;
 
 -- Candid photos are separate from costume entries and are intended to be
 -- downloaded by the host after the party, then cleared from Storage.
--- The optional p_film_path argument is retained for older clients, but ignored.
+drop function if exists public.create_party_photo(text, uuid, text, text, text);
 create or replace function public.create_party_photo(
-  p_party text, p_guest uuid, p_normal_path text, p_film_path text default null, p_caption text default null
+  p_party text, p_guest uuid, p_normal_path text, p_caption text default null
 ) returns json language plpgsql security definer set search_path = public as $$
 declare
   p public.parties;
@@ -990,9 +985,9 @@ revoke all on function public.assert_admin(text, text) from public, anon, authen
 
 grant execute on function public.party_info(text)                          to anon, authenticated;
 grant execute on function public.join_party(text, text, text)              to anon, authenticated;
-grant execute on function public.create_entry(text, uuid, text, text, text, text, text) to anon, authenticated;
+grant execute on function public.create_entry(text, uuid, text, text, text, text) to anon, authenticated;
 grant execute on function public.join_entry(text, uuid, uuid, text)        to anon, authenticated;
-grant execute on function public.update_entry(text, uuid, text, text, text) to anon, authenticated;
+grant execute on function public.update_entry(text, uuid, text, text) to anon, authenticated;
 grant execute on function public.update_my_costume(text, uuid, text)       to anon, authenticated;
 grant execute on function public.leave_entry(text, uuid)                  to anon, authenticated;
 grant execute on function public.list_entries(text, uuid)                 to anon, authenticated;
@@ -1005,7 +1000,7 @@ grant execute on function public.admin_update_guest(text, text, uuid, text, text
 grant execute on function public.admin_clear_all(text, text)              to anon, authenticated;
 grant execute on function public.admin_guests(text, text)                 to anon, authenticated;
 grant execute on function public.admin_guest_history(text, uuid)          to anon, authenticated;
-grant execute on function public.create_party_photo(text, uuid, text, text, text) to anon, authenticated;
+grant execute on function public.create_party_photo(text, uuid, text, text) to anon, authenticated;
 grant execute on function public.list_party_photos(text, uuid)             to anon, authenticated;
 grant execute on function public.admin_party_photos(text, text)            to anon, authenticated;
 
