@@ -36,7 +36,7 @@ const state = {
   membership: null,    // { entry_id, title, photo_path, photo_path_film, is_owner, costume_name, members }
   votedId: null,
   costumeReturn: 'v-name',
-  costumeMode: 'chooser', // chooser | solo | group | join | edit
+  costumeMode: 'chooser', // chooser | solo | groups | group | join | edit
   busy: false
 };
 
@@ -159,24 +159,37 @@ function fieldError(errId, inputId, msg) {
   if (inputId) $(inputId).setAttribute('aria-invalid', msg ? 'true' : 'false');
 }
 
-$('in-name').addEventListener('input', () => fieldError('err-name', 'in-name', ''));
+for (const part of ['first', 'last']) {
+  $(`in-${part}-name`).addEventListener('input', () => fieldError(`err-${part}-name`, `in-${part}-name`, ''));
+}
 
 $('form-name').addEventListener('submit', async (ev) => {
   ev.preventDefault();
-  const name = $('in-name').value.trim().replace(/\s+/g, ' ');
+  const givenName = $('in-first-name').value.trim().replace(/\s+/g, ' ');
+  const familyName = $('in-last-name').value.trim().replace(/\s+/g, ' ');
+  // Keep the existing guest API and history compatible with separate inputs.
+  const name = `${givenName} ${familyName}`;
   const phone = $('in-phone').value;
   const digits = phoneDigits(phone);
 
   let bad = false;
-  if (name.length < 2 || !name.includes(' ')) {
-    fieldError('err-name', 'in-name', 'Please enter your first and last name.');
+  if (!givenName) {
+    fieldError('err-first-name', 'in-first-name', 'Please enter your first name.');
+    bad = true;
+  }
+  if (!familyName) {
+    fieldError('err-last-name', 'in-last-name', 'Please enter your last name.');
     bad = true;
   }
   if (digits.length !== 10) {
     fieldError('err-phone', 'in-phone', 'Please enter all 10 digits of your mobile number.');
     bad = true;
   }
-  if (bad) { buzz(40); return; }
+  if (bad) {
+    $('form-name').querySelector('[aria-invalid="true"]')?.focus();
+    buzz(40);
+    return;
+  }
 
   const btn = $('btn-name');
   if (btn) loading(btn, true);
@@ -271,7 +284,7 @@ $('btn-back').addEventListener('click', () => {
     if (state.costumeReturn === 'v-dash') goDash();
     else show(state.costumeReturn || 'v-name');
   }
-  else renderCostume('chooser');
+  else renderCostume(['group', 'join'].includes(state.costumeMode) ? 'groups' : 'chooser');
 });
 
 $('btn-costume-refresh').addEventListener('click', async () => {
@@ -303,7 +316,7 @@ function renderCostume(mode, ctx) {
   updateBackButton();
   const topTitle = $('costume-top-title');
   if (topTitle) topTitle.textContent = {
-    chooser: 'Your costume', solo: 'Solo costume', group: 'Group costume',
+    chooser: 'Your costume', solo: 'Solo costume', groups: 'Group / pair', group: 'Start a group',
     join: 'Join a group', edit: 'Edit costume'
   }[mode] || 'Costume';
   const refreshButton = $('btn-costume-refresh');
@@ -312,12 +325,18 @@ function renderCostume(mode, ctx) {
   slot.replaceChildren();
   if (mode === 'chooser') renderChooser(slot);
   else if (mode === 'solo') renderSoloForm(slot);
+  else if (mode === 'groups') renderGroupChooser(slot);
   else if (mode === 'group') renderGroupForm(slot);
   else if (mode === 'join') renderJoinForm(slot, ctx);
   else if (mode === 'edit') renderEditForm(slot);
 }
 
+let fieldSequence = 0;
 function field(labelText, inputEl, errEl, placeholder, hintText) {
+  inputEl.id ||= `costume-field-${++fieldSequence}`;
+  errEl.id = `${inputEl.id}-error`;
+  errEl.setAttribute('aria-live', 'polite');
+  inputEl.setAttribute('aria-describedby', errEl.id);
   inputEl.classList.add('input');
   if (placeholder) inputEl.setAttribute('placeholder', placeholder);
   inputEl.setAttribute('autocapitalize', 'words');
@@ -325,7 +344,7 @@ function field(labelText, inputEl, errEl, placeholder, hintText) {
   inputEl.setAttribute('enterkeyhint', 'done');
   inputEl.setAttribute('maxlength', '80');
   return h('div', { class: 'field' },
-    h('label', { class: 'label' }, labelText),
+    h('label', { class: 'label', for: inputEl.id }, labelText),
     inputEl,
     hintText ? h('p', { class: 'hint', text: hintText }) : null,
     errEl
@@ -429,50 +448,67 @@ function joinRow(e, staticOnly) {
   );
 }
 
-async function renderChooser(slot) {
+function renderChooser(slot) {
   slot.replaceChildren(
     h('p', { class: 'eyebrow' }, 'Step 2 of 2 · Your costume'),
-    h('h2', { class: 'section-title', style: 'margin-top:8px' }, 'What are you dressed as?'),
-    h('p', { class: 'fine', style: 'margin-top:10px' }, 'Loading costumes already entered…')
+    h('h2', { class: 'section-title costume-heading' }, 'How are you arriving?'),
+    h('p', { class: 'hint' }, 'One curious character, or a whole cast?'),
+    h('div', { class: 'costume-choices' },
+      costumeChoice('solo', '♠', 'Solo', 'My own costume and photo'),
+      costumeChoice('groups', '♥ ♣', 'Group / pair', 'A shared entry, one photo for everyone')
+    )
+  );
+}
+
+function costumeChoice(mode, glyph, title, detail) {
+  return h('button', {
+    class: 'btn costume-choice', type: 'button', onclick: () => renderCostume(mode)
+  },
+    h('span', { class: 'costume-choice__glyph', 'aria-hidden': 'true', text: glyph }),
+    h('span', { class: 'costume-choice__copy' }, h('b', { text: title }), h('small', { text: detail })),
+    h('span', { class: 'costume-choice__arrow', 'aria-hidden': 'true', text: '→' })
+  );
+}
+
+async function renderGroupChooser(slot) {
+  // A local container prevents a slow response from replacing a newer screen.
+  const groups = h('div', { 'aria-live': 'polite' },
+    h('p', { class: 'hint' }, 'Looking for your group…'));
+  slot.replaceChildren(
+    h('p', { class: 'eyebrow' }, 'Group / pair'),
+    h('h2', { class: 'section-title costume-heading' }, 'Find your cast of characters'),
+    h('p', { class: 'hint' }, 'Each person checks in on their own phone to get their own vote. You all share one costume entry and one photo.'),
+    groups,
+    h('div', { class: 'choice-divider' }, 'First one here?'),
+    h('button', {
+      class: 'btn btn--primary btn--block', type: 'button', onclick: () => renderCostume('group')
+    }, 'Start a group / pair'),
+    h('p', { class: 'hint' }, 'Choose one person to start the entry and upload the shared photo. Everyone else joins it here.')
   );
 
-  let list = [];
   try {
     const entries = await api.listEntries(state.me.id);
-    list = entries.filter((entry) => entry.entry_type === 'group' || entry.is_group);
-  } catch { /* still let them start their own below */ }
-
-  const nodes = [
-    h('p', { class: 'eyebrow' }, 'Step 2 of 2 · Your costume'),
-    h('h2', { class: 'section-title', style: 'margin-top:8px' }, 'What are you dressed as?')
-  ];
-
-  if (list.length) {
-    nodes.push(h('p', { class: 'hint', style: 'margin:14px 0 10px' },
-      'See your group below? Join it instead of starting a new one.'));
-    nodes.push(h('div', { class: 'rank' }, ...list.map((e) => joinRow(e, false))));
+    if (!groups.isConnected) return;
+    const list = entries.filter((entry) => entry.entry_type === 'group' || entry.is_group);
+    groups.replaceChildren(
+      h('h3', { class: 'group-list-title' }, 'Join your group'),
+      list.length
+        ? h('div', { class: 'rank' }, ...list.map((e) => joinRow(e, false)))
+        : h('p', { class: 'hint' }, 'No groups yet. One of you can start yours below.'),
+      h('button', {
+        class: 'btn btn--ghost btn--sm', type: 'button', style: 'margin-top:12px',
+        onclick: () => renderCostume('groups')
+      }, 'Refresh group list')
+    );
+  } catch {
+    if (!groups.isConnected) return;
+    groups.replaceChildren(
+      h('p', { class: 'err' }, 'We couldn’t load the groups. Try again to find yours.'),
+      h('button', {
+        class: 'btn btn--ghost btn--sm', type: 'button', onclick: () => renderCostume('groups')
+      }, 'Try again')
+    );
   }
-
-  nodes.push(h('div', { class: 'choice-divider', text: list.length ? 'or start your own' : 'start your own' }));
-  nodes.push(h('div', { class: 'note note--warn', style: 'margin-top:14px' },
-    h('b', { text: 'Starting a group?' }),
-    ' Only one person needs to upload the group photo. If you already have one, start the group now — no need to wait for everyone to arrive.'
-  ));
-  // Keep the group path first: it is the intended shared-costume flow, and
-  // the solo option is the fallback below it.
-  const groupButton = h('button', {
-    class: 'btn btn--primary btn--block costume-choice-group', type: 'button',
-    onclick: () => renderCostume('group')
-  }, '👥 Starting a group costume');
-  const soloButton = h('button', {
-    class: 'btn btn--ghost btn--block costume-choice-solo', type: 'button',
-    onclick: () => renderCostume('solo')
-  }, '🧍 Going solo');
-  nodes.push(h('div', { class: 'stack costume-choice-stack', style: 'margin-top:0' },
-    groupButton, soloButton
-  ));
-
-  slot.replaceChildren(...nodes);
 }
 
 function renderSoloForm(slot) {
@@ -553,7 +589,7 @@ function renderGroupForm(slot) {
     h('p', { class: 'eyebrow', style: 'margin-top:0' }, 'Group costume'),
     h('div', { class: 'note note--warn', style: 'margin-top:8px' },
       h('b', { text: 'Only one person uploads the group photo.' }),
-      ' If you already have a group picture, start this entry now — you do not need to wait for everyone to arrive.'
+      ' You’re starting the shared entry. Add the group photo here; everyone else will just join and enter their own costume name.'
     ),
     h('div', { class: 'panel', style: 'margin-top:8px' },
       field('Group costume name', groupName, errG, 'e.g. Alice in Wonderland'),
@@ -591,6 +627,7 @@ function renderJoinForm(slot, entry) {
 
   slot.replaceChildren(
     h('p', { class: 'eyebrow', style: 'margin-top:0' }, 'Joining a group'),
+    h('p', { class: 'hint' }, 'Your group’s photo is already covered. Just add your costume name and you’re ready to vote.'),
     h('div', { class: 'rank', style: 'margin-top:10px' }, joinRow(entry, true)),
     h('div', { class: 'panel', style: 'margin-top:14px' },
       field('Your costume in this group', role, err, 'e.g. White Rabbit'),

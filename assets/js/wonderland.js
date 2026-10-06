@@ -56,7 +56,7 @@
     }
 
     document.addEventListener('click', (event) => {
-      const button = event.target.closest?.('.btn, .icon-btn');
+      const button = event.target.closest?.('.btn, .icon-btn, .wonder-sign');
       if (!button || reduced || button.disabled) return;
       const rect = button.getBoundingClientRect();
       const burst = document.createElement('span');
@@ -71,11 +71,12 @@
     });
 
     const form = document.getElementById('form-name');
-    const name = document.getElementById('in-name');
+    const firstName = document.getElementById('in-first-name');
+    const lastName = document.getElementById('in-last-name');
     const phone = document.getElementById('in-phone');
     const cue = document.getElementById('scroll-cue');
     const sentinel = document.getElementById('fall-sentinel');
-    if (!form || !name || !phone || !cue) return;
+    if (!form || !firstName || !lastName || !phone || !cue) return;
 
     let ready = false;
     let falling = false;
@@ -85,9 +86,8 @@
       return all.length === 11 && all.startsWith('1') ? all.slice(1) : all.slice(0, 10);
     };
     const syncGate = () => {
-      const fullName = name.value.trim().replace(/\s+/g, ' ');
       const digits = phoneDigits(phone.value);
-      ready = fullName.length >= 2 && fullName.includes(' ') && digits.length === 10;
+      ready = Boolean(firstName.value.trim() && lastName.value.trim() && digits.length === 10);
       cue.classList.toggle('is-ready', ready);
       cue.querySelector('.scroll-cue__text').textContent = ready
         ? 'Scroll down to enter Wonderland'
@@ -103,12 +103,11 @@
       }, 0);
     };
 
-    name.addEventListener('input', syncGateSoon);
-    phone.addEventListener('input', syncGateSoon);
-    name.addEventListener('change', syncGate);
-    phone.addEventListener('change', syncGate);
-    name.addEventListener('blur', syncGate);
-    phone.addEventListener('blur', syncGate);
+    for (const input of [firstName, lastName, phone]) {
+      input.addEventListener('input', syncGateSoon);
+      input.addEventListener('change', syncGate);
+      input.addEventListener('blur', syncGate);
+    }
     syncGate();
 
     const fall = () => {

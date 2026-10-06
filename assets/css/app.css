@@ -177,6 +177,17 @@ h1, h2, h3 { margin: 0; line-height: 1.15; font-weight: 800; }
 .field { margin-bottom: 16px; }
 .field:last-child { margin-bottom: 0; }
 
+.name-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin: 14px 0 16px;
+}
+.name-fields .field { min-width: 0; margin-bottom: 0; }
+@media (max-width: 360px) {
+  .name-fields { grid-template-columns: 1fr; }
+}
+
 .label {
   display: block;
   margin-bottom: 7px;
@@ -404,7 +415,24 @@ h1, h2, h3 { margin: 0; line-height: 1.15; font-weight: 800; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
 .stack { display: grid; gap: 10px; margin-top: 20px; }
-.costume-choice-stack { display: flex; flex-direction: column; }
+.costume-heading { margin-top: 8px; font: 400 32px/1.15 Georgia, serif; }
+.costume-choices { display: grid; gap: 16px; margin-top: 28px; }
+.costume-choices .costume-choice {
+  justify-content: flex-start;
+  gap: 16px;
+  min-height: 112px;
+  padding: 20px;
+  border: 1px solid var(--line-strong);
+  background: linear-gradient(135deg, var(--surface-2), var(--surface));
+  text-align: left;
+}
+.costume-choice__glyph { flex: 0 0 48px; color: var(--card-gold); font: 32px/1 Georgia, serif; }
+.costume-choice__copy { display: grid; flex: 1; gap: 7px; }
+.costume-choice__copy b { font: 700 24px/1.1 Georgia, serif; }
+.costume-choice__copy small { color: var(--muted); font-size: 13px; font-weight: 400; line-height: 1.4; }
+.costume-choice__arrow { color: var(--card-gold); font-size: 24px; }
+.group-list-title { margin: 24px 0 12px; font-size: 16px; }
+.topbar__refresh[hidden] { display: none; }
 
 .linkback {
   all: unset;
@@ -1649,43 +1677,90 @@ body.homepage-v2 .fall-sentinel b { color: #fff; }
 .hub__rule i { height: 1px; flex: 1; background: linear-gradient(90deg, transparent, rgba(217,180,109,.45)); }
 .hub__rule i:last-child { background: linear-gradient(90deg, rgba(217,180,109,.45), transparent); }
 .hub__rule span { font-size: 18px; transform: rotate(-12deg); }
-.hub__panel {
+.hub__signpost {
   width: 100%;
   max-width: 520px;
   margin: 38px auto 0;
-  padding: 25px 22px 22px;
-  border-radius: 28px 13px 25px 17px;
-  background: linear-gradient(145deg, rgba(18,12,17,.94), rgba(5,5,7,.97));
-  box-shadow: 0 28px 70px rgba(0,0,0,.56), 0 0 0 1px rgba(217,180,109,.05) inset;
-  transform: rotate(-.45deg);
+  text-align: center;
 }
-.hub__panel > .eyebrow { padding-left: 3px; }
-.hub__actions { display: grid; gap: 12px; margin-top: 16px; }
-.hub__actions .btn {
-  min-height: 76px;
-  justify-content: flex-start;
-  padding: 14px 16px;
-  border-radius: 19px 9px 17px 11px;
-  text-align: left;
-}
-.hub__actions .btn:nth-child(2) { border-radius: 10px 19px 11px 17px; }
-.hub__actions .btn:nth-child(3) { border-radius: 17px 11px 20px 8px; }
-.hub__actions .btn > * { position: relative; z-index: 1; }
-.hub__action-glyph {
+.hub__signpost > .eyebrow { color: var(--card-gold); letter-spacing: .22em; }
+.hub__signs {
+  position: relative;
   display: grid;
-  place-items: center;
-  flex: 0 0 38px;
-  width: 38px;
-  height: 38px;
-  border: 1px solid rgba(217,180,109,.28);
-  border-radius: 50%;
-  color: var(--card-gold);
-  font-size: 22px;
+  gap: 13px;
+  isolation: isolate;
+  padding: 24px 8px 28px;
+  margin-top: 10px;
 }
-.hub__action-copy { display: grid; flex: 1 1 auto; gap: 4px; min-width: 0; }
-.hub__action-copy b { font: 700 19px/1.1 Georgia, "Times New Roman", serif; }
-.hub__action-copy small { color: var(--muted-2); font-size: 12px; line-height: 1.25; }
-.hub__action-arrow { flex: 0 0 auto; color: var(--card-gold); font-size: 25px; }
+.hub__signs::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  top: 12px;
+  bottom: 0;
+  left: calc(50% - 11px);
+  width: 22px;
+  border: 1px solid #746047;
+  border-radius: 8px 5px 3px 3px;
+  background: repeating-linear-gradient(88deg, #403022 0 3px, #5c4730 4px 7px, #493725 8px 10px);
+  box-shadow: 5px 4px 12px #0008;
+  transform: rotate(2deg);
+}
+.wonder-sign {
+  --sign-tint: #88bcbc;
+  --sign-angle: -4deg;
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 130px;
+  padding: 25px 17% 27px 11%;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: #541b25;
+  text-align: left;
+  cursor: pointer;
+  transform: rotate(var(--sign-angle));
+  filter: drop-shadow(0 8px 5px #0008);
+  transition: transform .18s ease, filter .18s ease;
+}
+.wonder-sign::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background:
+    radial-gradient(ellipse at center, #fff4dfed 12%, #fff4dfb8 42%, transparent 77%),
+    linear-gradient(0deg, #79532d66, transparent 28% 72%, #79532d55),
+    repeating-conic-gradient(from 45deg, var(--sign-tint) 0% 25%, #f4e4c8 0% 50%) 0 0 / 38px 66px;
+  -webkit-mask: url('../images/wonderland-sign.svg') center / 100% 100% no-repeat;
+  mask: url('../images/wonderland-sign.svg') center / 100% 100% no-repeat;
+}
+.wonder-sign--rose { --sign-tint: #dca1b9; --sign-angle: 3deg; }
+.wonder-sign--lavender { --sign-tint: #afa1c7; --sign-angle: -3deg; }
+.wonder-sign--left { padding-inline: 17% 11%; flex-direction: row-reverse; }
+.wonder-sign--left::before { transform: scaleX(-1); }
+.wonder-sign__glyph { flex: 0 0 auto; font: 36px/1 Georgia, serif; transform: rotate(-12deg); }
+.wonder-sign__copy { display: grid; flex: 1; gap: 5px; text-align: center; }
+.wonder-sign__copy small { color: #684b40; font: 700 9px/1.2 Georgia, serif; letter-spacing: .15em; text-transform: uppercase; }
+.wonder-sign__copy b { font: 700 clamp(21px, 5.5vw, 32px)/1.05 Georgia, 'Times New Roman', serif; letter-spacing: -.045em; text-wrap: balance; }
+.wonder-sign__copy > span { color: #62463e; font: italic 12px/1.25 Georgia, serif; text-wrap: balance; }
+.hub__signpost-note { margin: 10px 0 0; color: var(--muted); font: italic 14px/1.5 Georgia, serif; }
+.wonder-sign:focus-visible { outline: 3px solid var(--card-gold); outline-offset: 5px; }
+@media (hover: hover) {
+  .wonder-sign:hover { transform: rotate(0) translateY(-3px); filter: drop-shadow(0 12px 7px #0008) brightness(1.06); }
+}
+.wonder-sign:active { transform: rotate(0) scale(.98); }
+@media (max-width: 380px) {
+  .wonder-sign { gap: 7px; }
+  .wonder-sign__glyph { font-size: 26px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hub__mark { animation: none; }
+  .wonder-sign { transition: none; }
+}
 @keyframes hub-mark-bob {
   0%, 100% { transform: rotate(-7deg) translateY(0); }
   50% { transform: rotate(3deg) translateY(-5px); }

@@ -9,15 +9,15 @@ Live at whatever URL GitHub Pages serves this repo from (Settings → Pages).
 
 ## How it works for guests
 
-1. **Check in** — real name + phone number. This builds a master guest list
+1. **Check in** — separate first and last name fields + phone number. This builds a master guest list
    that persists across years.
-2. **Enter a costume.** Three ways in:
+2. **Enter a costume.** Choose **Solo** or **Group / pair** first:
    - **Going solo** — just a costume name and a required photo.
    - **Starting a group** — a group name (e.g. "Alice in Wonderland") and
      your own individual costume/role within it (e.g. "Mad Hatter"), plus
      a photo for the whole group.
-   - **Joining a group** — see everyone already entered on your check-in
-     screen; tap "Join" on your group and enter your own costume/role
+   - **Joining a group** — choose **Group / pair** to see existing groups;
+     tap "Join" on your group and enter your own costume/role
      (e.g. "White Rabbit"). No need to know who's starting it in advance —
      whoever gets there first starts it, everyone else joins.
    A group is voted on as one entry no matter how many people are in it.

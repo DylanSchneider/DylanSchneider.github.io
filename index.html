@@ -11,7 +11,7 @@
 <meta name="format-detection" content="telephone=no">
 <title>Down the Rabbit Hole · Costume Contest</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐰</text></svg>">
-<link rel="stylesheet" href="assets/css/app.css?v=20260917-3">
+<link rel="stylesheet" href="assets/css/app.css?v=20261005-1">
 </head>
 <body>
 <div class="bg-fx"></div>
@@ -58,13 +58,23 @@
         <form id="form-name" class="panel" novalidate>
           <p class="eyebrow">Your invitation</p>
 
-          <div class="field" style="margin-top:14px">
-            <label class="label" for="in-name">Your real name</label>
-            <input class="input" id="in-name" type="text" name="name"
-                   autocomplete="name" autocapitalize="words" autocorrect="off"
-                   spellcheck="false" enterkeyhint="next" maxlength="60"
-                   placeholder="First and last name" required>
-            <p class="err" id="err-name"></p>
+          <div class="name-fields">
+            <div class="field">
+              <label class="label" for="in-first-name">First name</label>
+              <input class="input" id="in-first-name" type="text" name="given-name"
+                     autocomplete="given-name" autocapitalize="words" autocorrect="off"
+                     spellcheck="false" enterkeyhint="next" maxlength="60"
+                     aria-describedby="err-first-name" placeholder="First name" required>
+              <p class="err" id="err-first-name" aria-live="polite"></p>
+            </div>
+            <div class="field">
+              <label class="label" for="in-last-name">Last name</label>
+              <input class="input" id="in-last-name" type="text" name="family-name"
+                     autocomplete="family-name" autocapitalize="words" autocorrect="off"
+                     spellcheck="false" enterkeyhint="next" maxlength="60"
+                     aria-describedby="err-last-name" placeholder="Last name" required>
+              <p class="err" id="err-last-name" aria-live="polite"></p>
+            </div>
           </div>
 
           <div class="field">
@@ -123,26 +133,24 @@
         <div class="hub__rule" aria-hidden="true"><i></i><span>♠</span><i></i></div>
       </div>
 
-      <div class="panel hub__panel">
-        <p class="eyebrow">Where shall we go?</p>
-        <div class="hub__actions">
-          <button class="btn btn--ghost btn--block" id="hub-edit" type="button">
-            <span class="hub__action-glyph" aria-hidden="true">✎</span>
-            <span class="hub__action-copy"><b>Edit your costume</b><small>Change your photo or role</small></span>
-            <span class="hub__action-arrow" aria-hidden="true">↗</span>
+      <nav class="hub__signpost" aria-labelledby="hub-menu-title">
+        <h2 class="eyebrow" id="hub-menu-title">Where shall we go?</h2>
+        <div class="hub__signs">
+          <button class="wonder-sign wonder-sign--teal" id="hub-edit" type="button">
+            <span class="wonder-sign__glyph" aria-hidden="true">♠</span>
+            <span class="wonder-sign__copy"><small>This way</small><b>Edit your costume</b><span>Change your photo or role</span></span>
           </button>
-          <button class="btn btn--primary btn--block" id="hub-vote" type="button">
-            <span class="hub__action-glyph" aria-hidden="true">♣</span>
-            <span class="hub__action-copy"><b>Vote for costumes</b><small>Choose the one that steals the show</small></span>
-            <span class="hub__action-arrow" aria-hidden="true">↗</span>
+          <button class="wonder-sign wonder-sign--rose wonder-sign--left" id="hub-vote" type="button">
+            <span class="wonder-sign__glyph" aria-hidden="true">♥</span>
+            <span class="wonder-sign__copy"><small>Over there</small><b>Vote for costumes</b><span>Crown the evening’s favourite</span></span>
           </button>
-          <button class="btn btn--ghost btn--block" id="hub-photos" type="button">
-            <span class="hub__action-glyph" aria-hidden="true">📸</span>
-            <span class="hub__action-copy"><b>Party pictures</b><small>See what’s happening beyond the glass</small></span>
-            <span class="hub__action-arrow" aria-hidden="true">↗</span>
+          <button class="wonder-sign wonder-sign--lavender" id="hub-photos" type="button">
+            <span class="wonder-sign__glyph" aria-hidden="true">♣</span>
+            <span class="wonder-sign__copy"><small>Through the looking glass</small><b>Party pictures</b><span>Capture a little madness</span></span>
           </button>
         </div>
-      </div>
+        <p class="hub__signpost-note">Every path leads to a little madness.</p>
+      </nav>
     </div>
   </section>
 
@@ -203,7 +211,7 @@
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/gsap.min.js" defer></script>
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/ScrollTrigger.min.js" defer></script>
 <script src="assets/js/rabbit-v2-loader.js" defer></script>
-<script src="assets/js/wonderland.js?v=20260917-2" defer></script>
-<script type="module" src="assets/js/app.js?v=20260917-4"></script>
+<script src="assets/js/wonderland.js?v=20261005-1" defer></script>
+<script type="module" src="assets/js/app.js?v=20261005-1"></script>
 </body>
 </html>
