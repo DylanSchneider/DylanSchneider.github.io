@@ -22,6 +22,7 @@ const h = (tag, attrs, ...kids) => {
 const me = session.get();
 let variants = null;
 let previewUrls = [];
+const selectedLooks = new Map();
 
 function toast(msg, kind) {
   const box = $('toast');
@@ -33,31 +34,52 @@ function toast(msg, kind) {
 
 function loading(btn, on) { btn.disabled = on; btn.classList.toggle('is-loading', on); }
 
-function saveLink(url, filename, label) {
-  return h('a', { class: 'btn btn--ghost btn--sm', href: url, download: filename, target: '_blank', rel: 'noopener' }, label);
-}
-
 function photoTile(photo, bucket, kind) {
   const normal = photoUrl(photo.normal_path, bucket);
   const film = photo.film_path ? photoUrl(photo.film_path, bucket) : null;
   const title = kind === 'costume'
-    ? `🎭 ${photo.title || 'Costume photo'}`
-    : (photo.uploader ? `📸 ${photo.uploader}` : 'Party photo');
+    ? (photo.title || 'Costume photo')
+    : (photo.uploader || 'Party photo');
   const filePrefix = kind === 'costume' ? 'costume' : 'party';
-  const img = h('img', { src: normal, alt: photo.caption || photo.title || 'Party photo', loading: 'lazy', decoding: 'async' });
-  const show = (url) => { img.src = url; };
+  const lookKey = `${kind}:${photo.id}`;
+  const description = photo.caption || photo.title || `Party photo by ${title}`;
+  const img = h('img', { loading: 'lazy', decoding: 'async' });
+  const save = h('a', {
+    class: 'btn party-photo-save', target: '_blank', rel: 'noopener noreferrer'
+  }, 'Save');
+  const normalButton = film ? h('button', {
+    class: 'photo-look__button', type: 'button', onclick: () => show('normal')
+  }, 'Normal') : null;
+  const filmButton = film ? h('button', {
+    class: 'photo-look__button', type: 'button', onclick: () => show('film')
+  }, 'Film') : null;
+
+  function show(look) {
+    const isFilm = look === 'film' && Boolean(film);
+    const version = isFilm ? 'film' : 'normal';
+    const url = isFilm ? film : normal;
+    selectedLooks.set(lookKey, version);
+    img.src = url;
+    img.alt = `${description} — ${isFilm ? 'film' : 'normal'} version`;
+    // The preview and its single Save action always use the same version.
+    save.href = url;
+    save.download = `${filePrefix}-${photo.id}-${version}.jpg`;
+    save.setAttribute('aria-label', `Save ${version} photo: ${title}`);
+    normalButton?.setAttribute('aria-pressed', String(!isFilm));
+    filmButton?.setAttribute('aria-pressed', String(isFilm));
+  }
+  show(selectedLooks.get(lookKey) || 'normal');
+
   return h('article', { class: 'party-photo-tile' },
-    img,
+    h('div', { class: 'party-photo-tile__image' }, img),
     h('div', { class: 'party-photo-tile__body' },
       h('div', { class: 'party-photo-tile__meta' },
-        h('b', { text: title }),
-        h('span', { class: 'fine', text: photo.caption || photo.owner || '' })
+        h('h3', { text: title }),
+        (photo.caption || photo.owner) ? h('p', { text: photo.caption || photo.owner }) : null
       ),
       h('div', { class: 'party-photo-tile__actions' },
-        film ? h('button', { class: 'btn btn--ghost btn--sm', type: 'button', onclick: () => show(normal) }, 'Normal') : null,
-        film ? h('button', { class: 'btn btn--ghost btn--sm', type: 'button', onclick: () => show(film) }, 'Film') : null,
-        saveLink(normal, `${filePrefix}-${photo.id}-normal.jpg`, 'Save normal'),
-        film ? saveLink(film, `${filePrefix}-${photo.id}-film.jpg`, 'Save film') : null
+        film ? h('div', { class: 'photo-look', role: 'group', 'aria-label': 'Photo version' }, normalButton, filmButton) : null,
+        save
       )
     )
   );
@@ -79,6 +101,8 @@ async function loadGallery() {
         owner: entry.members?.find((member) => member.is_owner)?.name || ''
       }));
 
+    $('costume-count').textContent = `${costumes.length} ${costumes.length === 1 ? 'photo' : 'photos'}`;
+    $('party-count').textContent = `${photos.length} ${photos.length === 1 ? 'photo' : 'photos'}`;
     $('costume-gallery').replaceChildren(...costumes.map((photo) => photoTile(photo, 'costumes', 'costume')));
     $('costume-empty').replaceChildren();
     if (!costumes.length) $('costume-empty').append(h('div', { class: 'empty' },
@@ -94,7 +118,7 @@ async function loadGallery() {
     ));
     $('party-camera-panel').hidden = !info.open;
     if (!info.open) $('party-mode').replaceChildren(h('div', { class: 'note note--warn' },
-      h('b', { text: 'The party camera is closed.' }), ' Costume photos remain available above for downloading.'
+      h('b', { text: 'The party camera is closed.' }), ' You can still browse and save the photos below.'
     ));
   } catch (err) { toast(err.message, 'bad'); }
 }
@@ -127,6 +151,7 @@ function initializePartyCamera() {
       $('party-upload').disabled = false;
     } catch (err) {
       variants = null;
+      $('party-preview').hidden = true;
       $('party-photo-error').textContent = 'That photo could not be processed. Try another photo.';
       ev.target.value = '';
     }
@@ -142,18 +167,20 @@ function initializePartyCamera() {
     try {
       await api.uploadPartyPhoto(me.id, variants, $('party-caption').value.trim());
       toast('Photo saved to the party wall.', 'good');
-      status.textContent = 'Saved. You can download either version below.';
+      status.textContent = 'Added to the album. Choose Normal or Film below, then tap Save.';
       $('party-photo-file').value = '';
       $('party-caption').value = '';
       variants = null;
       $('party-preview').hidden = true;
+      previewUrls.forEach((url) => URL.revokeObjectURL(url));
+      previewUrls = [];
       btn.disabled = true;
       await loadGallery();
     } catch (err) {
       status.textContent = 'Upload did not finish. Check your connection and try again.';
       toast(err.message, 'bad');
     }
-    finally { loading(btn, false); btn.textContent = 'Save party photo'; btn.disabled = !variants; }
+    finally { loading(btn, false); btn.textContent = 'Add to party pictures'; btn.disabled = !variants; }
   });
 
   $('party-refresh').addEventListener('click', loadGallery);

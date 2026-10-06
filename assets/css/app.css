@@ -312,14 +312,61 @@ h1, h2, h3 { margin: 0; line-height: 1.15; font-weight: 800; }
 
 /* ── Party camera ───────────────────────────────────────────────────── */
 
-.party-wrap { padding-bottom: calc(48px + var(--safe-b)); }
-.party-camera-panel { margin-top: 16px; }
+.party-wrap { max-width: 980px; padding-bottom: calc(48px + var(--safe-b)); }
+.party-hero { padding: 30px 0 25px; text-align: center; }
+.party-hero .eyebrow { color: var(--card-gold); }
+.party-hero h1 {
+  margin: 16px 0;
+  color: var(--wonder-cream);
+  font: 400 clamp(38px, 9vw, 64px)/.96 Georgia, serif;
+  letter-spacing: -.045em;
+}
+.party-hero h1 em { color: var(--card-gold); font-weight: 400; }
+.party-hero > p:last-of-type { color: var(--muted); font-size: 15px; line-height: 1.6; }
+.party-hero__suit { display: block; margin-top: 20px; color: var(--card-red); }
+.party-camera-panel { margin-top: 0; padding: 0; overflow: hidden; }
+.party-camera-toggle {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 88px;
+  padding: 18px 20px;
+  cursor: pointer;
+  list-style: none;
+}
+.party-camera-toggle::-webkit-details-marker { display: none; }
+.party-camera-toggle__icon { color: var(--card-gold); font-size: 30px; font-weight: 400; }
+.party-camera-toggle b { display: block; color: var(--wonder-cream); font-size: 19px; }
+.party-camera-toggle small { display: block; margin-top: 4px; color: var(--muted); font-size: 13px; }
+.party-camera-toggle__arrow { margin-left: auto; color: var(--card-gold); font-size: 22px; }
+.party-camera-panel[open] .party-camera-toggle { border-bottom: 1px solid var(--line); }
+.party-camera-panel[open] .party-camera-toggle__arrow { transform: rotate(180deg); }
+.party-camera-fields { max-width: 660px; margin-inline: auto; padding: 4px 20px 20px; }
+.party-camera-fields .hint { color: var(--muted); }
+.party-photo-picker {
+  position: relative;
+  display: grid;
+  gap: 5px;
+  place-items: center;
+  padding: 20px 14px;
+  border: 1px dashed rgba(217,180,109,.55);
+  border-radius: 12px;
+  background: rgba(217,180,109,.06);
+  cursor: pointer;
+  text-align: center;
+}
+.party-photo-picker input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+.party-photo-picker:focus-within { outline: 2px solid var(--card-gold); outline-offset: 3px; }
+.party-photo-picker > span { color: var(--card-gold); font-size: 30px; line-height: 1; }
+.party-photo-picker b { color: var(--wonder-cream); font-size: 16px; }
+.party-photo-picker small { color: var(--muted); font-size: 12px; }
 .party-preview {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
   margin: 14px 0;
 }
+.party-preview[hidden] { display: none; }
 .party-preview div { display: grid; gap: 6px; }
 .party-preview img {
   width: 100%;
@@ -328,26 +375,82 @@ h1, h2, h3 { margin: 0; line-height: 1.15; font-weight: 800; }
   border: 1px solid var(--line);
   border-radius: var(--r);
 }
+.party-album { margin-top: 38px; }
 .party-gallery-head {
   display: flex;
   align-items: end;
   justify-content: space-between;
   gap: 12px;
-  margin: 28px 0 12px;
+  margin-bottom: 10px;
 }
-.party-photo-grid { display: grid; gap: 14px; }
+.party-gallery-head .eyebrow { margin: 0 0 7px; color: var(--card-gold); }
+.party-gallery-head h2 { color: var(--wonder-cream); font: 400 clamp(25px, 6vw, 32px)/1.1 Georgia, serif; }
+.party-photo-count {
+  flex-shrink: 0;
+  padding: 5px 9px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-pill);
+  color: var(--muted);
+  font: 12px/1.4 ui-sans-serif, system-ui, sans-serif;
+}
+.party-photo-count:empty { display: none; }
+.party-photo-grid { display: grid; gap: 22px; }
 .party-photo-tile {
+  min-width: 0;
   overflow: hidden;
-  border: 1px solid var(--line);
-  border-radius: var(--r);
-  background: var(--surface);
+  padding: 8px;
+  border: 1px solid #cfb997;
+  border-radius: 7px;
+  color: #432d27;
+  background: linear-gradient(140deg, #fff5e2, #ead9ba);
+  box-shadow: 0 14px 32px #0005;
 }
-.party-photo-tile > img { display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: cover; }
-.party-photo-tile__body { padding: 12px; }
-.party-photo-tile__meta { display: grid; gap: 3px; min-height: 34px; }
-.party-photo-tile__actions { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 10px; }
-.party-photo-tile__actions .btn { text-decoration: none; }
-.party-section-note { margin: 22px 0 0; }
+.party-photo-tile__image { overflow: hidden; border-radius: 3px; background: #171316; }
+.party-photo-tile__image img { display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: contain; }
+.party-photo-tile__body { padding: 14px 8px 8px; }
+.party-photo-tile__meta { display: grid; gap: 5px; overflow-wrap: anywhere; }
+.party-photo-tile__meta h3 { font: 700 21px/1.2 Georgia, serif; }
+.party-photo-tile__meta p { margin: 0; color: #735a4b; font: italic 14px/1.45 Georgia, serif; }
+.party-photo-tile__actions { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
+.photo-look {
+  display: inline-flex;
+  gap: 3px;
+  padding: 3px;
+  border: 1px solid #bca383;
+  border-radius: var(--r-pill);
+  background: #dfcbaa66;
+}
+.photo-look__button {
+  min-height: 44px;
+  padding: 9px 15px;
+  border: 0;
+  border-radius: var(--r-pill);
+  background: transparent;
+  color: #61473b;
+  font: 600 13px/1 ui-sans-serif, system-ui, sans-serif;
+  cursor: pointer;
+}
+.photo-look__button[aria-pressed="true"] { color: #fff7e7; background: #584137; box-shadow: 0 2px 4px #432d2726; }
+.party-photo-tile .party-photo-save {
+  min-height: 48px;
+  margin-left: auto;
+  padding: 12px 23px;
+  border-radius: var(--r-pill);
+  background: #641f32;
+  color: #fff7e7;
+  font: 700 14px/1 ui-sans-serif, system-ui, sans-serif;
+  text-decoration: none;
+}
+.party-photo-tile :focus-visible { outline: 2px solid #641f32; outline-offset: 3px; }
+.party-section-note { margin: 0 0 18px; color: var(--muted); font-size: 14px; line-height: 1.5; }
+@media (min-width: 700px) {
+  .party-photo-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 360px) {
+  .party-photo-tile__body { padding-inline: 4px; }
+  .photo-look__button { padding-inline: 12px; }
+  .party-photo-tile .party-photo-save { padding-inline: 18px; }
+}
 
 .admin-photo-row {
   display: grid;

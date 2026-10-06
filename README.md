@@ -30,7 +30,8 @@ Live at whatever URL GitHub Pages serves this repo from (Settings → Pages).
    flips the page over to show them.
 4. **Take party photos** — after checking in, open **Party photos** from the
    menu. The camera page makes a normal copy and a film-look copy of each
-   candid photo, uploads both, and provides explicit save links for the phone.
+   candid photo and uploads both. Choose **Normal** or **Film** on a photo,
+   then use its single **Save** button to keep the version you are viewing.
 5. **Contribute to the party** — an optional sign opens Juliette's Venmo
    in a new tab. Set `VENMO_URL` in `config.js` to her full HTTPS Venmo
    profile link; leaving it blank hides the sign and its note.
@@ -126,9 +127,10 @@ data:
   but the page remains available for costume-photo downloads.
 
 The browser cannot silently write into a phone's Photos library. The app
-therefore gives the person who took each photo clear **Save normal** and
-**Save film** actions. On iPhone, the browser may show the normal share/save
-sheet; that extra tap is required by the phone's security model.
+therefore provides a **Save** action for the version currently displayed.
+Use **Normal** / **Film** to switch looks when both are available. On iPhone,
+the browser may show the normal share/save sheet; that extra tap is required
+by the phone's security model.
 
 **`votes` is the one table that's deliberately *not* meant to be kept
 forever** — it's per-party ballots, not part of anyone's personal record.
