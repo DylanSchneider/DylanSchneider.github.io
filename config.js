@@ -44,9 +44,5 @@ window.PARTY_CONFIG = {
   // Longest edge of an uploaded photo, in pixels, after phone-side resizing.
   // Large enough for ordinary 8x11 prints while still reasonable on party Wi-Fi.
   PHOTO_MAX_EDGE: 2800,
-  PHOTO_QUALITY: 0.88,
-
-  // Party photos get a film copy derived from the same resized pixels as the
-  // normal copy. Costume entries keep the normal copy only.
-  FILM_QUALITY: 0.88
+  PHOTO_QUALITY: 0.88
 };

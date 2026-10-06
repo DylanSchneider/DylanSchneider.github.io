@@ -4,8 +4,8 @@
    here is read-only for anyone without it.
    ===================================================================== */
 
-import { api, photoUrl, IS_LIVE, PARTY_ID } from './store.js';
-import { messageFor } from './messages.js?v=20261005-6';
+import { api, photoUrl, IS_LIVE, PARTY_ID } from './store.js?v=20261005-8';
+import { messageFor } from './messages.js?v=20261005-8';
 
 const CFG = window.PARTY_CONFIG || {};
 const RESET_ENABLED = CFG.ENABLE_TEST_RESET !== false;
@@ -313,15 +313,13 @@ function paintPartyPhotos() {
   }
   box.replaceChildren(...state.partyPhotos.map((photo) => {
     const normal = photoUrl(photo.normal_path, 'party-photos');
-    const film = photoUrl(photo.film_path, 'party-photos');
     return h('div', { class: 'admin-photo-row' },
       h('img', { src: normal, alt: photo.caption || 'Party photo', loading: 'lazy' }),
       h('div', { class: 'rank__main' },
         h('div', { class: 'rank__title', text: photo.caption || 'Party photo' }),
         h('div', { class: 'rank__sub', text: `📸 ${photo.uploader || 'Guest'}` }),
         h('div', { class: 'party-photo-tile__actions' },
-          h('a', { class: 'btn btn--ghost btn--sm', href: normal, download: `party-${photo.id}-normal.jpg`, target: '_blank', rel: 'noopener' }, 'Save normal'),
-          h('a', { class: 'btn btn--ghost btn--sm', href: film, download: `party-${photo.id}-film.jpg`, target: '_blank', rel: 'noopener' }, 'Save film')
+          h('a', { class: 'btn btn--ghost btn--sm', href: normal, download: `party-${photo.id}.jpg`, target: '_blank', rel: 'noopener' }, 'Save')
         )
       )
     );

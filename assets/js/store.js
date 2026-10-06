@@ -112,11 +112,7 @@ async function decode(file) {
   return { src: img, free: () => URL.revokeObjectURL(url) };
 }
 
-/**
- * Resize one phone photo into two useful, printable copies before it leaves
- * the device. The film copy is derived from the same pixels as the normal
- * copy, so we never make guests upload the original camera file twice.
- */
+/** Resize one phone photo into a printable JPEG before upload. */
 export async function shrinkPhoto(file, maxEdge, quality) {
   maxEdge = maxEdge || CFG.PHOTO_MAX_EDGE || 2800;
   quality = quality || CFG.PHOTO_QUALITY || 0.88;
@@ -140,70 +136,6 @@ export async function shrinkPhoto(file, maxEdge, quality) {
     const blob = await new Promise((r) => canvas.toBlob(r, 'image/jpeg', quality));
     if (!blob) throw new Error('Could not process that photo.');
     return blob;
-  } finally {
-    try { free(src); } catch { /* nothing to free */ }
-  }
-}
-
-function blobFromCanvas(canvas, quality) {
-  return new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', quality));
-}
-
-function applyFilmLook(ctx, width, height) {
-  const image = ctx.getImageData(0, 0, width, height);
-  const px = image.data;
-  const cx = width / 2, cy = height / 2;
-  const maxDist = Math.sqrt(cx * cx + cy * cy);
-
-  for (let y = 0; y < height; y++) {
-    for (let x = 0; x < width; x++) {
-      const i = (y * width + x) * 4;
-      const dx = x - cx, dy = y - cy;
-      const vignette = Math.max(0, Math.min(1, Math.sqrt(dx * dx + dy * dy) / maxDist));
-      const leak = Math.max(0, 1 - (x / width) * 2.5) * Math.max(0, 1 - y / height);
-      const grain = ((Math.sin((x + 17) * 12.9898 + (y + 31) * 78.233) * 43758.5453) % 1) * 7;
-      const faded = 0.92;
-
-      let r = px[i] * faded + 8 + leak * 18;
-      let g = px[i + 1] * faded + 3 + leak * 5;
-      let b = px[i + 2] * faded - 3;
-      const contrast = 0.94;
-      r = ((r - 128) * contrast + 128) + grain;
-      g = ((g - 128) * contrast + 128) + grain;
-      b = ((b - 128) * contrast + 128) + grain;
-      const edge = 1 - vignette * vignette * 0.28;
-
-      px[i] = Math.max(0, Math.min(255, r * edge));
-      px[i + 1] = Math.max(0, Math.min(255, g * edge));
-      px[i + 2] = Math.max(0, Math.min(255, b * edge));
-    }
-  }
-  ctx.putImageData(image, 0, 0);
-}
-
-export async function processPhotoVariants(file, maxEdge, quality, filmQuality) {
-  maxEdge = maxEdge || CFG.PHOTO_MAX_EDGE || 2800;
-  quality = quality || CFG.PHOTO_QUALITY || 0.88;
-  filmQuality = filmQuality || CFG.FILM_QUALITY || quality;
-
-  const { src, free } = await decode(file);
-  try {
-    const w0 = src.width, h0 = src.height;
-    if (!w0 || !h0) throw new Error('That image looks empty.');
-    const scale = Math.min(1, maxEdge / Math.max(w0, h0));
-    const w = Math.max(1, Math.round(w0 * scale));
-    const h = Math.max(1, Math.round(h0 * scale));
-    const canvas = document.createElement('canvas');
-    canvas.width = w; canvas.height = h;
-    const ctx = canvas.getContext('2d', { willReadFrequently: true });
-    ctx.imageSmoothingQuality = 'high';
-    ctx.drawImage(src, 0, 0, w, h);
-    const normal = await blobFromCanvas(canvas, quality);
-    if (!normal) throw new Error('Could not process that photo.');
-    applyFilmLook(ctx, w, h);
-    const film = await blobFromCanvas(canvas, filmQuality);
-    if (!film) throw new Error('Could not create the film version.');
-    return { normal, film };
   } finally {
     try { free(src); } catch { /* nothing to free */ }
   }
@@ -237,19 +169,6 @@ async function uploadObject(bucket, name, blob) {
     throw new Error(friendlyError(t || `Photo upload failed (${res.status}).`, res.status));
   }
   return name;
-}
-
-async function uploadPhotoPair(ownerId, variants, bucket = BUCKET, prefix = PARTY_ID) {
-  const stamp = `${ownerId}-${Date.now()}-${crypto.randomUUID?.() || Math.random().toString(36).slice(2)}`;
-  const normalPath = `${prefix}/${stamp}-normal.jpg`;
-  const filmPath = `${prefix}/${stamp}-film.jpg`;
-  // Upload both copies together so the submit button does not sit idle while
-  // the normal version finishes before the film version starts.
-  await Promise.all([
-    uploadObject(bucket, normalPath, variants.normal),
-    uploadObject(bucket, filmPath, variants.film)
-  ]);
-  return { normalPath, filmPath };
 }
 
 async function uploadPhotoSingle(ownerId, blob, bucket = BUCKET, prefix = PARTY_ID) {
@@ -554,7 +473,7 @@ const demo = {
   addPartyPhoto(guestId, photoPaths, caption) {
     const db = demoRead();
     const photo = {
-      id: uid(), normal_path: photoPaths.normal, film_path: photoPaths.film,
+      id: uid(), normal_path: photoPaths.normal,
       caption: cleanText(caption), uploader: (db.guests.find((g) => g.id === guestId) || {}).full_name || 'Guest',
       created_at: new Date().toISOString()
     };
@@ -696,19 +615,19 @@ export const api = {
       : Promise.resolve(demo.updateGuest(guestId, fullName, costumeName));
   },
 
-  async uploadPartyPhoto(guestId, photoVariants, caption) {
-    if (!photoVariants?.normal || !photoVariants?.film) throw new Error('Both normal and film photo versions are required.');
+  async uploadPartyPhoto(guestId, photo, caption) {
+    if (!photo) throw new Error('A photo is required.');
     if (!IS_LIVE) {
       return demo.addPartyPhoto(guestId, {
-        normal: await blobToDataUrl(photoVariants.normal),
-        film: await blobToDataUrl(photoVariants.film)
+        normal: await blobToDataUrl(photo)
       }, caption);
     }
-    const paths = await uploadPhotoPair(guestId, photoVariants, PARTY_PHOTO_BUCKET, PARTY_ID);
+    const path = await uploadPhotoSingle(guestId, photo, PARTY_PHOTO_BUCKET, PARTY_ID);
     return rpc('create_party_photo', {
-      p_party: PARTY_ID, p_guest: guestId,
-      p_normal_path: paths.normalPath, p_film_path: paths.filmPath,
-      p_caption: caption || null
+      p_party: PARTY_ID, p_guest: guestId, p_normal_path: path,
+      // Older database versions require this argument. Reuse the same file
+      // until the single-photo migration is applied; never upload a second copy.
+      p_film_path: path, p_caption: caption || null
     });
   },
 

@@ -1,6 +1,6 @@
 /* Party camera: temporary candid photos, separate from costume entries. */
-import { api, session, photoUrl, processPhotoVariants, IS_LIVE } from './store.js';
-import { messageFor } from './messages.js?v=20261005-6';
+import { api, session, photoUrl, shrinkPhoto, IS_LIVE } from './store.js?v=20261005-8';
+import { messageFor } from './messages.js?v=20261005-8';
 
 const CFG = window.PARTY_CONFIG || {};
 const $ = (id) => document.getElementById(id);
@@ -21,9 +21,8 @@ const h = (tag, attrs, ...kids) => {
 };
 
 const me = session.get();
-let variants = null;
-let previewUrls = [];
-const selectedLooks = new Map();
+let photoBlob = null;
+let previewUrl = null;
 
 function toast(msg, kind) {
   const box = $('toast');
@@ -36,40 +35,17 @@ function toast(msg, kind) {
 function loading(btn, on) { btn.disabled = on; btn.classList.toggle('is-loading', on); }
 
 function photoTile(photo, bucket, kind) {
-  const normal = photoUrl(photo.normal_path, bucket);
-  const film = photo.film_path ? photoUrl(photo.film_path, bucket) : null;
+  const url = photoUrl(photo.normal_path, bucket);
   const title = kind === 'costume'
     ? (photo.title || 'Costume photo')
     : (photo.uploader || 'Party photo');
   const filePrefix = kind === 'costume' ? 'costume' : 'party';
-  const lookKey = `${kind}:${photo.id}`;
   const description = photo.caption || photo.title || `Party photo by ${title}`;
-  const img = h('img', { loading: 'lazy', decoding: 'async' });
+  const img = h('img', { src: url, alt: description, loading: 'lazy', decoding: 'async' });
   const save = h('a', {
-    class: 'btn party-photo-save', target: '_blank', rel: 'noopener noreferrer'
+    class: 'btn party-photo-save', href: url, download: `${filePrefix}-${photo.id}.jpg`,
+    target: '_blank', rel: 'noopener noreferrer', 'aria-label': `Save photo: ${title}`
   }, 'Save');
-  const normalButton = film ? h('button', {
-    class: 'photo-look__button', type: 'button', onclick: () => show('normal')
-  }, 'Normal') : null;
-  const filmButton = film ? h('button', {
-    class: 'photo-look__button', type: 'button', onclick: () => show('film')
-  }, 'Film') : null;
-
-  function show(look) {
-    const isFilm = look === 'film' && Boolean(film);
-    const version = isFilm ? 'film' : 'normal';
-    const url = isFilm ? film : normal;
-    selectedLooks.set(lookKey, version);
-    img.src = url;
-    img.alt = `${description} — ${isFilm ? 'film' : 'normal'} version`;
-    // The preview and its single Save action always use the same version.
-    save.href = url;
-    save.download = `${filePrefix}-${photo.id}-${version}.jpg`;
-    save.setAttribute('aria-label', `Save ${version} photo: ${title}`);
-    normalButton?.setAttribute('aria-pressed', String(!isFilm));
-    filmButton?.setAttribute('aria-pressed', String(isFilm));
-  }
-  show(selectedLooks.get(lookKey) || 'normal');
 
   return h('article', { class: 'party-photo-tile' },
     h('div', { class: 'party-photo-tile__image' }, img),
@@ -79,7 +55,6 @@ function photoTile(photo, bucket, kind) {
         (photo.caption || photo.owner) ? h('p', { text: photo.caption || photo.owner }) : null
       ),
       h('div', { class: 'party-photo-tile__actions' },
-        film ? h('div', { class: 'photo-look', role: 'group', 'aria-label': 'Photo version' }, normalButton, filmButton) : null,
         save
       )
     )
@@ -98,7 +73,6 @@ async function loadGallery() {
         id: entry.id,
         title: entry.title,
         normal_path: entry.photo_path,
-        film_path: entry.photo_path_film || null,
         owner: entry.members?.find((member) => member.is_owner)?.name || ''
       }));
 
@@ -142,15 +116,14 @@ function initializePartyCamera() {
     $('party-photo-error').textContent = '';
     $('party-upload').disabled = true;
     try {
-      variants = await processPhotoVariants(file, CFG.PHOTO_MAX_EDGE, CFG.PHOTO_QUALITY, CFG.FILM_QUALITY);
-      previewUrls.forEach((url) => URL.revokeObjectURL(url));
-      previewUrls = [URL.createObjectURL(variants.normal), URL.createObjectURL(variants.film)];
-      $('party-preview-normal').src = previewUrls[0];
-      $('party-preview-film').src = previewUrls[1];
+      photoBlob = await shrinkPhoto(file, CFG.PHOTO_MAX_EDGE, CFG.PHOTO_QUALITY);
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+      previewUrl = URL.createObjectURL(photoBlob);
+      $('party-preview-image').src = previewUrl;
       $('party-preview').hidden = false;
       $('party-upload').disabled = false;
     } catch (err) {
-      variants = null;
+      photoBlob = null;
       $('party-preview').hidden = true;
       $('party-photo-error').textContent = 'Try a different photo.';
       ev.target.value = '';
@@ -158,28 +131,28 @@ function initializePartyCamera() {
   });
 
   $('party-upload').addEventListener('click', async (ev) => {
-    if (!variants) return;
+    if (!photoBlob) return;
     const btn = ev.currentTarget;
     const status = $('party-upload-status');
     loading(btn, true);
     btn.textContent = 'Adding…';
     status.textContent = '';
     try {
-      await api.uploadPartyPhoto(me.id, variants, $('party-caption').value.trim());
+      await api.uploadPartyPhoto(me.id, photoBlob, $('party-caption').value.trim());
       toast('Another memory for the looking glass.', 'good');
       status.textContent = '';
       $('party-photo-file').value = '';
       $('party-caption').value = '';
-      variants = null;
+      photoBlob = null;
       $('party-preview').hidden = true;
-      previewUrls.forEach((url) => URL.revokeObjectURL(url));
-      previewUrls = [];
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+      previewUrl = null;
       btn.disabled = true;
       await loadGallery();
     } catch (err) {
       status.textContent = messageFor(err, 'Your photo slipped away. Try again.');
     }
-    finally { loading(btn, false); btn.textContent = 'Add to album'; btn.disabled = !variants; }
+    finally { loading(btn, false); btn.textContent = 'Add to album'; btn.disabled = !photoBlob; }
   });
 
   $('party-refresh').addEventListener('click', loadGallery);

@@ -11,12 +11,12 @@ Live at whatever URL GitHub Pages serves this repo from (Settings → Pages).
 
 1. **Check in** — separate first and last name fields + phone number. This builds a master guest list
    that persists across years.
-2. **Enter a costume.** Choose **Solo** or **Group / pair** first:
+2. **Enter a costume.** Choose **Solo** or **Group** first:
    - **Going solo** — just a costume name and a required photo.
    - **Starting a group** — a group name (e.g. "Alice in Wonderland") and
      your own individual costume/role within it (e.g. "Mad Hatter"), plus
      a photo for the whole group.
-   - **Joining a group** — choose **Group / pair** to see existing groups;
+   - **Joining a group** — choose **Group** to see existing groups;
      tap "Join" on your group and enter your own costume/role
      (e.g. "White Rabbit"). No need to know who's starting it in advance —
      whoever gets there first starts it, everyone else joins.
@@ -29,9 +29,8 @@ Live at whatever URL GitHub Pages serves this repo from (Settings → Pages).
    group). Results stay hidden until voting closes, when the countdown
    flips the page over to show them.
 4. **Take party photos** — after checking in, open **Party photos** from the
-   menu. The camera page makes a normal copy and a film-look copy of each
-   candid photo and uploads both. Choose **Normal** or **Film** on a photo,
-   then use its single **Save** button to keep the version you are viewing.
+   menu. Each candid photo is resized and uploaded once. Use its **Save**
+   button to keep the photo.
 5. **Contribute to the party** — the optional **Keep the magic going** sign
    opens a Wonderland invitation with a link to Juliette's Venmo in a new
    tab. Set `VENMO_URL` in `config.js` to her full HTTPS Venmo
@@ -89,6 +88,21 @@ Until you do this, the site runs in **demo mode**: fully clickable on one
 phone, but nothing is shared between phones and no votes are real. A banner
 says so on every page in that mode.
 
+## Updating an existing database
+
+For the single-image party-photo update, run
+[`supabase/migrations/20261005_single_party_photo.sql`](supabase/migrations/20261005_single_party_photo.sql)
+in the Supabase SQL Editor. New installations can use the updated
+`supabase/schema.sql` directly.
+
+The migration removes the two-version requirement and updates the guest
+and host photo APIs. Existing photos and their original images remain
+available. Legacy film-path metadata and Storage files are preserved, but
+the album and host page only display and save the original photo. The
+optional old RPC argument remains for cached clients. The updated app also
+works before the migration by passing the same image path for both legacy
+arguments; it uploads only one file.
+
 ## Multi-year usage
 
 This is meant to be reused every year (it's on its 5th annual as of 2026) —
@@ -120,16 +134,15 @@ Party candids are intentionally separate from the durable costume/history
 data:
 
 - **`party_photos`** — lightweight metadata for the temporary party-photo
-  wall. The image files live in the `party-photos` Storage bucket, with both
-  normal and film versions. The Party Pictures page also exposes every durable
+  wall. The image files live in the `party-photos` Storage bucket, with
+  one image per photo. The Party Pictures page also exposes every durable
   costume photo for download. After the party, use the host page's download
-  links to save the temporary party versions to your computer, then remove
+  links to save the temporary party photos to your computer, then remove
   those files from Storage. The party camera closes at the party deadline,
   but the page remains available for costume-photo downloads.
 
 The browser cannot silently write into a phone's Photos library. The app
-therefore provides a **Save** action for the version currently displayed.
-Use **Normal** / **Film** to switch looks when both are available. On iPhone,
+therefore provides a **Save** action for each photo. On iPhone,
 the browser may show the normal share/save sheet; that extra tap is required
 by the phone's security model.
 
@@ -202,6 +215,7 @@ Supabase.
 | `assets/css/app.css` | Shared mobile-first styling for both pages |
 | `config.js` | The only file you edit per party/year |
 | `supabase/schema.sql` | Paste-once database setup |
+| `supabase/migrations/` | Updates for existing databases |
 
 ## Design notes
 
@@ -212,9 +226,9 @@ Supabase.
   close, PIN-gated admin actions) is enforced in Postgres functions, not
   just in the browser — a guest editing the page's JS can't cheat.
 - Photos are resized to a maximum 2800px edge on the phone before upload.
-  Costume entries upload one normal JPEG; party candids upload both a normal
-  JPEG and a film-look JPEG. This keeps the files useful for ordinary 8×11
-  prints without sending original 10MB camera files to the server.
+  Both costume entries and party candids upload one JPEG. This keeps the
+  files useful for ordinary 8×11 prints without sending original 10MB camera
+  files to the server.
 - Tap targets, type sizes, and layout are tuned for one-handed phone use in
   a dark room; the countdown clock's numbers come from the Supabase
   server clock, not the phone's, so a wrong device clock can't lie about

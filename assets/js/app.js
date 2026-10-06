@@ -3,8 +3,8 @@
    Screens: check in → costume (join / start solo / start group / edit) → vote
    ===================================================================== */
 
-import { api, session, photoUrl, shrinkPhoto, IS_LIVE } from './store.js';
-import { messageFor } from './messages.js?v=20261005-6';
+import { api, session, photoUrl, shrinkPhoto, IS_LIVE } from './store.js?v=20261005-8';
+import { messageFor } from './messages.js?v=20261005-8';
 
 const CFG = window.PARTY_CONFIG || {};
 const $ = (id) => document.getElementById(id);
@@ -302,7 +302,7 @@ function renderCostume(mode, ctx) {
   updateBackButton();
   const topTitle = $('costume-top-title');
   if (topTitle) topTitle.textContent = {
-    chooser: 'Your costume', solo: 'Solo costume', groups: 'Group / pair', group: 'Start a group',
+    chooser: 'Your costume', solo: 'Solo costume', groups: 'Group', group: 'Start a group',
     join: 'Join a group', edit: 'Edit costume'
   }[mode] || 'Costume';
   const refreshButton = $('btn-costume-refresh');
@@ -438,7 +438,7 @@ function renderChooser(slot) {
     h('h2', { class: 'section-title costume-heading' }, 'How are you arriving?'),
     h('div', { class: 'wonder-signpost costume-choices' },
       costumeChoice('solo', '♠', 'Solo', 'A curious character'),
-      costumeChoice('groups', '♥', 'Group / pair', 'A cast of characters')
+      costumeChoice('groups', '♥', 'Group', 'A cast of characters')
     )
   );
 }
@@ -463,14 +463,14 @@ async function renderGroupChooser(slot) {
   const groups = h('div', { 'aria-live': 'polite' },
     h('p', { class: 'hint' }, 'Looking for your group…'));
   slot.replaceChildren(
-    h('p', { class: 'eyebrow' }, 'Group / pair'),
+    h('p', { class: 'eyebrow' }, 'Group'),
     h('h2', { class: 'section-title costume-heading' }, 'Find your cast of characters'),
     h('p', { class: 'hint' }, 'Join your group, or be the first to start it.'),
     groups,
     h('div', { class: 'choice-divider' }, 'First one here?'),
     h('button', {
       class: 'btn btn--primary btn--block', type: 'button', onclick: () => renderCostume('group')
-    }, 'Start a group / pair')
+    }, 'Start a group')
   );
 
   try {

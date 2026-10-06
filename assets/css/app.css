@@ -362,12 +362,10 @@ h1, h2, h3 { margin: 0; line-height: 1.15; font-weight: 800; }
 .party-photo-picker small { color: var(--muted); font-size: 12px; }
 .party-preview {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
   margin: 14px 0;
 }
 .party-preview[hidden] { display: none; }
-.party-preview div { display: grid; gap: 6px; }
 .party-preview img {
   width: 100%;
   aspect-ratio: 4 / 3;
@@ -412,25 +410,6 @@ h1, h2, h3 { margin: 0; line-height: 1.15; font-weight: 800; }
 .party-photo-tile__meta h3 { font: 700 21px/1.2 Georgia, serif; }
 .party-photo-tile__meta p { margin: 0; color: #735a4b; font: italic 14px/1.45 Georgia, serif; }
 .party-photo-tile__actions { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
-.photo-look {
-  display: inline-flex;
-  gap: 3px;
-  padding: 3px;
-  border: 1px solid #bca383;
-  border-radius: var(--r-pill);
-  background: #dfcbaa66;
-}
-.photo-look__button {
-  min-height: 44px;
-  padding: 9px 15px;
-  border: 0;
-  border-radius: var(--r-pill);
-  background: transparent;
-  color: #61473b;
-  font: 600 13px/1 ui-sans-serif, system-ui, sans-serif;
-  cursor: pointer;
-}
-.photo-look__button[aria-pressed="true"] { color: #fff7e7; background: #584137; box-shadow: 0 2px 4px #432d2726; }
 .party-photo-tile .party-photo-save {
   min-height: 48px;
   margin-left: auto;
@@ -447,7 +426,6 @@ h1, h2, h3 { margin: 0; line-height: 1.15; font-weight: 800; }
 }
 @media (max-width: 360px) {
   .party-photo-tile__body { padding-inline: 4px; }
-  .photo-look__button { padding-inline: 12px; }
   .party-photo-tile .party-photo-save { padding-inline: 18px; }
 }
 

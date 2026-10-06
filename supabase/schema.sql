@@ -67,7 +67,7 @@ create table if not exists public.party_photos (
   party_id      text        not null references public.parties(id) on delete cascade,
   uploader_id   uuid        not null references public.guests(id) on delete cascade,
   normal_path   text        not null,
-  film_path     text        not null,
+  film_path     text,                                    -- legacy metadata; new uploads use normal_path only
   caption       text,
   created_at    timestamptz not null default now()
 );
@@ -134,6 +134,9 @@ create index if not exists party_photos_party_idx on public.party_photos (party_
 --  install (nothing above created the old column/function, so these
 --  "if exists" statements simply find nothing to do).
 -- ---------------------------------------------------------------------
+
+-- Keep existing photo rows while removing the old two-version requirement.
+alter table public.party_photos alter column film_path drop not null;
 
 -- Replaced by entry_members: each guest's own costume now has its own row
 -- instead of being a free-text name in the group owner's entry.
@@ -717,8 +720,9 @@ end $$;
 
 -- Candid photos are separate from costume entries and are intended to be
 -- downloaded by the host after the party, then cleared from Storage.
+-- The optional p_film_path argument is retained for older clients, but ignored.
 create or replace function public.create_party_photo(
-  p_party text, p_guest uuid, p_normal_path text, p_film_path text, p_caption text default null
+  p_party text, p_guest uuid, p_normal_path text, p_film_path text default null, p_caption text default null
 ) returns json language plpgsql security definer set search_path = public as $$
 declare
   p public.parties;
@@ -735,17 +739,16 @@ begin
   if not exists (select 1 from public.attendance where party_id = p_party and guest_id = p_guest) then
     raise exception 'Check in with your name and number first.';
   end if;
-  if nullif(btrim(p_normal_path), '') is null or nullif(btrim(p_film_path), '') is null then
-    raise exception 'Both normal and film photo versions are required.';
+  if nullif(btrim(p_normal_path), '') is null then
+    raise exception 'A photo is required.';
   end if;
 
   v_caption := nullif(clean_text(p_caption), '');
-  insert into public.party_photos (party_id, uploader_id, normal_path, film_path, caption)
-  values (p_party, p_guest, p_normal_path, p_film_path, v_caption)
+  insert into public.party_photos (party_id, uploader_id, normal_path, caption)
+  values (p_party, p_guest, p_normal_path, v_caption)
   returning id into v_id;
 
-  return json_build_object('id', v_id, 'normal_path', p_normal_path,
-                           'film_path', p_film_path, 'caption', v_caption);
+  return json_build_object('id', v_id, 'normal_path', p_normal_path, 'caption', v_caption);
 end $$;
 
 create or replace function public.list_party_photos(p_party text, p_guest uuid)
@@ -765,7 +768,6 @@ begin
     select coalesce(json_agg(json_build_object(
              'id', pp.id,
              'normal_path', pp.normal_path,
-             'film_path', pp.film_path,
              'caption', pp.caption,
              'created_at', pp.created_at,
              'uploader', g.full_name
@@ -784,7 +786,6 @@ begin
     select coalesce(json_agg(json_build_object(
              'id', pp.id,
              'normal_path', pp.normal_path,
-             'film_path', pp.film_path,
              'caption', pp.caption,
              'created_at', pp.created_at,
              'uploader', g.full_name
@@ -1080,3 +1081,5 @@ on conflict (id) do nothing;
 --   values ('2027', 'Halloween 2027', (timestamp '2027-10-30 22:00') at time zone 'America/Denver', '1520')
 --   on conflict (id) do nothing;
 -- Then bump PARTY_ID in config.js to '2027' and redeploy.
+
+notify pgrst, 'reload schema';
