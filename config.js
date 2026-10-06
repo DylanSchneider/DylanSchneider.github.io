@@ -29,6 +29,10 @@ window.PARTY_CONFIG = {
   PARTY_TITLE: 'Halloween',
   PARTY_YEAR: '2026',
 
+  // Juliette's full https://venmo.com/ profile link. Blank hides the
+  // optional contribution sign and note on the party menu.
+  VENMO_URL: '',
+
   // Set false before the party to hide the destructive test reset control.
   // The database flag testing_reset_enabled can also be set false in Supabase.
   ENABLE_TEST_RESET: true,

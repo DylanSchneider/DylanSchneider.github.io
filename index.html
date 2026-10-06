@@ -11,7 +11,7 @@
 <meta name="format-detection" content="telephone=no">
 <title>Down the Rabbit Hole · Costume Contest</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐰</text></svg>">
-<link rel="stylesheet" href="assets/css/app.css?v=20261005-2">
+<link rel="stylesheet" href="assets/css/app.css?v=20261005-3">
 </head>
 <body>
 <div class="bg-fx"></div>
@@ -135,7 +135,7 @@
 
       <nav class="hub__signpost" aria-labelledby="hub-menu-title">
         <h2 class="eyebrow" id="hub-menu-title">Where shall we go?</h2>
-        <div class="hub__signs">
+        <div class="wonder-signpost">
           <button class="wonder-sign wonder-sign--teal" id="hub-edit" type="button">
             <span class="wonder-sign__glyph" aria-hidden="true">♠</span>
             <span class="wonder-sign__copy"><small>This way</small><b>Edit your costume</b><span>Change your photo or role</span></span>
@@ -148,6 +148,16 @@
             <span class="wonder-sign__glyph" aria-hidden="true">♣</span>
             <span class="wonder-sign__copy"><small>Through the looking glass</small><b>Party pictures</b><span>Capture a little madness</span></span>
           </button>
+          <a class="wonder-sign wonder-sign--gold wonder-sign--left" id="hub-contribute"
+             target="_blank" rel="noopener noreferrer" aria-describedby="hub-contribution-note" hidden>
+            <span class="wonder-sign__glyph" aria-hidden="true">♦</span>
+            <span class="wonder-sign__copy"><small>Keep the party going</small><b>Contribute to party</b><span>Juliette’s Venmo <span aria-hidden="true">↗</span></span></span>
+            <span class="sr-only">(opens in a new tab)</span>
+          </a>
+        </div>
+        <div class="hub__contribution-note" id="hub-contribution-note" hidden>
+          <p><strong>Forgot to bring something, or want to keep the party going?</strong> Chip in for drinks, snacks, and a little more Wonderland magic.</p>
+          <small>Completely optional—we’re just happy you’re here.</small>
         </div>
         <p class="hub__signpost-note">Every path leads to a little madness.</p>
       </nav>
@@ -207,11 +217,11 @@
   </div>
 </noscript>
 
-<script src="config.js"></script>
+<script src="config.js?v=20261005-3"></script>
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/gsap.min.js" defer></script>
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/ScrollTrigger.min.js" defer></script>
 <script src="assets/js/rabbit-v2-loader.js" defer></script>
 <script src="assets/js/wonderland.js?v=20261005-1" defer></script>
-<script type="module" src="assets/js/app.js?v=20261005-1"></script>
+<script type="module" src="assets/js/app.js?v=20261005-3"></script>
 </body>
 </html>

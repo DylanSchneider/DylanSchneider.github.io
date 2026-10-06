@@ -453,20 +453,25 @@ function renderChooser(slot) {
     h('p', { class: 'eyebrow' }, 'Step 2 of 2 · Your costume'),
     h('h2', { class: 'section-title costume-heading' }, 'How are you arriving?'),
     h('p', { class: 'hint' }, 'One curious character, or a whole cast?'),
-    h('div', { class: 'costume-choices' },
+    h('div', { class: 'wonder-signpost costume-choices' },
       costumeChoice('solo', '♠', 'Solo', 'My own costume and photo'),
-      costumeChoice('groups', '♥ ♣', 'Group / pair', 'A shared entry, one photo for everyone')
+      costumeChoice('groups', '♥', 'Group / pair', 'One shared entry, one group photo')
     )
   );
 }
 
 function costumeChoice(mode, glyph, title, detail) {
+  const isSolo = mode === 'solo';
   return h('button', {
-    class: 'btn costume-choice', type: 'button', onclick: () => renderCostume(mode)
+    class: `wonder-sign costume-choice ${isSolo ? 'wonder-sign--teal' : 'wonder-sign--rose wonder-sign--left'}`,
+    type: 'button', onclick: () => renderCostume(mode)
   },
-    h('span', { class: 'costume-choice__glyph', 'aria-hidden': 'true', text: glyph }),
-    h('span', { class: 'costume-choice__copy' }, h('b', { text: title }), h('small', { text: detail })),
-    h('span', { class: 'costume-choice__arrow', 'aria-hidden': 'true', text: '→' })
+    h('span', { class: 'wonder-sign__glyph', 'aria-hidden': 'true', text: glyph }),
+    h('span', { class: 'wonder-sign__copy' },
+      h('small', { text: isSolo ? 'This way' : 'Together, that way' }),
+      h('b', { text: title }),
+      h('span', { text: detail })
+    )
   );
 }
 
@@ -756,6 +761,16 @@ $('hub-vote').addEventListener('click', () => goDash());
 $('hub-photos').addEventListener('click', () => { location.href = 'party.html'; });
 $('hub-edit').addEventListener('click', () => openCostume('v-hub'));
 
+function configureContributionLink() {
+  // Keep the sign out of the menu until a real Venmo destination is set.
+  let url;
+  try { url = new URL(CFG.VENMO_URL); } catch { return; }
+  if (url.protocol !== 'https:' || !['venmo.com', 'www.venmo.com', 'account.venmo.com'].includes(url.hostname)) return;
+  $('hub-contribute').href = url.href;
+  $('hub-contribute').hidden = false;
+  $('hub-contribution-note').hidden = false;
+}
+
 async function refresh(quiet, repaint = true) {
   const spin = $('btn-refresh');
   if (!quiet) spin.classList.add('is-spinning');
@@ -1028,6 +1043,7 @@ document.addEventListener('visibilitychange', () => {
 (async function boot() {
   $('brand-year').textContent = CFG.PARTY_YEAR || '';
   paintModeNotes();
+  configureContributionLink();
 
   let info;
   try {

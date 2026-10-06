@@ -413,21 +413,7 @@ h1, h2, h3 { margin: 0; line-height: 1.15; font-weight: 800; }
 
 .stack { display: grid; gap: 10px; margin-top: 20px; }
 .costume-heading { margin-top: 8px; font: 400 32px/1.15 Georgia, serif; }
-.costume-choices { display: grid; gap: 16px; margin-top: 28px; }
-.costume-choices .costume-choice {
-  justify-content: flex-start;
-  gap: 16px;
-  min-height: 112px;
-  padding: 20px;
-  border: 1px solid var(--line-strong);
-  background: linear-gradient(135deg, var(--surface-2), var(--surface));
-  text-align: left;
-}
-.costume-choice__glyph { flex: 0 0 48px; color: var(--card-gold); font: 32px/1 Georgia, serif; }
-.costume-choice__copy { display: grid; flex: 1; gap: 7px; }
-.costume-choice__copy b { font: 700 24px/1.1 Georgia, serif; }
-.costume-choice__copy small { color: var(--muted); font-size: 13px; font-weight: 400; line-height: 1.4; }
-.costume-choice__arrow { color: var(--card-gold); font-size: 24px; }
+.costume-choices { width: 100%; max-width: 520px; margin-inline: auto; }
 .group-list-title { margin: 24px 0 12px; font-size: 16px; }
 .topbar__refresh[hidden] { display: none; }
 
@@ -1681,7 +1667,7 @@ body.homepage-v2 .fall-sentinel b { color: #fff; }
   text-align: center;
 }
 .hub__signpost > .eyebrow { color: var(--card-gold); letter-spacing: .22em; }
-.hub__signs {
+.wonder-signpost {
   position: relative;
   display: grid;
   gap: 13px;
@@ -1689,7 +1675,7 @@ body.homepage-v2 .fall-sentinel b { color: #fff; }
   padding: 24px 8px 28px;
   margin-top: 10px;
 }
-.hub__signs::before {
+.wonder-signpost::before {
   content: '';
   position: absolute;
   z-index: -1;
@@ -1718,6 +1704,7 @@ body.homepage-v2 .fall-sentinel b { color: #fff; }
   background: transparent;
   color: #541b25;
   text-align: left;
+  text-decoration: none;
   cursor: pointer;
   transform: rotate(var(--sign-angle));
   filter: drop-shadow(0 8px 5px #0008);
@@ -1737,6 +1724,8 @@ body.homepage-v2 .fall-sentinel b { color: #fff; }
 }
 .wonder-sign--rose { --sign-tint: #dca1b9; --sign-angle: 3deg; }
 .wonder-sign--lavender { --sign-tint: #afa1c7; --sign-angle: -3deg; }
+.wonder-sign--gold { --sign-tint: #d6b078; --sign-angle: 3deg; }
+.wonder-sign[hidden] { display: none; }
 .wonder-sign--left { padding-inline: 17% 11%; flex-direction: row-reverse; }
 .wonder-sign--left::before { transform: scaleX(-1); }
 .wonder-sign__glyph { flex: 0 0 auto; font: 36px/1 Georgia, serif; transform: rotate(-12deg); }
@@ -1745,6 +1734,18 @@ body.homepage-v2 .fall-sentinel b { color: #fff; }
 .wonder-sign__copy b { font: 700 clamp(21px, 5.5vw, 32px)/1.05 Georgia, 'Times New Roman', serif; letter-spacing: -.045em; text-wrap: balance; }
 .wonder-sign__copy > span { color: #62463e; font: italic 12px/1.25 Georgia, serif; text-wrap: balance; }
 .hub__signpost-note { margin: 10px 0 0; color: var(--muted); font: italic 14px/1.5 Georgia, serif; }
+.hub__contribution-note {
+  max-width: 390px;
+  margin: 18px auto 0;
+  padding: 18px 20px;
+  border-block: 1px solid rgba(217,180,109,.25);
+  color: var(--muted);
+  font: 15px/1.6 Georgia, serif;
+  text-wrap: pretty;
+}
+.hub__contribution-note p { margin: 0; }
+.hub__contribution-note strong { color: var(--wonder-cream); font-weight: 400; }
+.hub__contribution-note small { display: block; margin-top: 8px; font-size: 13px; font-style: italic; }
 .wonder-sign:focus-visible { outline: 3px solid var(--card-gold); outline-offset: 5px; }
 @media (hover: hover) {
   .wonder-sign:hover { transform: rotate(0) translateY(-3px); filter: drop-shadow(0 12px 7px #0008) brightness(1.06); }

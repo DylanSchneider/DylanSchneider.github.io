@@ -31,6 +31,9 @@ Live at whatever URL GitHub Pages serves this repo from (Settings → Pages).
 4. **Take party photos** — after checking in, open **Party photos** from the
    menu. The camera page makes a normal copy and a film-look copy of each
    candid photo, uploads both, and provides explicit save links for the phone.
+5. **Contribute to the party** — an optional sign opens Juliette's Venmo
+   in a new tab. Set `VENMO_URL` in `config.js` to her full HTTPS Venmo
+   profile link; leaving it blank hides the sign and its note.
 
 ## The host page (`admin.html`)
 
