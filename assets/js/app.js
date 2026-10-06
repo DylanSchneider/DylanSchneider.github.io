@@ -3,7 +3,8 @@
    Screens: check in → costume (join / start solo / start group / edit) → vote
    ===================================================================== */
 
-import { api, session, photoUrl, shrinkPhoto, IS_LIVE, PARTY_ID } from './store.js';
+import { api, session, photoUrl, shrinkPhoto, IS_LIVE } from './store.js';
+import { messageFor } from './messages.js?v=20261005-6';
 
 const CFG = window.PARTY_CONFIG || {};
 const $ = (id) => document.getElementById(id);
@@ -87,41 +88,26 @@ function displayText(value, fallback = '') {
 }
 
 
-/* ── Mode + setup banners ────────────────────────────────────────────── */
+/* ── Rehearsal + unavailable states ──────────────────────────────────── */
 
 function paintModeNotes() {
   if (IS_LIVE) return;
   const note = () => h('div', { class: 'note note--warn' },
-    h('b', { text: 'Demo mode — this phone only' }),
-    'Nothing is shared between phones and no votes are recorded for real. ',
-    'Add your Supabase URL and key to ',
-    h('code', { text: 'config.js' }),
-    ' to go live. Setup steps are in README.md.'
+    h('b', { text: 'Dress rehearsal' }),
+    'Practice only. These votes won’t count at the party.'
   );
   $('mode-note').replaceChildren(note());
   $('mode-note-2').replaceChildren(note());
 }
 
-function bootFail(message) {
-  $('boot-msg').textContent = 'This app is not connected yet.';
+function bootFail(error) {
+  $('boot-msg').textContent = 'A curious delay';
   $('boot-extra').replaceChildren(
-    h('div', { class: 'note note--warn' }, h('b', { text: 'What went wrong' }), message),
-    h('div', { class: 'panel', style: 'margin-top:14px' },
-      h('p', { class: 'eyebrow', text: 'To fix it' }),
-      h('ol', { class: 'setup-steps', style: 'margin-top:12px' },
-        h('li', {}, 'Open your Supabase project → SQL Editor, paste all of ',
-          h('b', { text: 'supabase/schema.sql' }), ' and press Run.'),
-        h('li', {}, 'Copy your Project URL and ', h('b', { text: 'Publishable' }),
-          ' key into ', h('code', { text: 'config.js' }), '.'),
-        h('li', {}, 'Make sure ', h('code', { text: 'PARTY_ID' }), ' in config.js matches the party row id (currently ',
-          h('code', { text: PARTY_ID }), ').'),
-        h('li', {}, 'Commit and push, then reload this page.')
-      ),
-      h('button', {
-        class: 'btn btn--ghost btn--block', style: 'margin-top:16px', type: 'button',
-        onclick: () => location.reload()
-      }, 'Try again')
-    )
+    h('p', { class: 'fine', text: messageFor(error, 'Wonderland isn’t ready just yet. Try again in a moment, or check with the host.') }),
+    h('button', {
+      class: 'btn btn--ghost btn--block', style: 'margin-top:16px', type: 'button',
+      onclick: () => location.reload()
+    }, 'Try again')
   );
   show('v-boot');
 }
@@ -174,15 +160,15 @@ $('form-name').addEventListener('submit', async (ev) => {
 
   let bad = false;
   if (!givenName) {
-    fieldError('err-first-name', 'in-first-name', 'Please enter your first name.');
+    fieldError('err-first-name', 'in-first-name', 'Enter your first name.');
     bad = true;
   }
   if (!familyName) {
-    fieldError('err-last-name', 'in-last-name', 'Please enter your last name.');
+    fieldError('err-last-name', 'in-last-name', 'Enter your last name.');
     bad = true;
   }
   if (digits.length !== 10) {
-    fieldError('err-phone', 'in-phone', 'Please enter all 10 digits of your mobile number.');
+    fieldError('err-phone', 'in-phone', 'Enter a 10-digit mobile number.');
     bad = true;
   }
   if (bad) {
@@ -211,7 +197,7 @@ $('form-name').addEventListener('submit', async (ev) => {
     window.rabbitFall?.finish?.();
   } catch (err) {
     window.rabbitFall?.cancel?.();
-    toast(err.message, 'bad');
+    toast(messageFor(err), 'bad');
     buzz(60);
   } finally {
     if (btn) loading(btn, false);
@@ -297,9 +283,9 @@ $('btn-costume-refresh').addEventListener('click', async () => {
     await recoverMembership();
     if (state.membership) renderCostume('edit');
     else openCostume('v-name');
-    toast('Costume details refreshed.');
+    toast('All caught up.');
   } catch (err) {
-    toast(err.message, 'bad');
+    toast(messageFor(err), 'bad');
   } finally {
     loading(btn, false);
   }
@@ -376,8 +362,8 @@ function buildPhotoField(existingUrl, required = false) {
     photoInput,
     h('span', { class: 'photo__empty' },
       h('span', { class: 'photo__icon', text: '📸' }),
-      h('b', { text: 'Add a costume photo' }),
-      h('span', { class: 'fine', text: 'Tap to take one, choose from Photos, or upload a file' })
+      h('b', { text: 'Add a photo' }),
+      h('span', { class: 'fine', text: 'Camera or photo library' })
     ),
     img,
     h('span', { class: 'photo__swap', text: 'Change' })
@@ -408,9 +394,7 @@ function buildPhotoField(existingUrl, required = false) {
       setPreview(URL.createObjectURL(normal));
     } catch (e) {
       ev.target.value = '';
-      err.textContent = /empty|read as an image/i.test(e.message)
-        ? 'That file could not be read as a photo. Try another image.'
-        : e.message;
+      err.textContent = messageFor(e, 'Try a different photo.');
     } finally {
       box.classList.remove('is-busy');
     }
@@ -421,7 +405,7 @@ function buildPhotoField(existingUrl, required = false) {
   return {
     node: h('div', { class: 'field' },
       h('span', { class: 'label' }, 'Photo ', h('span', { class: 'opt', text: required ? '— required' : '— optional' })),
-      h('p', { class: 'hint photo-instructions', text: 'Taking it now? Please use the photo-op board on the back patio.' }),
+      h('p', { class: 'hint photo-instructions', text: 'Strike a pose at the back-patio photo board.' }),
       box, err, removeBtn
     ),
     get: () => picked,
@@ -452,10 +436,9 @@ function renderChooser(slot) {
   slot.replaceChildren(
     h('p', { class: 'eyebrow' }, 'Step 2 of 2 · Your costume'),
     h('h2', { class: 'section-title costume-heading' }, 'How are you arriving?'),
-    h('p', { class: 'hint' }, 'One curious character, or a whole cast?'),
     h('div', { class: 'wonder-signpost costume-choices' },
-      costumeChoice('solo', '♠', 'Solo', 'My own costume and photo'),
-      costumeChoice('groups', '♥', 'Group / pair', 'One shared entry, one group photo')
+      costumeChoice('solo', '♠', 'Solo', 'A curious character'),
+      costumeChoice('groups', '♥', 'Group / pair', 'A cast of characters')
     )
   );
 }
@@ -482,13 +465,12 @@ async function renderGroupChooser(slot) {
   slot.replaceChildren(
     h('p', { class: 'eyebrow' }, 'Group / pair'),
     h('h2', { class: 'section-title costume-heading' }, 'Find your cast of characters'),
-    h('p', { class: 'hint' }, 'Each person checks in on their own phone to get their own vote. You all share one costume entry and one photo.'),
+    h('p', { class: 'hint' }, 'Join your group, or be the first to start it.'),
     groups,
     h('div', { class: 'choice-divider' }, 'First one here?'),
     h('button', {
       class: 'btn btn--primary btn--block', type: 'button', onclick: () => renderCostume('group')
-    }, 'Start a group / pair'),
-    h('p', { class: 'hint' }, 'Choose one person to start the entry and upload the shared photo. Everyone else joins it here.')
+    }, 'Start a group / pair')
   );
 
   try {
@@ -499,16 +481,16 @@ async function renderGroupChooser(slot) {
       h('h3', { class: 'group-list-title' }, 'Join your group'),
       list.length
         ? h('div', { class: 'rank' }, ...list.map((e) => joinRow(e, false)))
-        : h('p', { class: 'hint' }, 'No groups yet. One of you can start yours below.'),
+        : h('p', { class: 'hint' }, 'The cast is still arriving. Start your group below.'),
       h('button', {
         class: 'btn btn--ghost btn--sm', type: 'button', style: 'margin-top:12px',
         onclick: () => renderCostume('groups')
-      }, 'Refresh group list')
+      }, 'Refresh')
     );
   } catch {
     if (!groups.isConnected) return;
     groups.replaceChildren(
-      h('p', { class: 'err' }, 'We couldn’t load the groups. Try again to find yours.'),
+      h('p', { class: 'err' }, 'Your group is out of sight. Try again.'),
       h('button', {
         class: 'btn btn--ghost btn--sm', type: 'button', onclick: () => renderCostume('groups')
       }, 'Try again')
@@ -527,7 +509,7 @@ function renderSoloForm(slot) {
     if (t.length < 2) { err.textContent = 'Give your costume a name.'; buzz(40); return; }
     const photoBlob = photo.get();
     if (!photoBlob) {
-      photo.setError('Add a photo before entering your costume.');
+      photo.setError('Add your costume photo.');
       buzz(40);
       return;
     }
@@ -536,10 +518,10 @@ function renderSoloForm(slot) {
       const saved = await api.createEntry(state.me.id, t, t, photoBlob, 'solo');
       mergeMembership(saved);
       goHub();
-      toast('Costume entered. Good luck!', 'good');
+      toast('You’ve joined the cast!', 'good');
       buzz(30);
     } catch (e) {
-      toast(e.message, 'bad'); buzz(60);
+      toast(messageFor(e), 'bad'); buzz(60);
     } finally {
       loading(btn, false);
     }
@@ -568,10 +550,10 @@ function renderGroupForm(slot) {
     const r = yourRole.value.trim().replace(/\s+/g, ' ');
     let bad = false;
     if (g.length < 2) { errG.textContent = 'Give your group a name.'; bad = true; }
-    if (r.length < 1) { errR.textContent = 'What are you dressed as in the group?'; bad = true; }
+    if (r.length < 1) { errR.textContent = 'Enter your costume or character.'; bad = true; }
     const photoBlob = photo.get();
     if (!photoBlob) {
-      photo.setError('Add the shared group photo before starting this entry.');
+      photo.setError('Add one photo of your group.');
       bad = true;
     }
     if (bad) { buzz(40); return; }
@@ -581,10 +563,10 @@ function renderGroupForm(slot) {
       const saved = await api.createEntry(state.me.id, g, r, photoBlob, 'group');
       mergeMembership(saved);
       goHub();
-      toast('Group started. Send the rest of your group to check in and join it!', 'good');
+      toast('Your cast is ready. Friends can join now.', 'good');
       buzz(30);
     } catch (e) {
-      toast(e.message, 'bad'); buzz(60);
+      toast(messageFor(e), 'bad'); buzz(60);
     } finally {
       loading(btn, false);
     }
@@ -592,16 +574,11 @@ function renderGroupForm(slot) {
 
   slot.replaceChildren(
     h('p', { class: 'eyebrow', style: 'margin-top:0' }, 'Group costume'),
-    h('div', { class: 'note note--warn', style: 'margin-top:8px' },
-      h('b', { text: 'Only one person uploads the group photo.' }),
-      ' You’re starting the shared entry. Add the group photo here; everyone else will just join and enter their own costume name.'
-    ),
+    h('p', { class: 'hint' }, 'One group, one photo. Everyone else joins after you.'),
     h('div', { class: 'panel', style: 'margin-top:8px' },
       field('Group costume name', groupName, errG, 'e.g. Alice in Wonderland'),
       field('Your costume in the group', yourRole, errR, 'e.g. Mad Hatter'),
       photo.node,
-      h('p', { class: 'hint' },
-        'After you start it, the rest of your group can check in and join this entry from their own phones.'),
       h('div', { class: 'stack' }, btn)
     )
   );
@@ -614,16 +591,16 @@ function renderJoinForm(slot, entry) {
   const btn = h('button', { class: 'btn btn--primary btn--block', type: 'button' }, `Join "${entry.title}"`);
   btn.addEventListener('click', async () => {
     const v = role.value.trim().replace(/\s+/g, ' ');
-    if (v.length < 1) { err.textContent = 'What are you dressed as in this group?'; buzz(40); return; }
+    if (v.length < 1) { err.textContent = 'Enter your costume or character.'; buzz(40); return; }
     loading(btn, true);
     try {
       const saved = await api.joinEntry(state.me.id, entry.id, v);
       mergeMembership(saved);
       goHub();
-      toast(`Joined "${entry.title}". Good luck!`, 'good');
+      toast(`Welcome to “${entry.title}”!`, 'good');
       buzz(30);
     } catch (e) {
-      toast(e.message, 'bad'); buzz(60);
+      toast(messageFor(e), 'bad'); buzz(60);
       if (/already exists|already have a costume/i.test(e.message)) renderCostume('chooser');
     } finally {
       loading(btn, false);
@@ -632,7 +609,7 @@ function renderJoinForm(slot, entry) {
 
   slot.replaceChildren(
     h('p', { class: 'eyebrow', style: 'margin-top:0' }, 'Joining a group'),
-    h('p', { class: 'hint' }, 'Your group’s photo is already covered. Just add your costume name and you’re ready to vote.'),
+    h('p', { class: 'hint' }, 'Your place in the cast. No extra photo needed.'),
     h('div', { class: 'rank', style: 'margin-top:10px' }, joinRow(entry, true)),
     h('div', { class: 'panel', style: 'margin-top:14px' },
       field('Your costume in this group', role, err, 'e.g. White Rabbit'),
@@ -667,12 +644,12 @@ function renderEditForm(slot) {
     }
     const photoValue = isOwner ? photo.get() : undefined;
     if (isOwner && photoValue === null) {
-      photo.setError('An entry must keep a photo. Add one before saving.');
+      photo.setError('Keep a costume photo to save your changes.');
       buzz(40);
       return;
     }
     if (isOwner && photoValue === undefined && !m.photo_path) {
-      photo.setError('Add a photo before saving this entry.');
+      photo.setError('Add a costume photo.');
       buzz(40);
       return;
     }
@@ -690,9 +667,9 @@ function renderEditForm(slot) {
       }
       if (role !== currentCostume) mergeMembership(await api.updateMyCostume(state.me.id, role));
       goHub();
-      toast('Costume updated.', 'good');
+      toast('A splendid change of character.', 'good');
     } catch (e) {
-      toast(e.message, 'bad');
+      toast(messageFor(e), 'bad');
     } finally {
       loading(saveBtn, false);
     }
@@ -704,7 +681,7 @@ function renderEditForm(slot) {
   leaveBtn.addEventListener('click', async () => {
     const sure = isOwner
       ? confirm('Remove your costume entry? This can’t be undone.')
-      : confirm('Leave this group? You can join a different one, or go solo, afterward.');
+      : confirm('Leave this group?');
     if (!sure) return;
     loading(leaveBtn, true);
     try {
@@ -713,7 +690,7 @@ function renderEditForm(slot) {
       renderCostume('chooser');
       toast(isOwner ? 'Costume removed.' : 'You left the group.', 'good');
     } catch (e) {
-      toast(e.message, 'bad');
+      toast(messageFor(e), 'bad');
     } finally {
       loading(leaveBtn, false);
     }
@@ -728,14 +705,14 @@ function renderEditForm(slot) {
         : h('div', { class: 'field' },
             h('span', { class: 'label', text: nameLabel }),
             h('p', { class: 'fine', style: 'margin-top:6px' },
-              entryTitle, ' ', h('span', { class: 'opt', text: '— only the person who started it can rename it' }))
+              entryTitle, ' ', h('span', { class: 'opt', text: '— named by your group’s starter' }))
           ),
       isGroup ? field('Your costume', roleInput, errRole) : null,
       isOwner ? photo.node : null,
       h('div', { class: 'stack' }, saveBtn)
     ),
     isGroup ? h('div', { class: 'panel', style: 'margin-top:14px' },
-      h('p', { class: 'eyebrow' }, 'Who’s in this group'),
+      h('p', { class: 'eyebrow' }, 'Your cast of characters'),
       h('div', { class: 'chips', style: 'margin-top:10px' },
         ...members.map((x) => h('span', { class: 'chip', style: 'cursor:default' },
           `${displayText(x.name, 'Guest')} — ${displayText(x.costume_name, 'Costume not entered')}${x.is_owner ? ' (started it)' : ''}`)))
@@ -768,7 +745,6 @@ function configureContributionLink() {
   if (url.protocol !== 'https:' || !['venmo.com', 'www.venmo.com', 'account.venmo.com'].includes(url.hostname)) return;
   $('hub-contribute').href = url.href;
   $('hub-contribute').hidden = false;
-  $('hub-contribution-note').hidden = false;
 }
 
 async function refresh(quiet, repaint = true) {
@@ -783,7 +759,7 @@ async function refresh(quiet, repaint = true) {
     state.entries = Array.isArray(entries) ? entries : [];
     if (repaint) paintAll();
   } catch (err) {
-    if (!quiet) toast(err.message, 'bad');
+    if (!quiet) toast(messageFor(err), 'bad');
   } finally {
     spin.classList.remove('is-spinning');
   }
@@ -828,7 +804,7 @@ function paintClock() {
 
   box.classList.remove('is-closed');
   box.classList.toggle('is-urgent', ms < 10 * 60 * 1000);
-  $('clock-label').textContent = state.revealed ? 'Results are live · closes in' : 'Voting closes in';
+  $('clock-label').textContent = state.revealed ? 'The race for the crown · closes in' : 'Voting closes in';
 
   const total = Math.floor(ms / 1000);
   const d = Math.floor(total / 86400);
@@ -870,13 +846,13 @@ function paintWinner() {
     box.replaceChildren(h('div', { class: 'winner' },
       h('div', { class: 'winner__crown', text: '🦗' }),
       h('div', { class: 'winner__label', text: 'Final result' }),
-      h('div', { class: 'winner__name', text: 'Nobody voted' })
+      h('div', { class: 'winner__name', text: 'No crown claimed' })
     ));
     return;
   }
 
   const winners = state.entries.filter((e) => (e.votes || 0) === top);
-  const label = state.info && serverNow() < state.closesAt ? 'Leading right now' : 'Best costume';
+  const label = state.info && serverNow() < state.closesAt ? 'Leading the royal procession' : 'Wonderland’s finest';
 
   box.replaceChildren(h('div', { class: 'winner' },
     h('div', { class: 'winner__crown', text: winners.length > 1 ? '🤝' : '👑' }),
@@ -902,16 +878,16 @@ function paintStatus() {
     txt.replaceChildren(
       closed ? 'You voted for ' : 'Your vote: ',
       h('b', { text: voted.title }),
-      closed ? '' : ' · tap another costume to change it'
+      closed ? '' : ' · choose another to change it'
     );
   } else if (closed) {
     icon.textContent = '🕛';
-    txt.textContent = 'Voting is closed and you did not get a vote in.';
+    txt.textContent = 'Time’s up. No vote cast.';
   } else if (!state.entries.length) {
     strip.hidden = true;
   } else {
     icon.textContent = '🗳️';
-    txt.textContent = 'You have one vote. Tap a costume to cast it.';
+    txt.textContent = 'One vote. Who deserves the crown?';
   }
 }
 
@@ -924,8 +900,8 @@ function paintCards() {
     grid.replaceChildren();
     empty.replaceChildren(h('div', { class: 'empty' },
       h('div', { class: 'empty__icon', text: '👻' }),
-      h('b', { text: 'No costumes entered yet' }),
-      h('p', { text: state.membership ? 'Yours is in. Check back as other people scan the code.' : 'Be the first — add yours from the menu.' })
+      h('b', { text: 'The cast is still arriving' }),
+      h('p', { text: 'Check back in a little while.' })
     ));
     return;
   }
@@ -977,9 +953,9 @@ function entryCard(e, rank) {
 }
 
 async function tapCard(e) {
-  if (serverNow() >= state.closesAt) { toast('Voting is closed.', 'bad'); return; }
-  if (e.is_mine) { toast('You cannot vote for your own costume.', 'bad'); buzz(40); return; }
-  if (e.id === state.votedId) { toast('That is already your vote.'); return; }
+  if (serverNow() >= state.closesAt) { toast('Time’s up. Voting is closed.', 'bad'); return; }
+  if (e.is_mine) { toast('Choose someone else’s costume.', 'bad'); buzz(40); return; }
+  if (e.id === state.votedId) { toast('Your vote is already here.'); return; }
   if (state.busy) return;
 
   state.busy = true;
@@ -987,14 +963,14 @@ async function tapCard(e) {
   try {
     await api.castVote(state.me.id, e.id);
     state.votedId = e.id;
-    toast(`Vote locked in for “${e.title}”`, 'good');
+    toast(`Your vote: “${e.title}”`, 'good');
     buzz([18, 40, 18]);
     paintAll();
     await refresh(true, false);
     paintWinner();
     paintStatus();
   } catch (err) {
-    toast(err.message, 'bad');
+    toast(messageFor(err), 'bad');
     buzz(70);
     refresh(true);
   } finally {
@@ -1049,7 +1025,7 @@ document.addEventListener('visibilitychange', () => {
   try {
     info = await api.partyInfo();
   } catch (err) {
-    bootFail(err.message);
+    bootFail(err);
     return;
   }
   adoptInfo(info);

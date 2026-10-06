@@ -34,7 +34,7 @@ Live at whatever URL GitHub Pages serves this repo from (Settings → Pages).
    then use its single **Save** button to keep the version you are viewing.
 5. **Contribute to the party** — an optional sign opens Juliette's Venmo
    in a new tab. Set `VENMO_URL` in `config.js` to her full HTTPS Venmo
-   profile link; leaving it blank hides the sign and its note.
+   profile link; leaving it blank hides the sign.
 
 ## The host page (`admin.html`)
 

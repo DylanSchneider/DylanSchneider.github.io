@@ -5,13 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
 <meta name="theme-color" content="#000000">
-<meta name="description" content="Down the Rabbit Hole — check in, enter your costume, and vote for the best.">
+<meta name="description" content="An invitation to Wonderland. Curious costumes, familiar faces, and a little madness.">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="format-detection" content="telephone=no">
 <title>Down the Rabbit Hole · Costume Contest</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐰</text></svg>">
-<link rel="stylesheet" href="assets/css/app.css?v=20261005-3">
+<link rel="stylesheet" href="assets/css/app.css?v=20261005-6">
 </head>
 <body>
 <div class="bg-fx"></div>
@@ -24,7 +24,7 @@
       <div class="brand">
         <div class="brand__mark">🐰</div>
         <h1 class="brand__title">Wonderland</h1>
-        <p class="brand__sub" id="boot-msg">Loading…</p>
+        <p class="brand__sub" id="boot-msg">Opening the looking glass…</p>
       </div>
       <div id="boot-extra"></div>
     </div>
@@ -42,16 +42,16 @@
           <span id="brand-year"></span>
         </div>
         <div class="rabbit-symbol" aria-hidden="true"><span></span><span></span></div>
-        <p class="landing-hero__kicker">Everyone is mad here</p>
+        <p class="landing-hero__kicker">We’re all mad here</p>
         <h1 class="landing-hero__title">Down<br><em>the Rabbit Hole</em></h1>
-        <p class="landing-hero__sub">A spooky evening of strange costumes, curious characters, and tea served at the wrong time.</p>
+        <p class="landing-hero__sub">Curious costumes. Familiar faces. Tea at entirely the wrong time.</p>
         <div class="landing-hero__rule" aria-hidden="true"><i></i><span>♥</span><i></i></div>
       </div>
 
       <div class="entry-stage" id="entry-details">
         <div class="entry-stage__label">Follow the White Rabbit <span>·</span> step 1 of 2</div>
         <h2 class="entry-stage__title">Before you enter…</h2>
-        <p class="entry-stage__copy">Tell us who is falling through the looking glass.</p>
+        <p class="entry-stage__copy">Who’s joining the tea party?</p>
 
         <div class="steps"><i class="on"></i><i></i></div>
 
@@ -83,7 +83,7 @@
                    inputmode="numeric" autocomplete="tel-national"
                    enterkeyhint="go" maxlength="16"
                    placeholder="(555) 123-4567" required>
-            <p class="hint">For the guest list and your one vote. No texts, ever.</p>
+            <p class="hint">For the guest list. No texts.</p>
             <p class="err" id="err-phone"></p>
           </div>
 
@@ -91,14 +91,14 @@
 
         <div class="scroll-cue" id="scroll-cue" aria-live="polite">
           <span class="scroll-cue__line"></span>
-          <span class="scroll-cue__text">Fill in your details to unlock</span>
+          <span class="scroll-cue__text">Your invitation awaits</span>
           <span class="scroll-cue__arrow">↓</span>
         </div>
         <div class="fall-tunnel" aria-hidden="true">
           <div class="fall-tunnel__copy">Keep falling<br><span>the way is down</span></div>
         </div>
         <div class="fall-sentinel" id="fall-sentinel" aria-hidden="true">
-          <span>Reach the bottom</span><b>↓</b>
+          <span>Down the rabbit hole</span><b>↓</b>
         </div>
       </div>
     </div>
@@ -129,7 +129,7 @@
         <div class="hub__mark" aria-hidden="true">♥</div>
         <p class="eyebrow">You’re in Wonderland</p>
         <h1 class="hub__title">Welcome, <span id="hub-name">friend</span></h1>
-        <p class="hub__copy">Your costume is entered. The rest of the evening is waiting just beyond the looking glass.</p>
+        <p class="hub__copy">Let curiosity lead the way.</p>
         <div class="hub__rule" aria-hidden="true"><i></i><span>♠</span><i></i></div>
       </div>
 
@@ -138,7 +138,7 @@
         <div class="wonder-signpost">
           <button class="wonder-sign wonder-sign--teal" id="hub-edit" type="button">
             <span class="wonder-sign__glyph" aria-hidden="true">♠</span>
-            <span class="wonder-sign__copy"><small>This way</small><b>Edit your costume</b><span>Change your photo or role</span></span>
+            <span class="wonder-sign__copy"><small>This way</small><b>Edit your costume</b><span>A change of character</span></span>
           </button>
           <button class="wonder-sign wonder-sign--rose wonder-sign--left" id="hub-vote" type="button">
             <span class="wonder-sign__glyph" aria-hidden="true">♥</span>
@@ -148,16 +148,12 @@
             <span class="wonder-sign__glyph" aria-hidden="true">♣</span>
             <span class="wonder-sign__copy"><small>Through the looking glass</small><b>Party pictures</b><span>Capture a little madness</span></span>
           </button>
-          <a class="wonder-sign wonder-sign--gold wonder-sign--left" id="hub-contribute"
-             target="_blank" rel="noopener noreferrer" aria-describedby="hub-contribution-note" hidden>
+          <a class="wonder-sign wonder-sign--gold wonder-sign--left wonder-sign--compact" id="hub-contribute"
+             target="_blank" rel="noopener noreferrer" hidden>
             <span class="wonder-sign__glyph" aria-hidden="true">♦</span>
-            <span class="wonder-sign__copy"><small>Keep the party going</small><b>Contribute to party</b><span>Juliette’s Venmo <span aria-hidden="true">↗</span></span></span>
+            <span class="wonder-sign__copy"><small>A little more magic</small><b>Contribute to party</b></span>
             <span class="sr-only">(opens in a new tab)</span>
           </a>
-        </div>
-        <div class="hub__contribution-note" id="hub-contribution-note" hidden>
-          <p><strong>Forgot to bring something, or want to keep the party going?</strong> Chip in for drinks, snacks, and a little more Wonderland magic.</p>
-          <small>Completely optional—we’re just happy you’re here.</small>
         </div>
         <p class="hub__signpost-note">Every path leads to a little madness.</p>
       </nav>
@@ -213,7 +209,7 @@
 
 <noscript>
   <div class="wrap">
-    <div class="note note--warn"><b>JavaScript is off</b>This page needs JavaScript to check you in and take your vote.</div>
+    <div class="note note--warn"><b>The looking glass is closed</b>Turn on JavaScript in your browser, then try again.</div>
   </div>
 </noscript>
 
@@ -221,7 +217,7 @@
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/gsap.min.js" defer></script>
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/ScrollTrigger.min.js" defer></script>
 <script src="assets/js/rabbit-v2-loader.js" defer></script>
-<script src="assets/js/wonderland.js?v=20261005-1" defer></script>
-<script type="module" src="assets/js/app.js?v=20261005-3"></script>
+<script src="assets/js/wonderland.js?v=20261005-6" defer></script>
+<script type="module" src="assets/js/app.js?v=20261005-6"></script>
 </body>
 </html>

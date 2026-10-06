@@ -5,6 +5,7 @@
    ===================================================================== */
 
 import { api, photoUrl, IS_LIVE, PARTY_ID } from './store.js';
+import { messageFor } from './messages.js?v=20261005-6';
 
 const CFG = window.PARTY_CONFIG || {};
 const RESET_ENABLED = CFG.ENABLE_TEST_RESET !== false;
@@ -65,7 +66,7 @@ $('form-pin').addEventListener('submit', async (ev) => {
   ev.preventDefault();
   const pin = $('in-pin').value.trim();
   if (!pin && IS_LIVE) {
-    $('err-pin').textContent = 'Enter your admin PIN.';
+    $('err-pin').textContent = 'Enter your host PIN.';
     return;
   }
   const btn = $('btn-pin');
@@ -74,7 +75,7 @@ $('form-pin').addEventListener('submit', async (ev) => {
   try {
     await enter(pin);
   } catch (err) {
-    $('err-pin').textContent = err.message;
+    $('err-pin').textContent = messageFor(err);
   } finally {
     loading(btn, false);
   }
@@ -116,7 +117,7 @@ async function refresh(quiet) {
     paintAll();
     loadPartyPhotos();
   } catch (err) {
-    if (!quiet) toast(err.message, 'bad');
+    if (!quiet) toast(messageFor(err), 'bad');
   } finally {
     spin.classList.remove('is-spinning');
   }
@@ -129,7 +130,7 @@ async function loadGuests() {
     paintGuests();
   } catch (err) {
     $('guest-rows').replaceChildren(
-      h('tr', {}, h('td', { colspan: '7', class: 'wrap-cell', text: err.message }))
+      h('tr', {}, h('td', { colspan: '7', class: 'wrap-cell', text: messageFor(err) }))
     );
   }
 }
@@ -212,7 +213,7 @@ function paintRank() {
     box.replaceChildren();
     $('rank-empty').replaceChildren(h('div', { class: 'empty' },
       h('div', { class: 'empty__icon', text: '👻' }),
-      h('b', { text: 'No costumes entered yet' })
+      h('b', { text: 'The cast is still arriving' })
     ));
     return;
   }
@@ -245,10 +246,10 @@ function paintReveal() {
   const on = state.data.party.results_public;
   const closed = serverNow() >= state.closesAt;
   $('reveal-state').textContent = closed
-    ? 'Voting has closed, so everyone can already see the results.'
-    : (on ? 'Guests can see live vote counts right now.' : 'Guests cannot see any vote counts yet.');
+    ? 'Voting closed. The crown is revealed.'
+    : (on ? 'Results are visible to guests.' : 'Results are hidden from guests.');
   const btn = $('btn-reveal');
-  btn.textContent = on ? 'Hide results again' : 'Reveal results now';
+  btn.textContent = on ? 'Hide results' : 'Reveal results';
   btn.className = 'btn btn--block btn--sm ' + (on ? 'btn--danger' : 'btn--primary');
 }
 
@@ -298,7 +299,7 @@ async function loadPartyPhotos() {
     state.partyPhotos = Array.isArray(photos) ? photos : [];
     paintPartyPhotos();
   } catch (err) {
-    $('party-photo-admin').replaceChildren(h('p', { class: 'err', text: err.message }));
+    $('party-photo-admin').replaceChildren(h('p', { class: 'err', text: messageFor(err) }));
   }
 }
 
@@ -307,7 +308,7 @@ function paintPartyPhotos() {
   const count = $('party-photo-count');
   count.textContent = `${state.partyPhotos.length} photo${state.partyPhotos.length === 1 ? '' : 's'}`;
   if (!state.partyPhotos.length) {
-    box.replaceChildren(h('p', { class: 'hint', text: 'No party photos have been uploaded yet.' }));
+    box.replaceChildren(h('p', { class: 'hint', text: 'A curious moment awaits.' }));
     return;
   }
   box.replaceChildren(...state.partyPhotos.map((photo) => {
@@ -339,7 +340,7 @@ function openGuestEditor(guest) {
   $('edit-guest-costume').disabled = !guest.entry;
   $('edit-guest-costume-hint').textContent = guest.entry
     ? `Current entry: ${guest.entry}`
-    : 'This guest has not entered a costume for this party.';
+    : 'No costume entered yet.';
   $('edit-guest-name-error').textContent = '';
   $('edit-guest-costume-error').textContent = '';
   const dialog = $('edit-guest-dialog');
@@ -389,7 +390,7 @@ $('form-edit-guest').addEventListener('submit', async (ev) => {
     await loadGuests();
     toast('Guest details updated.', 'good');
   } catch (err) {
-    toast(err.message, 'bad');
+    toast(messageFor(err), 'bad');
   } finally {
     loading(btn, false);
   }
@@ -409,7 +410,7 @@ $('btn-close').addEventListener('click', async (ev) => {
   // A datetime-local value has no timezone, so the browser reads it as this
   // phone's local time — which is what the host means by "10pm".
   const when = new Date(raw);
-  if (isNaN(when)) { toast('That date did not parse.', 'bad'); return; }
+  if (isNaN(when)) { toast('Choose a valid date and time.', 'bad'); return; }
 
   const btn = ev.currentTarget;
   loading(btn, true);
@@ -418,7 +419,7 @@ $('btn-close').addEventListener('click', async (ev) => {
     await refresh(true);
     toast('Deadline updated to ' + fmtWhen(when), 'good');
   } catch (err) {
-    toast(err.message, 'bad');
+    toast(messageFor(err), 'bad');
   } finally {
     loading(btn, false);
   }
@@ -433,7 +434,7 @@ $('btn-reveal').addEventListener('click', async (ev) => {
     await refresh(true);
     toast(next ? 'Results are now visible to guests.' : 'Results hidden from guests.', 'good');
   } catch (err) {
-    toast(err.message, 'bad');
+    toast(messageFor(err), 'bad');
   } finally {
     loading(btn, false);
   }
@@ -447,7 +448,7 @@ async function removeEntry(entry, btn) {
     await refresh(true);
     toast('Entry deleted.', 'good');
   } catch (err) {
-    toast(err.message, 'bad');
+    toast(messageFor(err), 'bad');
   } finally {
     loading(btn, false);
   }
@@ -471,7 +472,7 @@ $('btn-clear-all').addEventListener('click', async (ev) => {
     await loadPartyPhotos();
     toast('All testing data for this party was cleared.', 'good');
   } catch (err) {
-    toast(err.message, 'bad');
+    toast(messageFor(err), 'bad');
   } finally {
     loading(btn, false);
   }
@@ -513,7 +514,7 @@ $('btn-copy').addEventListener('click', async () => {
   if (!state.guests.length) { toast('No guests to export yet.', 'bad'); return; }
   try {
     await navigator.clipboard.writeText(csv());
-    toast('Guest list copied — paste it into Notes or a spreadsheet.', 'good');
+    toast('Guest list copied.', 'good');
   } catch {
     toast('This browser blocked clipboard access. Use Download CSV instead.', 'bad');
   }
@@ -537,11 +538,11 @@ document.addEventListener('visibilitychange', () => {
 (async function boot() {
   if (!IS_LIVE) {
     $('pin-mode').replaceChildren(h('div', { class: 'note note--warn' },
-      h('b', { text: 'Demo mode' }),
-      'No database is connected, so this shows whatever is stored on this phone. Any PIN works.'
+      h('b', { text: 'Dress rehearsal' }),
+      'Practice only. Any PIN works.'
     ));
     $('admin-mode').replaceChildren(h('div', { class: 'note note--warn' },
-      h('b', { text: 'Demo mode' }), 'These numbers come from this phone only.'
+      h('b', { text: 'Dress rehearsal' }), 'Practice results only.'
     ));
   }
 

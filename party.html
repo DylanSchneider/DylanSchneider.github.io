@@ -6,7 +6,7 @@
 <meta name="robots" content="noindex, nofollow">
 <meta name="theme-color" content="#000000">
 <title>Party photos · Wonderland</title>
-<link rel="stylesheet" href="assets/css/app.css?v=20261005-5">
+<link rel="stylesheet" href="assets/css/app.css?v=20261005-6">
 </head>
 <body>
 <div class="bg-fx"></div>
@@ -24,38 +24,36 @@
 
       <div id="party-content" hidden>
         <header class="party-hero">
-          <p class="eyebrow">The Wonderland photo album</p>
+          <p class="eyebrow">Memories of Wonderland</p>
           <h1>Through the<br><em>looking glass</em></h1>
-          <p>A few curious characters. A little beautiful madness.<br>Keep your favourite moments from the night.</p>
+          <p>A little proof of the madness.</p>
           <span class="party-hero__suit" aria-hidden="true">♦</span>
         </header>
 
         <details class="panel party-camera-panel" id="party-camera-panel">
           <summary class="party-camera-toggle">
             <span class="party-camera-toggle__icon" aria-hidden="true">＋</span>
-            <span><b>Add a party photo</b><small>A moment worth sharing with the whole party</small></span>
+            <span><b>Add a party photo</b><small>Capture a curious moment</small></span>
             <span class="party-camera-toggle__arrow" aria-hidden="true">⌄</span>
           </summary>
           <div class="party-camera-fields">
-            <p class="hint">Take a photo or choose one from your library. We’ll add both a normal and a film version to the album.</p>
             <div class="field" style="margin-top:16px">
               <label class="party-photo-picker" for="party-photo-file">
                 <input id="party-photo-file" type="file" accept="image/*" aria-describedby="party-photo-error">
                 <span aria-hidden="true">◇</span>
                 <b>Take or choose a photo</b>
-                <small>Let’s remember this bit of Wonderland</small>
               </label>
               <p class="err" id="party-photo-error" aria-live="polite"></p>
             </div>
             <div class="party-preview" id="party-preview" hidden>
               <div><span class="fine">Normal</span><img id="party-preview-normal" alt="Normal preview"></div>
-              <div><span class="fine">Film look</span><img id="party-preview-film" alt="Film preview"></div>
+              <div><span class="fine">Film</span><img id="party-preview-film" alt="Film preview"></div>
             </div>
             <div class="field">
               <label class="label" for="party-caption">Caption <span class="opt">— optional</span></label>
               <input class="input" id="party-caption" maxlength="120" placeholder="A curious moment…">
             </div>
-            <button class="btn btn--primary btn--block" id="party-upload" type="button" disabled>Add to party pictures</button>
+            <button class="btn btn--primary btn--block" id="party-upload" type="button" disabled>Add to album</button>
             <p class="hint" id="party-upload-status" aria-live="polite"></p>
           </div>
         </details>
@@ -63,12 +61,11 @@
         <section class="party-album" aria-labelledby="costume-gallery-title">
           <div class="party-gallery-head">
             <div>
-              <p class="eyebrow">Costume contest</p>
+              <p class="eyebrow">Costume photos</p>
               <h2 id="costume-gallery-title">The cast of characters</h2>
             </div>
             <span class="party-photo-count" id="costume-count" aria-live="polite"></span>
           </div>
-          <p class="party-section-note">Costume photos from the evening. Find a favourite and tap Save.</p>
           <div class="party-photo-grid" id="costume-gallery"></div>
           <div id="costume-empty"></div>
         </section>
@@ -76,12 +73,11 @@
         <section class="party-album" aria-labelledby="party-gallery-title">
           <div class="party-gallery-head">
             <div>
-              <p class="eyebrow">The party wall</p>
+              <p class="eyebrow">Party pictures</p>
               <h2 id="party-gallery-title">Curiouser &amp; curiouser</h2>
             </div>
             <span class="party-photo-count" id="party-count" aria-live="polite"></span>
           </div>
-          <p class="party-section-note">Party pictures in two looks. Choose Normal or Film, then Save the one you’re viewing.</p>
           <div class="party-photo-grid" id="party-gallery"></div>
           <div id="party-empty"></div>
         </section>
@@ -91,6 +87,6 @@
 </main>
 <div id="toast" aria-live="polite"></div>
 <script src="config.js"></script>
-<script type="module" src="assets/js/party.js?v=20261005-5"></script>
+<script type="module" src="assets/js/party.js?v=20261005-6"></script>
 </body>
 </html>

@@ -381,7 +381,7 @@ h1, h2, h3 { margin: 0; line-height: 1.15; font-weight: 800; }
   align-items: end;
   justify-content: space-between;
   gap: 12px;
-  margin-bottom: 10px;
+  margin-bottom: 18px;
 }
 .party-gallery-head .eyebrow { margin: 0 0 7px; color: var(--card-gold); }
 .party-gallery-head h2 { color: var(--wonder-cream); font: 400 clamp(25px, 6vw, 32px)/1.1 Georgia, serif; }
@@ -442,7 +442,6 @@ h1, h2, h3 { margin: 0; line-height: 1.15; font-weight: 800; }
   text-decoration: none;
 }
 .party-photo-tile :focus-visible { outline: 2px solid #641f32; outline-offset: 3px; }
-.party-section-note { margin: 0 0 18px; color: var(--muted); font-size: 14px; line-height: 1.5; }
 @media (min-width: 700px) {
   .party-photo-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
@@ -1831,24 +1830,13 @@ body.homepage-v2 .fall-sentinel b { color: #fff; }
 .wonder-sign[hidden] { display: none; }
 .wonder-sign--left { padding-inline: 17% 11%; flex-direction: row-reverse; }
 .wonder-sign--left::before { transform: scaleX(-1); }
+.wonder-sign--compact { min-height: 112px; padding-block: 22px; }
 .wonder-sign__glyph { flex: 0 0 auto; font: 36px/1 Georgia, serif; transform: rotate(-12deg); }
 .wonder-sign__copy { display: grid; flex: 1; gap: 5px; text-align: center; }
 .wonder-sign__copy small { color: #684b40; font: 700 9px/1.2 Georgia, serif; letter-spacing: .15em; text-transform: uppercase; }
 .wonder-sign__copy b { font: 700 clamp(21px, 5.5vw, 32px)/1.05 Georgia, 'Times New Roman', serif; letter-spacing: -.045em; text-wrap: balance; }
 .wonder-sign__copy > span { color: #62463e; font: italic 12px/1.25 Georgia, serif; text-wrap: balance; }
 .hub__signpost-note { margin: 10px 0 0; color: var(--muted); font: italic 14px/1.5 Georgia, serif; }
-.hub__contribution-note {
-  max-width: 390px;
-  margin: 18px auto 0;
-  padding: 18px 20px;
-  border-block: 1px solid rgba(217,180,109,.25);
-  color: var(--muted);
-  font: 15px/1.6 Georgia, serif;
-  text-wrap: pretty;
-}
-.hub__contribution-note p { margin: 0; }
-.hub__contribution-note strong { color: var(--wonder-cream); font-weight: 400; }
-.hub__contribution-note small { display: block; margin-top: 8px; font-size: 13px; font-style: italic; }
 .wonder-sign:focus-visible { outline: 3px solid var(--card-gold); outline-offset: 5px; }
 @media (hover: hover) {
   .wonder-sign:hover { transform: rotate(0) translateY(-3px); filter: drop-shadow(0 12px 7px #0008) brightness(1.06); }

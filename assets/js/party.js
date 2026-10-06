@@ -1,5 +1,6 @@
 /* Party camera: temporary candid photos, separate from costume entries. */
 import { api, session, photoUrl, processPhotoVariants, IS_LIVE } from './store.js';
+import { messageFor } from './messages.js?v=20261005-6';
 
 const CFG = window.PARTY_CONFIG || {};
 const $ = (id) => document.getElementById(id);
@@ -106,35 +107,34 @@ async function loadGallery() {
     $('costume-gallery').replaceChildren(...costumes.map((photo) => photoTile(photo, 'costumes', 'costume')));
     $('costume-empty').replaceChildren();
     if (!costumes.length) $('costume-empty').append(h('div', { class: 'empty' },
-      h('div', { class: 'empty__icon', text: '🎭' }), h('b', { text: 'No costume photos yet' }),
-      h('p', { class: 'fine', text: 'Costume photos will appear here after someone enters one.' })
+      h('div', { class: 'empty__icon', text: '🎭' }), h('b', { text: 'The cast is still arriving' })
     ));
 
     $('party-gallery').replaceChildren(...photos.map((photo) => photoTile(photo, 'party-photos', 'party')));
     $('party-empty').replaceChildren();
     if (!photos.length) $('party-empty').append(h('div', { class: 'empty' },
-      h('div', { class: 'empty__icon', text: '📸' }), h('b', { text: 'No party photos yet' }),
-      h('p', { class: 'fine', text: 'Be the first person to capture a curious moment.' })
+      h('div', { class: 'empty__icon', text: '📸' }), h('b', { text: 'A curious moment awaits' }),
+      h('p', { class: 'fine', text: 'Be the first to capture it.' })
     ));
     $('party-camera-panel').hidden = !info.open;
     if (!info.open) $('party-mode').replaceChildren(h('div', { class: 'note note--warn' },
-      h('b', { text: 'The party camera is closed.' }), ' You can still browse and save the photos below.'
+      h('b', { text: 'The camera has retired for the night' }), ' The memories are yours to keep.'
     ));
-  } catch (err) { toast(err.message, 'bad'); }
+  } catch (err) { toast(messageFor(err), 'bad'); }
 }
 
-function partyCostumeGate(message) {
+function partyCostumeGate() {
   $('party-gate').replaceChildren(
     h('div', { class: 'note note--warn' },
-      h('b', { text: 'Enter your costume first' }), ` ${message || 'The Party Pictures page opens after your costume data and photo are saved.'}`),
-    h('a', { class: 'btn btn--primary btn--block', href: 'index.html', style: 'margin-top:14px' }, '← Set up my costume')
+      h('b', { text: 'A place in the cast awaits' }), ' Enter your costume first.'),
+    h('a', { class: 'btn btn--primary btn--block', href: 'index.html', style: 'margin-top:14px' }, '← Enter my costume')
   );
 }
 
 function initializePartyCamera() {
   $('party-content').hidden = false;
   if (!IS_LIVE) $('party-mode').replaceChildren(h('div', { class: 'note note--warn' },
-    h('b', { text: 'Demo mode — this phone only' }), ' Party photos are stored in this browser only.'));
+    h('b', { text: 'Dress rehearsal' }), ' Practice photos only.'));
 
   $('party-photo-file').addEventListener('change', async (ev) => {
     const file = ev.target.files?.[0];
@@ -152,7 +152,7 @@ function initializePartyCamera() {
     } catch (err) {
       variants = null;
       $('party-preview').hidden = true;
-      $('party-photo-error').textContent = 'That photo could not be processed. Try another photo.';
+      $('party-photo-error').textContent = 'Try a different photo.';
       ev.target.value = '';
     }
   });
@@ -162,12 +162,12 @@ function initializePartyCamera() {
     const btn = ev.currentTarget;
     const status = $('party-upload-status');
     loading(btn, true);
-    btn.textContent = 'Uploading…';
-    status.textContent = 'Uploading both photo versions…';
+    btn.textContent = 'Adding…';
+    status.textContent = '';
     try {
       await api.uploadPartyPhoto(me.id, variants, $('party-caption').value.trim());
-      toast('Photo saved to the party wall.', 'good');
-      status.textContent = 'Added to the album. Choose Normal or Film below, then tap Save.';
+      toast('Another memory for the looking glass.', 'good');
+      status.textContent = '';
       $('party-photo-file').value = '';
       $('party-caption').value = '';
       variants = null;
@@ -177,10 +177,9 @@ function initializePartyCamera() {
       btn.disabled = true;
       await loadGallery();
     } catch (err) {
-      status.textContent = 'Upload did not finish. Check your connection and try again.';
-      toast(err.message, 'bad');
+      status.textContent = messageFor(err, 'Your photo slipped away. Try again.');
     }
-    finally { loading(btn, false); btn.textContent = 'Add to party pictures'; btn.disabled = !variants; }
+    finally { loading(btn, false); btn.textContent = 'Add to album'; btn.disabled = !variants; }
   });
 
   $('party-refresh').addEventListener('click', loadGallery);
@@ -190,8 +189,8 @@ function initializePartyCamera() {
 if (!me) {
   $('party-gate').replaceChildren(
     h('div', { class: 'note note--warn' },
-      h('b', { text: 'Check in first' }), ' Return to the party page and enter your name and phone number to use the camera.'),
-    h('a', { class: 'btn btn--primary btn--block', href: 'index.html', style: 'margin-top:14px' }, '← Back to check-in')
+      h('b', { text: 'Your invitation awaits' }), ' Join the tea party first.'),
+    h('a', { class: 'btn btn--primary btn--block', href: 'index.html', style: 'margin-top:14px' }, '← Join the tea party')
   );
 } else {
   api.listEntries(me.id).then((entries) => {
@@ -201,5 +200,10 @@ if (!me) {
       return;
     }
     initializePartyCamera();
-  }).catch((err) => partyCostumeGate(err.message));
+  }).catch((err) => {
+    $('party-gate').replaceChildren(
+      h('p', { class: 'err', text: messageFor(err) }),
+      h('button', { class: 'btn btn--ghost btn--block', type: 'button', onclick: () => location.reload() }, 'Try again')
+    );
+  });
 }
