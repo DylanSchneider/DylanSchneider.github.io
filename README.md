@@ -32,8 +32,9 @@ Live at whatever URL GitHub Pages serves this repo from (Settings → Pages).
    menu. The camera page makes a normal copy and a film-look copy of each
    candid photo and uploads both. Choose **Normal** or **Film** on a photo,
    then use its single **Save** button to keep the version you are viewing.
-5. **Contribute to the party** — an optional sign opens Juliette's Venmo
-   in a new tab. Set `VENMO_URL` in `config.js` to her full HTTPS Venmo
+5. **Contribute to the party** — the optional **Keep the magic going** sign
+   opens a Wonderland invitation with a link to Juliette's Venmo in a new
+   tab. Set `VENMO_URL` in `config.js` to her full HTTPS Venmo
    profile link; leaving it blank hides the sign.
 
 ## The host page (`admin.html`)

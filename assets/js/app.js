@@ -743,7 +743,42 @@ function configureContributionLink() {
   let url;
   try { url = new URL(CFG.VENMO_URL); } catch { return; }
   if (url.protocol !== 'https:' || !['venmo.com', 'www.venmo.com', 'account.venmo.com'].includes(url.hostname)) return;
-  $('hub-contribute').href = url.href;
+  const dialog = $('contribution-dialog');
+  const sign = $('hub-contribute');
+  $('contribution-venmo').href = url.href;
+  sign.addEventListener('click', () => {
+    dialog.showModal();
+    document.body.classList.add('contribution-open');
+  });
+  dialog.addEventListener('close', () => document.body.classList.remove('contribution-open'));
+  $('contribution-venmo').addEventListener('click', () => dialog.close());
+  dialog.addEventListener('keydown', (event) => {
+    if (event.key !== 'Tab') return;
+    const controls = dialog.querySelectorAll('button, a[href]');
+    const first = controls[0];
+    const last = controls[controls.length - 1];
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  });
+
+  // Close only when a complete tap begins and ends outside the card.
+  const outsideCard = (event) => {
+    const bounds = dialog.getBoundingClientRect();
+    return event.target === dialog && (event.clientX < bounds.left || event.clientX > bounds.right ||
+      event.clientY < bounds.top || event.clientY > bounds.bottom);
+  };
+  let backdropPressed = false;
+  dialog.addEventListener('pointerdown', (event) => { backdropPressed = outsideCard(event); });
+  dialog.addEventListener('pointerup', (event) => {
+    if (backdropPressed && outsideCard(event)) dialog.close();
+    backdropPressed = false;
+  });
+  dialog.addEventListener('pointercancel', () => { backdropPressed = false; });
   $('hub-contribute').hidden = false;
 }
 

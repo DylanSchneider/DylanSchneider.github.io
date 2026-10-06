@@ -1855,6 +1855,88 @@ body.homepage-v2 .fall-sentinel b { color: #fff; }
   50% { transform: rotate(3deg) translateY(-5px); }
 }
 
+/* The optional invitation sits above the signpost like a tea-party card. */
+body.contribution-open { overflow: hidden; }
+.contribution-dialog {
+  width: min(480px, calc(100% - 32px));
+  max-width: none;
+  max-height: calc(100dvh - 32px);
+  padding: 0;
+  border: 1px solid rgba(217,180,109,.6);
+  border-radius: 24px;
+  color: var(--wonder-cream);
+  background:
+    radial-gradient(ellipse at 50% 0, rgba(181,18,60,.2), transparent 60%),
+    #100b0f;
+  box-shadow: 0 24px 90px #000b, inset 0 0 0 5px #100b0f, inset 0 0 0 6px rgba(217,180,109,.2);
+  overscroll-behavior: contain;
+}
+.contribution-dialog::backdrop { background: rgba(0,0,0,.78); backdrop-filter: blur(6px); }
+.contribution-dialog[open] { animation: contribution-arrive .22s ease-out; }
+.contribution-card {
+  position: relative;
+  margin: 0;
+  padding: 36px 30px 30px;
+  text-align: center;
+}
+.contribution-card__close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 1px solid rgba(217,180,109,.25);
+  border-radius: 50%;
+  background: #100b0f;
+  color: var(--wonder-cream);
+  font: 26px/1 Georgia, serif;
+  cursor: pointer;
+}
+.contribution-card__tea {
+  display: grid;
+  place-items: center;
+  width: 78px;
+  height: 78px;
+  margin: 0 auto 20px;
+  border: 1px solid rgba(217,180,109,.4);
+  border-radius: 50%;
+  color: var(--card-gold);
+  background: radial-gradient(circle, rgba(217,180,109,.1), transparent 70%);
+  transform: rotate(-7deg);
+}
+.contribution-card__tea svg { width: 52px; height: 52px; }
+.contribution-card__eyebrow { margin: 0 0 12px; color: var(--card-gold); font: 700 10px/1.4 Georgia, serif; letter-spacing: .17em; text-transform: uppercase; }
+.contribution-card h2 { margin: 0; font: 400 clamp(36px, 10vw, 54px)/.95 Georgia, serif; letter-spacing: -.045em; }
+.contribution-card h2 em { color: var(--card-red); }
+.contribution-card__rule { display: flex; align-items: center; justify-content: center; gap: 18px; margin: 22px 0; color: var(--card-gold); }
+.contribution-card__rule span:nth-child(even) { color: var(--card-red); }
+.contribution-card__welcome { margin: 0 0 12px; font: italic 19px/1.4 Georgia, serif; }
+.contribution-card__copy { margin: 0; color: var(--muted); font-size: 16px; line-height: 1.6; text-wrap: pretty; }
+.contribution-card__note { margin: 18px 0 0; color: var(--card-gold); font: italic 14px/1.5 Georgia, serif; }
+.contribution-card__note span { color: var(--card-red); }
+.contribution-card__actions { display: grid; gap: 10px; margin-top: 25px; }
+.contribution-card__actions .btn { text-decoration: none; }
+@keyframes contribution-arrive {
+  from { opacity: 0; transform: translateY(18px); }
+  to { opacity: 1; transform: none; }
+}
+@media (max-width: 600px) {
+  .contribution-dialog {
+    inset: auto 0 0;
+    width: 100%;
+    max-height: calc(100dvh - 24px);
+    margin: 0 auto;
+    border-bottom: 0;
+    border-radius: 24px 24px 0 0;
+  }
+  .contribution-card { padding: 30px 24px calc(24px + var(--safe-b)); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .contribution-dialog[open] { animation: none; }
+}
+
 body.rabbit-fall { overflow: hidden; }
 
 @keyframes portal-breathe {

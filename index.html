@@ -11,7 +11,7 @@
 <meta name="format-detection" content="telephone=no">
 <title>Down the Rabbit Hole · Costume Contest</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐰</text></svg>">
-<link rel="stylesheet" href="assets/css/app.css?v=20261005-6">
+<link rel="stylesheet" href="assets/css/app.css?v=20261005-7">
 </head>
 <body>
 <div class="bg-fx"></div>
@@ -148,12 +148,11 @@
             <span class="wonder-sign__glyph" aria-hidden="true">♣</span>
             <span class="wonder-sign__copy"><small>Through the looking glass</small><b>Party pictures</b><span>Capture a little madness</span></span>
           </button>
-          <a class="wonder-sign wonder-sign--gold wonder-sign--left wonder-sign--compact" id="hub-contribute"
-             target="_blank" rel="noopener noreferrer" hidden>
+          <button class="wonder-sign wonder-sign--gold wonder-sign--left wonder-sign--compact" id="hub-contribute"
+                  type="button" aria-haspopup="dialog" aria-controls="contribution-dialog" hidden>
             <span class="wonder-sign__glyph" aria-hidden="true">♦</span>
-            <span class="wonder-sign__copy"><small>A little more magic</small><b>Contribute to party</b></span>
-            <span class="sr-only">(opens in a new tab)</span>
-          </a>
+            <span class="wonder-sign__copy"><small>Entirely optional</small><b>Keep the magic going</b></span>
+          </button>
         </div>
         <p class="hub__signpost-note">Every path leads to a little madness.</p>
       </nav>
@@ -192,6 +191,29 @@
 
 </main>
 
+<dialog class="contribution-dialog" id="contribution-dialog"
+        aria-labelledby="contribution-title" aria-describedby="contribution-copy contribution-note">
+  <form method="dialog" class="contribution-card">
+    <button class="contribution-card__close" type="submit" value="close" aria-label="Close contribution invitation" autofocus>×</button>
+    <div class="contribution-card__tea" aria-hidden="true">
+      <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M14 29h31v8c0 10-6 16-15.5 16S14 47 14 37zM45 31h4a7 7 0 0 1 0 14h-6M9 56h43M24 22c-7-7 7-8 0-15M34 22c-7-7 7-8 0-15"/>
+        <path d="m25 38 5 6 5-6-5-6z" fill="currentColor" stroke="none"/>
+      </svg>
+    </div>
+    <p class="contribution-card__eyebrow">Another cup of magic?</p>
+    <h2 id="contribution-title">A little more<br><em>Wonderland</em></h2>
+    <div class="contribution-card__rule" aria-hidden="true"><span>♠</span><span>♥</span><span>♣</span><span>♦</span></div>
+    <p class="contribution-card__welcome">Your company is more than enough.</p>
+    <p class="contribution-card__copy" id="contribution-copy">If you forgot drinks or would like to help make the next party even more magical, you’re welcome to chip in.</p>
+    <p class="contribution-card__note" id="contribution-note">Always optional. Always appreciated. <span aria-hidden="true">♥</span></p>
+    <div class="contribution-card__actions">
+      <a class="btn btn--primary btn--block" id="contribution-venmo" target="_blank" rel="noopener noreferrer">Chip in on Venmo<span class="sr-only"> (opens in a new tab)</span></a>
+      <button class="btn btn--ghost btn--block" type="submit" value="dismiss">Back to the party</button>
+    </div>
+  </form>
+</dialog>
+
 <!-- Full-screen descent layer. Canvas renders the tunnel; the timeline keeps
      the old and new views completely separate during the handoff. -->
 <div class="fall-transition" id="fall-transition" aria-hidden="true">
@@ -218,6 +240,6 @@
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/ScrollTrigger.min.js" defer></script>
 <script src="assets/js/rabbit-v2-loader.js" defer></script>
 <script src="assets/js/wonderland.js?v=20261005-6" defer></script>
-<script type="module" src="assets/js/app.js?v=20261005-6"></script>
+<script type="module" src="assets/js/app.js?v=20261005-7"></script>
 </body>
 </html>
