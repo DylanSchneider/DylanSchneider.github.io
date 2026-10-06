@@ -173,7 +173,7 @@ async function uploadObject(bucket, name, blob) {
 
 async function uploadPhotoSingle(ownerId, blob, bucket = BUCKET, prefix = PARTY_ID) {
   const stamp = `${ownerId}-${Date.now()}-${crypto.randomUUID?.() || Math.random().toString(36).slice(2)}`;
-  const path = `${prefix}/${stamp}-normal.jpg`;
+  const path = `${prefix}/${stamp}.jpg`;
   await uploadObject(bucket, path, blob);
   return path;
 }
@@ -215,6 +215,15 @@ function demoRead() {
       results_public: false
     };
   }
+  // Upgrade photos already saved in the rehearsal database.
+  let renamed = false;
+  for (const photo of db.party_photos || []) {
+    if (!Object.hasOwn(photo, 'normal_path')) continue;
+    photo.path = photo.path || photo.normal_path;
+    delete photo.normal_path;
+    renamed = true;
+  }
+  if (renamed) demoWrite(db);
   return db;
 }
 
@@ -468,10 +477,10 @@ const demo = {
     demoWrite(db);
     return { guest_id: id, full_name: guest.full_name, costume_name: member?.costume_name || null };
   },
-  addPartyPhoto(guestId, photoPaths, caption) {
+  addPartyPhoto(guestId, path, caption) {
     const db = demoRead();
     const photo = {
-      id: uid(), normal_path: photoPaths.normal,
+      id: uid(), path,
       caption: cleanText(caption), uploader: (db.guests.find((g) => g.id === guestId) || {}).full_name || 'Guest',
       created_at: new Date().toISOString()
     };
@@ -510,10 +519,10 @@ export const api = {
         normal: await blobToDataUrl(photoVariants.normal)
       }, entryType);
     }
-    const normalPath = await uploadPhotoSingle(guestId, photoVariants.normal);
+    const path = await uploadPhotoSingle(guestId, photoVariants.normal);
     return rpc('create_entry', {
       p_party: PARTY_ID, p_guest: guestId, p_title: title, p_costume_name: costumeName,
-      p_entry_type: entryType || 'solo', p_photo_path: normalPath
+      p_entry_type: entryType || 'solo', p_photo_path: path
     });
   },
 
@@ -616,13 +625,11 @@ export const api = {
   async uploadPartyPhoto(guestId, photo, caption) {
     if (!photo) throw new Error('A photo is required.');
     if (!IS_LIVE) {
-      return demo.addPartyPhoto(guestId, {
-        normal: await blobToDataUrl(photo)
-      }, caption);
+      return demo.addPartyPhoto(guestId, await blobToDataUrl(photo), caption);
     }
     const path = await uploadPhotoSingle(guestId, photo, PARTY_PHOTO_BUCKET, PARTY_ID);
     return rpc('create_party_photo', {
-      p_party: PARTY_ID, p_guest: guestId, p_normal_path: path,
+      p_party: PARTY_ID, p_guest: guestId, p_path: path,
       p_caption: caption || null
     });
   },

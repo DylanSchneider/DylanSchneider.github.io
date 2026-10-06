@@ -1,6 +1,6 @@
 /* Party camera: temporary candid photos, separate from costume entries. */
-import { api, session, photoUrl, shrinkPhoto, IS_LIVE } from './store.js?v=20261005-9';
-import { messageFor } from './messages.js?v=20261005-9';
+import { api, session, photoUrl, shrinkPhoto, IS_LIVE } from './store.js?v=20261005-10';
+import { messageFor } from './messages.js?v=20261005-10';
 
 const CFG = window.PARTY_CONFIG || {};
 const $ = (id) => document.getElementById(id);
@@ -35,7 +35,7 @@ function toast(msg, kind) {
 function loading(btn, on) { btn.disabled = on; btn.classList.toggle('is-loading', on); }
 
 function photoTile(photo, bucket, kind) {
-  const url = photoUrl(photo.normal_path, bucket);
+  const url = photoUrl(photo.path, bucket);
   const title = kind === 'costume'
     ? (photo.title || 'Costume photo')
     : (photo.uploader || 'Party photo');
@@ -72,7 +72,7 @@ async function loadGallery() {
       .map((entry) => ({
         id: entry.id,
         title: entry.title,
-        normal_path: entry.photo_path,
+        path: entry.photo_path,
         owner: entry.members?.find((member) => member.is_owner)?.name || ''
       }));
 

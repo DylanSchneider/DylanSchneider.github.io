@@ -91,17 +91,19 @@ says so on every page in that mode.
 ## Updating an existing database
 
 Run
-[`supabase/migrations/20261005_single_photo_cleanup.sql`](supabase/migrations/20261005_single_photo_cleanup.sql)
+[`supabase/migrations/20261005_single_photo_paths.sql`](supabase/migrations/20261005_single_photo_paths.sql)
 in the Supabase SQL Editor **before using the updated app**. This replaces
-all photo RPCs with their single-image signatures and drops the obsolete
-photo columns from both costume entries and party photos. It can run
-against either the original schema or the previous single-image migration;
-you do not need to run that older migration first. It is safe to re-run.
+all photo RPCs with their single-image signatures, renames
+`party_photos.normal_path` to `path`, and drops the obsolete photo columns
+from both costume entries and party photos. The upload API accepts `p_path`.
+It can run against the original schema or either previous single-image
+migration; you do not need to run those older migrations first. It is safe
+to re-run.
 New installations can use the updated `supabase/schema.sql` directly.
 
 Guest, costume, vote, and original-photo records are preserved. The old
-alternate-image metadata is discarded. The earlier migration remains in
-this repository as migration history; use the cleanup migration for the
+alternate-image metadata is discarded. The earlier migrations remain in
+this repository as migration history; use the paths migration for the
 current app. Storage files are separate from database columns, so any
 unused alternate images can be removed from the Storage dashboard.
 
