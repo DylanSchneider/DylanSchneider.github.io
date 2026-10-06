@@ -179,14 +179,11 @@ h1, h2, h3 { margin: 0; line-height: 1.15; font-weight: 800; }
 
 .name-fields {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
   margin: 14px 0 16px;
 }
 .name-fields .field { min-width: 0; margin-bottom: 0; }
-@media (max-width: 360px) {
-  .name-fields { grid-template-columns: 1fr; }
-}
 
 .label {
   display: block;
