@@ -31,7 +31,7 @@ window.PARTY_CONFIG = {
 
   // Juliette's full https://venmo.com/ profile link. Blank hides the
   // optional contribution sign and note on the party menu.
-  VENMO_URL: '',
+  VENMO_URL: 'https://venmo.com/u/Juliette-Martin',
 
   // Set false before the party to hide the destructive test reset control.
   // The database flag testing_reset_enabled can also be set false in Supabase.
