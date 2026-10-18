@@ -90,8 +90,8 @@
       ready = Boolean(firstName.value.trim() && lastName.value.trim() && digits.length === 10);
       cue.classList.toggle('is-ready', ready);
       cue.querySelector('.scroll-cue__text').textContent = ready
-        ? 'Scroll down. Wonderland awaits.'
-        : 'Your invitation awaits';
+        ? 'Scroll down to check in and choose your costume.'
+        : 'Fill in all three fields above, then scroll down to continue.';
       document.documentElement.classList.toggle('rabbit-ready', ready);
     };
     const syncGateSoon = () => {

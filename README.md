@@ -29,8 +29,9 @@ Live at whatever URL GitHub Pages serves this repo from (Settings → Pages).
    group). Results stay hidden until voting closes, when the countdown
    flips the page over to show them.
 4. **Take party photos** — after checking in, open **Party photos** from the
-   menu. Each candid photo is resized and uploaded once. Use its **Save**
-   button to keep the photo.
+   menu. Each candid photo is resized and uploaded once. The albums show
+   plain, uncropped images; touch and hold a photo (or right-click on a
+   computer) to use the browser's image options.
 5. **Contribute to the party** — the optional **Keep the magic going** sign
    opens a Wonderland invitation with a link to Juliette's Venmo in a new
    tab. Set `VENMO_URL` in `config.js` to her full HTTPS Venmo
@@ -142,10 +143,10 @@ data:
   those files from Storage. The party camera closes at the party deadline,
   but the page remains available for costume-photo downloads.
 
-The browser cannot silently write into a phone's Photos library. The app
-therefore provides a **Save** action for each photo. On iPhone,
-the browser may show the normal share/save sheet; that extra tap is required
-by the phone's security model.
+The browser cannot silently write into a phone's Photos library. Guests use
+the browser's native image menu to save photos; the available actions depend
+on their device and browser. The host page retains a **Save** link for each
+party photo.
 
 **`votes` is the one table that's deliberately *not* meant to be kept
 forever** — it's per-party ballots, not part of anyone's personal record.

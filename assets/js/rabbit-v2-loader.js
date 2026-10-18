@@ -2,7 +2,7 @@
    the first visit starts in the same experience that used to require ?v2=1. */
 (function () {
   let modulePromise;
-  const load = () => modulePromise || (modulePromise = import('./rabbit-v2.js'));
+  const load = () => modulePromise || (modulePromise = import('./rabbit-v2.js?v=20261018-1'));
   const api = {
     start: () => load().then(() => window.rabbitFall?.start?.()),
     finish: () => load().then(() => window.rabbitFall?.finish?.()),

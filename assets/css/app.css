@@ -392,42 +392,15 @@ h1, h2, h3 { margin: 0; line-height: 1.15; font-weight: 800; }
   font: 12px/1.4 ui-sans-serif, system-ui, sans-serif;
 }
 .party-photo-count:empty { display: none; }
-.party-photo-grid { display: grid; gap: 22px; }
-.party-photo-tile {
-  min-width: 0;
-  overflow: hidden;
-  padding: 8px;
-  border: 1px solid #cfb997;
-  border-radius: 7px;
-  color: #432d27;
-  background: linear-gradient(140deg, #fff5e2, #ead9ba);
-  box-shadow: 0 14px 32px #0005;
+.party-photo-list { display: grid; grid-template-columns: minmax(0, 1fr); gap: 20px; }
+.party-photo-list > img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 8px;
 }
-.party-photo-tile__image { overflow: hidden; border-radius: 3px; background: #171316; }
-.party-photo-tile__image img { display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: contain; }
-.party-photo-tile__body { padding: 14px 8px 8px; }
-.party-photo-tile__meta { display: grid; gap: 5px; overflow-wrap: anywhere; }
-.party-photo-tile__meta h3 { font: 700 21px/1.2 Georgia, serif; }
-.party-photo-tile__meta p { margin: 0; color: #735a4b; font: italic 14px/1.45 Georgia, serif; }
+/* The host photo downloads retain their action row. */
 .party-photo-tile__actions { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
-.party-photo-tile .party-photo-save {
-  min-height: 48px;
-  margin-left: auto;
-  padding: 12px 23px;
-  border-radius: var(--r-pill);
-  background: #641f32;
-  color: #fff7e7;
-  font: 700 14px/1 ui-sans-serif, system-ui, sans-serif;
-  text-decoration: none;
-}
-.party-photo-tile :focus-visible { outline: 2px solid #641f32; outline-offset: 3px; }
-@media (min-width: 700px) {
-  .party-photo-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-}
-@media (max-width: 360px) {
-  .party-photo-tile__body { padding-inline: 4px; }
-  .party-photo-tile .party-photo-save { padding-inline: 18px; }
-}
 
 .admin-photo-row {
   display: grid;
@@ -1483,24 +1456,22 @@ body { background: #000; }
   align-items: center;
   justify-content: center;
   border: 0;
-  color: var(--muted-2);
+  color: var(--muted);
   background: transparent;
-  font: 700 12px/1.2 Georgia, "Times New Roman", serif;
-  letter-spacing: 1.5px;
-  text-transform: uppercase;
+  font: 700 16px/1.5 ui-sans-serif, system-ui, sans-serif;
+  text-align: center;
   cursor: default;
   transition: color .25s, opacity .25s;
 }
-.scroll-cue:not(.is-ready) { opacity: .68; }
-.scroll-cue.is-ready { color: var(--wonder-cream); }
-.scroll-cue__line { width: 34px; height: 1px; background: currentColor; opacity: .5; }
-.scroll-cue__arrow { font-size: 20px; line-height: .7; }
+.scroll-cue.is-ready { color: var(--card-gold); }
+.scroll-cue__line { flex: 0 0 22px; height: 1px; background: currentColor; opacity: .5; }
+.scroll-cue__arrow { flex-shrink: 0; font-size: 30px; line-height: 1; }
 .scroll-cue.is-ready .scroll-cue__arrow { animation: cue-nudge 1.3s ease-in-out infinite; }
 .entry-stage.is-gated { animation: gate-pulse .38s ease-out; }
 
 .fall-sentinel {
   display: grid;
-  min-height: 32svh;
+  min-height: 12svh;
   place-content: center;
   gap: 14px;
   color: var(--muted-2);
@@ -1518,7 +1489,7 @@ body { background: #000; }
 .fall-tunnel {
   position: relative;
   width: 100vw;
-  min-height: 125svh;
+  min-height: 110svh;
   margin: 8px 0 0 calc(50% - 50vw);
   overflow: hidden;
   isolation: isolate;
@@ -1590,7 +1561,7 @@ body.homepage-v2 .fall-sentinel b { color: #e8e8e8; }
 body.homepage-v2 .landing-hero__rule i,
 body.homepage-v2 .landing-hero__rule i:last-child { background: linear-gradient(90deg, transparent, rgba(255,255,255,.36), transparent); }
 body.homepage-v2 .fall-tunnel {
-  min-height: 230svh;
+  min-height: 110svh;
   overflow: visible;
   background: #000;
 }
@@ -1627,6 +1598,8 @@ body.homepage-v2 .fall-tunnel::after { display: none; }
   left: clamp(18px, 5vw, 56px);
   right: clamp(18px, 5vw, 56px);
   display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
   justify-content: space-between;
   color: rgba(255,255,255,.58);
   font-size: 10px;
@@ -1656,7 +1629,7 @@ body.homepage-v2 .fall-tunnel::after { display: none; }
   text-transform: uppercase;
 }
 body.homepage-v2 .fall-sentinel {
-  min-height: 35svh;
+  min-height: 12svh;
   color: rgba(255,255,255,.48);
 }
 body.homepage-v2 .fall-sentinel b { color: #fff; }

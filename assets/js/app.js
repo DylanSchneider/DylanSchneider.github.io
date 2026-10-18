@@ -8,6 +8,7 @@ import { messageFor } from './messages.js?v=20261005-10';
 
 const CFG = window.PARTY_CONFIG || {};
 const $ = (id) => document.getElementById(id);
+const GROUP_RULE = 'Your group competes as one entry. One person creates it and uploads a group photo; everyone else joins.';
 
 /** Build a DOM node. Text always goes through textContent, never innerHTML,
  *  so a costume called `<script>` is just a funny costume name. */
@@ -463,7 +464,7 @@ async function renderGroupChooser(slot) {
   slot.replaceChildren(
     h('p', { class: 'eyebrow' }, 'Group'),
     h('h2', { class: 'section-title costume-heading' }, 'Find your cast of characters'),
-    h('p', { class: 'hint' }, 'Join your group, or be the first to start it.'),
+    h('p', { class: 'hint' }, GROUP_RULE),
     groups,
     h('div', { class: 'choice-divider' }, 'First one here?'),
     h('button', {
@@ -516,7 +517,7 @@ function renderSoloForm(slot) {
       const saved = await api.createEntry(state.me.id, t, t, photoBlob, 'solo');
       mergeMembership(saved);
       goHub();
-      toast('You’ve joined the cast!', 'good');
+      toast('Costume entered!', 'good');
       buzz(30);
     } catch (e) {
       toast(messageFor(e), 'bad'); buzz(60);
@@ -561,7 +562,7 @@ function renderGroupForm(slot) {
       const saved = await api.createEntry(state.me.id, g, r, photoBlob, 'group');
       mergeMembership(saved);
       goHub();
-      toast('Your cast is ready. Friends can join now.', 'good');
+      toast('Group entered! Friends can join now.', 'good');
       buzz(30);
     } catch (e) {
       toast(messageFor(e), 'bad'); buzz(60);
@@ -572,7 +573,7 @@ function renderGroupForm(slot) {
 
   slot.replaceChildren(
     h('p', { class: 'eyebrow', style: 'margin-top:0' }, 'Group costume'),
-    h('p', { class: 'hint' }, 'One group, one photo. Everyone else joins after you.'),
+    h('p', { class: 'hint' }, GROUP_RULE),
     h('div', { class: 'panel', style: 'margin-top:8px' },
       field('Group costume name', groupName, errG, 'e.g. Alice in Wonderland'),
       field('Your costume in the group', yourRole, errR, 'e.g. Mad Hatter'),
@@ -595,7 +596,7 @@ function renderJoinForm(slot, entry) {
       const saved = await api.joinEntry(state.me.id, entry.id, v);
       mergeMembership(saved);
       goHub();
-      toast(`Welcome to “${entry.title}”!`, 'good');
+      toast(`Joined “${entry.title}”!`, 'good');
       buzz(30);
     } catch (e) {
       toast(messageFor(e), 'bad'); buzz(60);
@@ -665,7 +666,7 @@ function renderEditForm(slot) {
       }
       if (role !== currentCostume) mergeMembership(await api.updateMyCostume(state.me.id, role));
       goHub();
-      toast('A splendid change of character.', 'good');
+      toast('Changes saved', 'good');
     } catch (e) {
       toast(messageFor(e), 'bad');
     } finally {
@@ -920,7 +921,7 @@ function paintStatus() {
     strip.hidden = true;
   } else {
     icon.textContent = '🗳️';
-    txt.textContent = 'One vote. Who deserves the crown?';
+    txt.textContent = 'Tap a costume photo to vote. You get one vote and can change it until voting closes. You can’t vote for your own entry.';
   }
 }
 
