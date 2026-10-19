@@ -27,6 +27,11 @@ const photoCards = new Map();
 let replies = [];
 let replyLoadVersion = 0;
 let activeReplyWrites = 0;
+const SHOW_STEP = 24;
+const albums = { party: [], costume: [] };
+const shownCount = { party: SHOW_STEP, costume: SHOW_STEP };
+let viewerKey = 'party';
+let viewerIndex = 0;
 
 function toast(msg, kind) {
   const box = $('toast');
@@ -51,8 +56,9 @@ function photoImage(photo, bucket) {
 function paintReplies(card) {
   const comments = replies.filter((reply) => reply.photo_id === card.id);
   card.summary.textContent = comments.length
-    ? `${comments.length} ${comments.length === 1 ? 'reply' : 'replies'} · Comment or react`
-    : 'Comment or react';
+    ? `${comments.length} ${comments.length === 1 ? 'reply' : 'replies'}`
+    : 'No replies yet';
+  card.badge.textContent = comments.length ? `💬 ${comments.length}` : '';
   card.list.replaceChildren(...comments.map((reply) => {
     const remove = reply.is_mine ? h('button', {
       class: 'photo-reply-remove', type: 'button', 'aria-label': 'Remove your reply',
@@ -105,9 +111,11 @@ async function loadReplies() {
 function partyPhotoCard(photo) {
   const card = { id: photo.id, busy: false };
   card.image = photoImage(photo, 'party-photos');
+  card.badge = h('span', { class: 'party-thumb__badge', 'aria-hidden': 'true' });
+  card.thumb = h('button', { class: 'party-thumb', type: 'button' }, card.image, card.badge);
   card.author = h('span', { class: 'party-photo-author', text: photo.uploader || 'Guest' });
   card.caption = h('p', { class: 'party-photo-caption', text: photo.caption || '' });
-  card.summary = h('summary', {}, 'Comment or react');
+  card.summary = h('p', { class: 'photo-replies-count' }, 'No replies yet');
   card.list = h('ul', { class: 'photo-replies-list', 'aria-label': 'Replies' });
   card.loadStatus = h('p', { class: 'hint', 'aria-live': 'polite', text: 'Loading replies…' });
   card.error = h('p', { class: 'err', 'aria-live': 'polite', id: `reply-error-${photo.id}` });
@@ -145,26 +153,26 @@ function partyPhotoCard(photo) {
       send.disabled = !input.value.trim();
     }
   });
-  const details = h('details', { class: 'photo-replies' },
+  // The reply panel lives in the viewer; the card object keeps typed replies while it's away.
+  card.panel = h('div', { class: 'photo-replies' },
     card.summary, card.loadStatus, card.list, form, card.error
   );
-  details.addEventListener('toggle', () => { if (details.open) loadReplies(); });
-  card.node = h('figure', { class: 'party-photo', 'data-photo-id': photo.id },
-    card.image, h('figcaption', {}, card.author, card.caption), details
-  );
+  card.view = () => ({
+    src: card.image.src,
+    caption: card.caption.textContent || 'Party photo',
+    author: card.author.textContent ? `by ${card.author.textContent}` : '',
+    panel: card.panel
+  });
   paintReplies(card);
   return card;
 }
 
 function paintPartyPhotos(photos) {
-  const gallery = $('party-gallery');
   const ids = new Set(photos.map((photo) => photo.id));
-  for (const [id, card] of photoCards) {
-    if (ids.has(id)) continue;
-    card.node.remove();
-    photoCards.delete(id);
+  for (const [id] of photoCards) {
+    if (!ids.has(id)) photoCards.delete(id);
   }
-  photos.forEach((photo, index) => {
+  albums.party = photos.map((photo) => {
     let card = photoCards.get(photo.id);
     if (!card) {
       card = partyPhotoCard(photo);
@@ -172,9 +180,9 @@ function paintPartyPhotos(photos) {
     }
     card.caption.textContent = photo.caption || '';
     card.author.textContent = photo.uploader || 'Guest';
-    // Reuse cards so refreshing preserves expanded threads and typed replies.
-    if (gallery.children[index] !== card.node) gallery.insertBefore(card.node, gallery.children[index] || null);
+    return card;
   });
+  renderAlbum('party');
 }
 
 async function loadGallery() {
@@ -194,7 +202,19 @@ async function loadGallery() {
 
     $('costume-count').textContent = `${costumes.length} ${costumes.length === 1 ? 'photo' : 'photos'}`;
     $('party-count').textContent = `${photos.length} ${photos.length === 1 ? 'photo' : 'photos'}`;
-    $('costume-gallery').replaceChildren(...costumes.map((photo) => photoImage(photo, 'costumes')));
+    albums.costume = costumes.map((costume) => {
+      const image = photoImage(costume, 'costumes');
+      return {
+        thumb: h('button', { class: 'party-thumb', type: 'button' }, image),
+        view: () => ({
+          src: image.src,
+          caption: costume.title || 'Costume photo',
+          author: costume.owner ? `Costume by ${costume.owner}` : '',
+          panel: null
+        })
+      };
+    });
+    renderAlbum('costume');
     $('costume-empty').replaceChildren();
     if (!costumes.length) $('costume-empty').append(h('div', { class: 'empty' },
       h('div', { class: 'empty__icon', text: '🎭' }), h('b', { text: 'The cast is still arriving' })
@@ -212,6 +232,84 @@ async function loadGallery() {
       h('b', { text: 'The camera has retired for the night' }), ' The memories are yours to keep.'
     ));
   } catch (err) { toast(messageFor(err), 'bad'); }
+}
+
+/** Draws the first page of an album; "Show more" adds the next page. */
+function renderAlbum(key) {
+  const items = albums[key];
+  const visible = items.slice(0, shownCount[key]);
+  for (const item of visible) item.thumb.onclick = () => openViewer(key, items.indexOf(item));
+  $(`${key}-gallery`).replaceChildren(...visible.map((item) => item.thumb));
+  const left = items.length - visible.length;
+  $(`${key}-more`).replaceChildren(...(left > 0 ? [h('button', {
+    class: 'btn btn--ghost btn--block', type: 'button',
+    onclick: () => { shownCount[key] += SHOW_STEP; renderAlbum(key); }
+  }, `Show ${Math.min(left, SHOW_STEP)} more`)] : []));
+}
+
+function showViewer(index) {
+  const list = albums[viewerKey];
+  viewerIndex = (index + list.length) % list.length;
+  const { src, caption, author, panel } = list[viewerIndex].view();
+  $('viewer-image').src = src;
+  $('viewer-image').alt = caption;
+  $('viewer-caption').textContent = caption;
+  $('viewer-author').textContent = author;
+  $('viewer-save').href = src;
+  $('viewer-count').textContent = `${viewerIndex + 1} of ${list.length}`;
+  $('viewer-prev').hidden = $('viewer-next').hidden = list.length < 2;
+  $('viewer-replies').replaceChildren(...(panel ? [panel] : []));
+  if (panel) loadReplies();
+}
+
+function openViewer(key, index) {
+  viewerKey = key;
+  showViewer(index);
+  $('photo-viewer').showModal();
+}
+
+function selectAlbum(key, { focus = false } = {}) {
+  for (const name of Object.keys(albums)) {
+    const tab = $(`tab-${name}`);
+    const selected = name === key;
+    tab.setAttribute('aria-selected', String(selected));
+    tab.tabIndex = selected ? 0 : -1;
+    $(`${name}-album`).hidden = !selected;
+  }
+  if (focus) $(`tab-${key}`).focus();
+  // Keeps the URL shareable: party.html#costumes opens the costume tab.
+  history.replaceState(null, '', key === 'costume' ? '#costumes' : '#party');
+}
+
+function initializeAlbums() {
+  for (const name of Object.keys(albums)) {
+    $(`tab-${name}`).addEventListener('click', () => selectAlbum(name));
+    $(`tab-${name}`).addEventListener('keydown', (event) => {
+      if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+      event.preventDefault();
+      selectAlbum(name === 'party' ? 'costume' : 'party', { focus: true });
+    });
+  }
+  selectAlbum(location.hash === '#costumes' ? 'costume' : 'party');
+
+  const viewerEl = $('photo-viewer');
+  $('viewer-close').addEventListener('click', () => viewerEl.close());
+  $('viewer-prev').addEventListener('click', () => showViewer(viewerIndex - 1));
+  $('viewer-next').addEventListener('click', () => showViewer(viewerIndex + 1));
+  // Arrow keys stay out of the way while someone is typing a reply.
+  viewerEl.addEventListener('keydown', (event) => {
+    if (event.target.closest('input, textarea')) return;
+    if (event.key === 'ArrowLeft') showViewer(viewerIndex - 1);
+    if (event.key === 'ArrowRight') showViewer(viewerIndex + 1);
+  });
+  let swipeX = null;
+  $('viewer-stage').addEventListener('touchstart', (event) => { swipeX = event.touches[0].clientX; }, { passive: true });
+  $('viewer-stage').addEventListener('touchend', (event) => {
+    if (swipeX == null) return;
+    const dx = event.changedTouches[0].clientX - swipeX;
+    swipeX = null;
+    if (Math.abs(dx) > 50) showViewer(viewerIndex + (dx < 0 ? 1 : -1));
+  });
 }
 
 function partyCostumeGate() {
@@ -273,6 +371,7 @@ function initializePartyCamera() {
   });
 
   $('party-refresh').addEventListener('click', loadGallery);
+  initializeAlbums();
   setInterval(() => { if (!document.hidden) loadReplies(); }, 15000);
   document.addEventListener('visibilitychange', () => { if (!document.hidden) loadReplies(); });
   loadGallery();

@@ -6,7 +6,7 @@
 <meta name="robots" content="noindex, nofollow">
 <meta name="theme-color" content="#000000">
 <title>Party photos · Wonderland</title>
-<link rel="stylesheet" href="assets/css/app.css?v=20261018-4">
+<link rel="stylesheet" href="assets/css/app.css?v=20261018-5">
 </head>
 <body>
 <div class="bg-fx"></div>
@@ -26,7 +26,7 @@
         <header class="party-hero">
           <p class="eyebrow">Memories of Wonderland</p>
           <h1>Through the<br><em>looking glass</em></h1>
-          <p>Touch and hold a photo, or right-click on a computer, for image options.</p>
+          <p>Tap a photo to see it full size. Touch and hold it, or right-click on a computer, to save it.</p>
           <span class="party-hero__suit" aria-hidden="true">♦</span>
         </header>
 
@@ -57,19 +57,12 @@
           </div>
         </details>
 
-        <section class="party-album" aria-labelledby="costume-gallery-title">
-          <div class="party-gallery-head">
-            <div>
-              <p class="eyebrow">Costume photos</p>
-              <h2 id="costume-gallery-title">The cast of characters</h2>
-            </div>
-            <span class="party-photo-count" id="costume-count" aria-live="polite"></span>
-          </div>
-          <div class="party-photo-list" id="costume-gallery"></div>
-          <div id="costume-empty"></div>
-        </section>
+        <nav class="party-tabs" role="tablist" aria-label="Photo albums">
+          <button class="party-tab" id="tab-party" type="button" role="tab" aria-controls="party-album">Party pictures</button>
+          <button class="party-tab" id="tab-costume" type="button" role="tab" aria-controls="costume-album">Costume photos</button>
+        </nav>
 
-        <section class="party-album" aria-labelledby="party-gallery-title">
+        <section class="party-album" id="party-album" role="tabpanel" aria-labelledby="tab-party">
           <div class="party-gallery-head">
             <div>
               <p class="eyebrow">Party pictures</p>
@@ -78,14 +71,50 @@
             <span class="party-photo-count" id="party-count" aria-live="polite"></span>
           </div>
           <div class="party-photo-list" id="party-gallery"></div>
+          <div class="party-more" id="party-more"></div>
           <div id="party-empty"></div>
+        </section>
+
+        <section class="party-album" id="costume-album" role="tabpanel" aria-labelledby="tab-costume" hidden>
+          <div class="party-gallery-head">
+            <div>
+              <p class="eyebrow">Costume photos</p>
+              <h2 id="costume-gallery-title">The cast of characters</h2>
+            </div>
+            <span class="party-photo-count" id="costume-count" aria-live="polite"></span>
+          </div>
+          <div class="party-photo-list" id="costume-gallery"></div>
+          <div class="party-more" id="costume-more"></div>
+          <div id="costume-empty"></div>
         </section>
       </div>
     </div>
   </section>
 </main>
+
+<dialog class="photo-viewer" id="photo-viewer" aria-label="Photo viewer">
+  <div class="photo-viewer__inner">
+    <div class="photo-viewer__bar">
+      <span class="photo-viewer__count" id="viewer-count" aria-live="polite"></span>
+      <button class="icon-btn" id="viewer-close" type="button" aria-label="Close photo">×</button>
+    </div>
+    <div class="photo-viewer__stage" id="viewer-stage">
+      <button class="photo-viewer__nav photo-viewer__nav--prev" id="viewer-prev" type="button" aria-label="Previous photo" hidden>‹</button>
+      <img id="viewer-image" alt="">
+      <button class="photo-viewer__nav photo-viewer__nav--next" id="viewer-next" type="button" aria-label="Next photo" hidden>›</button>
+    </div>
+    <div class="photo-viewer__meta">
+      <div>
+        <p class="photo-viewer__caption" id="viewer-caption"></p>
+        <span class="party-photo-author" id="viewer-author"></span>
+      </div>
+      <a class="btn btn--ghost btn--sm" id="viewer-save" href="#" target="_blank" rel="noopener">Open full size to save</a>
+    </div>
+    <div id="viewer-replies"></div>
+  </div>
+</dialog>
 <div id="toast" aria-live="polite"></div>
 <script src="config.js"></script>
-<script type="module" src="assets/js/party.js?v=20261018-5"></script>
+<script type="module" src="assets/js/party.js?v=20261018-6"></script>
 </body>
 </html>
