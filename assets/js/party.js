@@ -1,6 +1,6 @@
 /* Party camera: temporary candid photos, separate from costume entries. */
-import { api, session, photoUrl, shrinkPhoto, IS_LIVE } from './store.js?v=20261005-10';
-import { messageFor } from './messages.js?v=20261005-10';
+import { api, session, photoUrl, shrinkPhoto, IS_LIVE } from './store.js?v=20261018-4';
+import { messageFor } from './messages.js?v=20261018-4';
 
 const CFG = window.PARTY_CONFIG || {};
 const $ = (id) => document.getElementById(id);
@@ -23,6 +23,10 @@ const h = (tag, attrs, ...kids) => {
 const me = session.get();
 let photoBlob = null;
 let previewUrl = null;
+const photoCards = new Map();
+let replies = [];
+let replyLoadVersion = 0;
+let activeReplyWrites = 0;
 
 function toast(msg, kind) {
   const box = $('toast');
@@ -41,6 +45,135 @@ function photoImage(photo, bucket) {
   // Plain image elements preserve the browser's native save/share menu.
   return h('img', {
     src: photoUrl(photo.path, bucket), alt: description, loading: 'lazy', decoding: 'async'
+  });
+}
+
+function paintReplies(card) {
+  const comments = replies.filter((reply) => reply.photo_id === card.id);
+  card.summary.textContent = comments.length
+    ? `${comments.length} ${comments.length === 1 ? 'reply' : 'replies'} · Comment or react`
+    : 'Comment or react';
+  card.list.replaceChildren(...comments.map((reply) => {
+    const remove = reply.is_mine ? h('button', {
+      class: 'photo-reply-remove', type: 'button', 'aria-label': 'Remove your reply',
+      onclick: async () => {
+        if (card.busy) return;
+        card.busy = true;
+        activeReplyWrites++;
+        replyLoadVersion++;
+        remove.disabled = true;
+        card.error.textContent = '';
+        try {
+          await api.deletePartyPhotoComment(me.id, reply.id);
+          replies = replies.filter((item) => item.id !== reply.id);
+          paintReplies(card);
+        } catch (err) {
+          card.error.textContent = messageFor(err, 'Couldn’t remove your reply. Try again.');
+        } finally {
+          card.busy = false;
+          activeReplyWrites--;
+          remove.disabled = false;
+        }
+      }
+    }, 'Remove') : null;
+    return h('li', { class: 'photo-reply' },
+      h('p', {}, h('b', { text: reply.author || 'Guest' }), ' ', h('span', { text: reply.body })),
+      remove
+    );
+  }));
+}
+
+async function loadReplies() {
+  if (activeReplyWrites || !photoCards.size) return;
+  const version = ++replyLoadVersion;
+  try {
+    const result = await api.listPartyPhotoComments(me.id);
+    if (version !== replyLoadVersion) return;
+    replies = Array.isArray(result) ? result : [];
+    for (const card of photoCards.values()) {
+      card.loadStatus.textContent = '';
+      paintReplies(card);
+    }
+  } catch (err) {
+    if (version !== replyLoadVersion) return;
+    for (const card of photoCards.values()) {
+      card.loadStatus.textContent = messageFor(err, 'Replies couldn’t load. Close and reopen this section to try again.');
+    }
+  }
+}
+
+function partyPhotoCard(photo) {
+  const card = { id: photo.id, busy: false };
+  card.image = photoImage(photo, 'party-photos');
+  card.author = h('span', { class: 'party-photo-author', text: photo.uploader || 'Guest' });
+  card.caption = h('p', { class: 'party-photo-caption', text: photo.caption || '' });
+  card.summary = h('summary', {}, 'Comment or react');
+  card.list = h('ul', { class: 'photo-replies-list', 'aria-label': 'Replies' });
+  card.loadStatus = h('p', { class: 'hint', 'aria-live': 'polite', text: 'Loading replies…' });
+  card.error = h('p', { class: 'err', 'aria-live': 'polite', id: `reply-error-${photo.id}` });
+  const input = h('input', {
+    class: 'input', type: 'text', maxlength: '280', enterkeyhint: 'send',
+    placeholder: 'Add a comment or emoji…', 'aria-label': 'Add a comment or emoji',
+    'aria-describedby': card.error.id
+  });
+  const send = h('button', { class: 'btn btn--ghost btn--sm', type: 'submit', disabled: true }, 'Send');
+  input.addEventListener('input', () => { send.disabled = !input.value.trim(); });
+  const form = h('form', { class: 'photo-reply-form' }, input, send);
+  form.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const body = input.value.trim();
+    if (card.busy || !body) return;
+    card.busy = true;
+    activeReplyWrites++;
+    replyLoadVersion++;
+    input.disabled = true;
+    loading(send, true);
+    card.error.textContent = '';
+    try {
+      const saved = await api.addPartyPhotoComment(me.id, photo.id, body);
+      replies.push(saved);
+      input.value = '';
+      card.loadStatus.textContent = '';
+      paintReplies(card);
+    } catch (err) {
+      card.error.textContent = messageFor(err, 'Your reply wasn’t sent. Try again.');
+    } finally {
+      card.busy = false;
+      activeReplyWrites--;
+      input.disabled = false;
+      loading(send, false);
+      send.disabled = !input.value.trim();
+    }
+  });
+  const details = h('details', { class: 'photo-replies' },
+    card.summary, card.loadStatus, card.list, form, card.error
+  );
+  details.addEventListener('toggle', () => { if (details.open) loadReplies(); });
+  card.node = h('figure', { class: 'party-photo', 'data-photo-id': photo.id },
+    card.image, h('figcaption', {}, card.author, card.caption), details
+  );
+  paintReplies(card);
+  return card;
+}
+
+function paintPartyPhotos(photos) {
+  const gallery = $('party-gallery');
+  const ids = new Set(photos.map((photo) => photo.id));
+  for (const [id, card] of photoCards) {
+    if (ids.has(id)) continue;
+    card.node.remove();
+    photoCards.delete(id);
+  }
+  photos.forEach((photo, index) => {
+    let card = photoCards.get(photo.id);
+    if (!card) {
+      card = partyPhotoCard(photo);
+      photoCards.set(photo.id, card);
+    }
+    card.caption.textContent = photo.caption || '';
+    card.author.textContent = photo.uploader || 'Guest';
+    // Reuse cards so refreshing preserves expanded threads and typed replies.
+    if (gallery.children[index] !== card.node) gallery.insertBefore(card.node, gallery.children[index] || null);
   });
 }
 
@@ -67,7 +200,8 @@ async function loadGallery() {
       h('div', { class: 'empty__icon', text: '🎭' }), h('b', { text: 'The cast is still arriving' })
     ));
 
-    $('party-gallery').replaceChildren(...photos.map((photo) => photoImage(photo, 'party-photos')));
+    paintPartyPhotos(photos);
+    loadReplies();
     $('party-empty').replaceChildren();
     if (!photos.length) $('party-empty').append(h('div', { class: 'empty' },
       h('div', { class: 'empty__icon', text: '📸' }), h('b', { text: 'A curious moment awaits' }),
@@ -139,6 +273,8 @@ function initializePartyCamera() {
   });
 
   $('party-refresh').addEventListener('click', loadGallery);
+  setInterval(() => { if (!document.hidden) loadReplies(); }, 15000);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) loadReplies(); });
   loadGallery();
 }
 

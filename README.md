@@ -32,6 +32,10 @@ Live at whatever URL GitHub Pages serves this repo from (Settings → Pages).
    menu. Each candid photo is resized and uploaded once. The albums show
    plain, uncropped images; touch and hold a photo (or right-click on a
    computer) to use the browser's image options.
+   Party photos show their captions underneath. Open **Comment or react**
+   to send a short comment or an emoji from the normal keyboard. Replies
+   are shared between guests, refresh while the page is open, and can be
+   removed by the person who posted them.
 5. **Contribute to the party** — the optional **Keep the magic going** sign
    opens a Wonderland invitation with a link to Juliette's Venmo in a new
    tab. Set `VENMO_URL` in `config.js` to her full HTTPS Venmo
@@ -142,6 +146,10 @@ data:
   links to save the temporary party photos to your computer, then remove
   those files from Storage. The party camera closes at the party deadline,
   but the page remains available for costume-photo downloads.
+- **`party_photo_comments`** — short text or emoji replies on party photos.
+  Replies remain available after uploads close and are removed automatically
+  when the photo record is deleted. On an existing database, run
+  `supabase/photo-replies.sql` in Supabase's SQL Editor to enable replies.
 
 The browser cannot silently write into a phone's Photos library. Guests use
 the browser's native image menu to save photos; the available actions depend

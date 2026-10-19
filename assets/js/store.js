@@ -210,6 +210,7 @@ function demoRead() {
       entries: [],    // {id, owner_id, title, photo_path}
       members: [],    // {guest_id, entry_id, costume_name, is_owner}
       party_photos: [],
+      party_photo_comments: [],
       votes: {},      // voter_id -> entry_id
       closes_at: CFG.FALLBACK_CLOSES_AT || '2026-10-24T22:00:00-04:00',
       results_public: false
@@ -492,6 +493,40 @@ const demo = {
   partyPhotos() {
     return (demoRead().party_photos || []).slice();
   },
+  partyPhotoComments(guestId) {
+    const db = demoRead();
+    if (!db.guests.some((guest) => guest.id === guestId)) throw new Error('Check in with your name first.');
+    return (db.party_photo_comments || [])
+      .filter((comment) => (db.party_photos || []).some((photo) => photo.id === comment.photo_id))
+      .map((comment) => ({
+        id: comment.id, photo_id: comment.photo_id, body: comment.body, created_at: comment.created_at,
+        author: db.guests.find((guest) => guest.id === comment.guest_id)?.full_name || 'Guest',
+        is_mine: comment.guest_id === guestId
+      }));
+  },
+  addPartyPhotoComment(guestId, photoId, body) {
+    const db = demoRead();
+    const guest = db.guests.find((item) => item.id === guestId);
+    if (!guest) throw new Error('Check in with your name first.');
+    if (!(db.party_photos || []).some((photo) => photo.id === photoId)) throw new Error('That party photo is no longer available.');
+    const text = cleanText(body);
+    if (!text || Array.from(text).length > 280) throw new Error('Write a comment or emoji, up to 280 characters.');
+    const comment = { id: uid(), photo_id: photoId, guest_id: guestId, body: text, created_at: new Date().toISOString() };
+    db.party_photo_comments ||= [];
+    db.party_photo_comments.push(comment);
+    demoWrite(db);
+    return { id: comment.id, photo_id: photoId, body: text, created_at: comment.created_at, author: guest.full_name, is_mine: true };
+  },
+  deletePartyPhotoComment(guestId, commentId) {
+    const db = demoRead();
+    if (!db.guests.some((guest) => guest.id === guestId)) throw new Error('Check in with your name first.');
+    const comments = db.party_photo_comments || [];
+    if (!comments.some((comment) => comment.id === commentId && comment.guest_id === guestId)) {
+      throw new Error('That reply is no longer available or belongs to another guest.');
+    }
+    db.party_photo_comments = comments.filter((comment) => comment.id !== commentId);
+    demoWrite(db);
+  },
   wipe() { try { localStorage.removeItem(DEMO_KEY); } catch { /* private mode */ } }
 };
 
@@ -638,6 +673,24 @@ export const api = {
     return IS_LIVE
       ? rpc('list_party_photos', { p_party: PARTY_ID, p_guest: guestId })
       : Promise.resolve(demo.partyPhotos());
+  },
+
+  listPartyPhotoComments(guestId) {
+    return IS_LIVE
+      ? rpc('list_party_photo_comments', { p_party: PARTY_ID, p_guest: guestId })
+      : Promise.resolve(demo.partyPhotoComments(guestId));
+  },
+
+  addPartyPhotoComment(guestId, photoId, body) {
+    return IS_LIVE
+      ? rpc('add_party_photo_comment', { p_party: PARTY_ID, p_guest: guestId, p_photo: photoId, p_body: body })
+      : Promise.resolve(demo.addPartyPhotoComment(guestId, photoId, body));
+  },
+
+  deletePartyPhotoComment(guestId, commentId) {
+    return IS_LIVE
+      ? rpc('delete_party_photo_comment', { p_party: PARTY_ID, p_guest: guestId, p_comment: commentId })
+      : Promise.resolve(demo.deletePartyPhotoComment(guestId, commentId));
   },
 
   adminPartyPhotos(pin) {

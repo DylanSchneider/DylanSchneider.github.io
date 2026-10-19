@@ -393,12 +393,40 @@ h1, h2, h3 { margin: 0; line-height: 1.15; font-weight: 800; }
 }
 .party-photo-count:empty { display: none; }
 .party-photo-list { display: grid; grid-template-columns: minmax(0, 1fr); gap: 20px; }
-.party-photo-list > img {
+.party-photo-list > img,
+.party-photo > img {
   display: block;
   width: 100%;
   height: auto;
   border-radius: 8px;
 }
+.party-photo { min-width: 0; margin: 0; }
+.party-photo figcaption { margin-top: 10px; overflow-wrap: anywhere; }
+.party-photo-author { color: var(--muted); font-size: 12px; }
+.party-photo-caption { margin: 3px 0 0; font-size: 15px; }
+.party-photo-caption:empty { display: none; }
+.photo-replies { margin-top: 3px; }
+.photo-replies > summary {
+  width: fit-content;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  color: var(--card-gold);
+  font-size: 13px;
+  cursor: pointer;
+  list-style: none;
+}
+.photo-replies > summary::-webkit-details-marker { display: none; }
+.photo-replies > summary::after { content: '⌄'; margin-left: 8px; }
+.photo-replies[open] > summary::after { content: '⌃'; }
+.photo-replies-list { list-style: none; margin: 0; padding: 0; max-height: 260px; overflow-y: auto; }
+.photo-reply { display: flex; align-items: start; gap: 8px; padding: 6px 0; }
+.photo-reply p { flex: 1; min-width: 0; margin: 0; font-size: 14px; overflow-wrap: anywhere; }
+.photo-reply b { margin-right: 5px; color: var(--muted); font-size: 12px; }
+.photo-reply-remove { flex-shrink: 0; min-height: 44px; padding: 0 8px; border: 0; background: none; color: var(--muted); font: inherit; font-size: 12px; cursor: pointer; }
+.photo-reply-form { display: flex; gap: 8px; margin-top: 8px; }
+.photo-reply-form .input { flex: 1; min-width: 0; font-size: 16px; }
+.photo-reply-form .btn { flex-shrink: 0; min-height: 44px; }
 /* The host photo downloads retain their action row. */
 .party-photo-tile__actions { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
 
