@@ -175,7 +175,31 @@ async function uploadPhotoSingle(ownerId, blob, bucket = BUCKET, prefix = PARTY_
   const stamp = `${ownerId}-${Date.now()}-${crypto.randomUUID?.() || Math.random().toString(36).slice(2)}`;
   const path = `${prefix}/${stamp}.jpg`;
   await uploadObject(bucket, path, blob);
+  await uploadPreview(bucket, path, blob);
   return path;
+}
+
+const PREVIEW_MAX_EDGE = 640;
+const PREVIEW_QUALITY = 0.8;
+
+/** Where a photo's small preview lives: 2026/abc.jpg → 2026/thumbs/abc.jpg */
+export function thumbPath(path) {
+  const cut = path.lastIndexOf('/');
+  return `${path.slice(0, cut + 1)}thumbs/${path.slice(cut + 1)}`;
+}
+
+/** Small preview for grids and cards. Full-size stays one tap away in the viewer. */
+export function thumbUrl(path, bucket = BUCKET) {
+  if (!path || path.startsWith('data:') || path.startsWith('http')) return photoUrl(path, bucket);
+  return photoUrl(thumbPath(path), bucket);
+}
+
+/** Best-effort: if the preview fails, pages fall back to the full photo. */
+async function uploadPreview(bucket, path, blob) {
+  try {
+    const small = await shrinkPhoto(blob, PREVIEW_MAX_EDGE, PREVIEW_QUALITY);
+    await uploadObject(bucket, thumbPath(path), small);
+  } catch { /* the full photo still works without a preview */ }
 }
 
 

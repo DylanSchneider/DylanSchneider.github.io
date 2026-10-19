@@ -1,5 +1,5 @@
 /* Party camera: temporary candid photos, separate from costume entries. */
-import { api, session, photoUrl, shrinkPhoto, IS_LIVE } from './store.js?v=20261018-5';
+import { api, session, photoUrl, thumbUrl, shrinkPhoto, IS_LIVE } from './store.js?v=20261018-6';
 import { messageFor } from './messages.js?v=20261018-5';
 
 const CFG = window.PARTY_CONFIG || {};
@@ -47,9 +47,12 @@ function photoImage(photo, bucket) {
   const description = bucket === 'costumes'
     ? [photo.title || 'Costume photo', photo.owner].filter(Boolean).join(' — ')
     : [photo.caption || 'Party photo', photo.uploader ? `by ${photo.uploader}` : ''].filter(Boolean).join(' — ');
+  // Grids show the small preview. Older photos have none, so they fall back to the full image.
+  const full = photoUrl(photo.path, bucket);
   // Plain image elements preserve the browser's native save/share menu.
   return h('img', {
-    src: photoUrl(photo.path, bucket), alt: description, loading: 'lazy', decoding: 'async'
+    src: thumbUrl(photo.path, bucket), alt: description, loading: 'lazy', decoding: 'async',
+    onerror: (event) => { event.currentTarget.onerror = null; event.currentTarget.src = full; }
   });
 }
 
@@ -158,7 +161,7 @@ function partyPhotoCard(photo) {
     card.summary, card.loadStatus, card.list, form, card.error
   );
   card.view = () => ({
-    src: card.image.src,
+    src: photoUrl(photo.path, 'party-photos'),
     caption: card.caption.textContent || 'Party photo',
     author: card.author.textContent ? `by ${card.author.textContent}` : '',
     panel: card.panel
@@ -207,7 +210,7 @@ async function loadGallery() {
       return {
         thumb: h('button', { class: 'party-thumb', type: 'button' }, image),
         view: () => ({
-          src: image.src,
+          src: photoUrl(costume.path, 'costumes'),
           caption: costume.title || 'Costume photo',
           author: costume.owner ? `Costume by ${costume.owner}` : '',
           panel: null
@@ -258,13 +261,25 @@ function showViewer(index) {
   $('viewer-count').textContent = `${viewerIndex + 1} of ${list.length}`;
   $('viewer-prev').hidden = $('viewer-next').hidden = list.length < 2;
   $('viewer-replies').replaceChildren(...(panel ? [panel] : []));
-  if (panel) loadReplies();
 }
 
 function openViewer(key, index) {
   viewerKey = key;
   showViewer(index);
   $('photo-viewer').showModal();
+  if (key === 'party') startReplyRefresh();
+}
+
+// Replies are only fetched while a party photo is open, plus once when the page loads (for the thumbnail counts).
+let replyTimer = null;
+function startReplyRefresh() {
+  loadReplies();
+  clearInterval(replyTimer);
+  replyTimer = setInterval(() => { if (!document.hidden) loadReplies(); }, 15000);
+}
+function stopReplyRefresh() {
+  clearInterval(replyTimer);
+  replyTimer = null;
 }
 
 function selectAlbum(key, { focus = false } = {}) {
@@ -292,6 +307,7 @@ function initializeAlbums() {
   selectAlbum(location.hash === '#costumes' ? 'costume' : 'party');
 
   const viewerEl = $('photo-viewer');
+  viewerEl.addEventListener('close', stopReplyRefresh);
   $('viewer-close').addEventListener('click', () => viewerEl.close());
   $('viewer-prev').addEventListener('click', () => showViewer(viewerIndex - 1));
   $('viewer-next').addEventListener('click', () => showViewer(viewerIndex + 1));
@@ -371,8 +387,6 @@ function initializePartyCamera() {
 
   $('party-refresh').addEventListener('click', loadGallery);
   initializeAlbums();
-  setInterval(() => { if (!document.hidden) loadReplies(); }, 15000);
-  document.addEventListener('visibilitychange', () => { if (!document.hidden) loadReplies(); });
   loadGallery();
 }
 

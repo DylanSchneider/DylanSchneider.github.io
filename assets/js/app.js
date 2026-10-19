@@ -3,7 +3,7 @@
    Screens: check in → costume (join / start solo / start group / edit) → vote
    ===================================================================== */
 
-import { api, session, photoUrl, shrinkPhoto, IS_LIVE } from './store.js?v=20261005-10';
+import { api, session, photoUrl, thumbUrl, shrinkPhoto, IS_LIVE } from './store.js?v=20261018-6';
 import { messageFor } from './messages.js?v=20261005-10';
 
 const CFG = window.PARTY_CONFIG || {};
@@ -419,7 +419,7 @@ function joinRow(e, staticOnly) {
   if (!staticOnly) cls.push('rank__row--tap');
   return h('div', { class: cls.join(' '), onclick: staticOnly ? null : () => renderCostume('join', e) },
     h('div', { class: 'rank__pos rank__pos--thumb' },
-      e.photo_path ? h('img', { src: photoUrl(e.photo_path), alt: '' }) : '🎭'),
+      e.photo_path ? h('img', { src: thumbUrl(e.photo_path), alt: '', onerror: (event) => { event.currentTarget.onerror = null; event.currentTarget.src = photoUrl(e.photo_path); } }) : '🎭'),
     h('div', { class: 'rank__main' },
       h('div', { class: 'rank__title', text: e.title }),
       h('div', { class: 'rank__sub', text: rosterText(e) })
@@ -970,7 +970,11 @@ function entryCard(e, rank) {
   },
     h('div', { class: 'card__media' },
       e.photo_path
-        ? h('img', { src: photoUrl(e.photo_path), alt: e.title, loading: 'lazy', decoding: 'async' })
+        ? h('img', {
+            src: thumbUrl(e.photo_path), alt: e.title, loading: 'lazy', decoding: 'async',
+            // Costumes entered before previews existed fall back to the full photo.
+            onerror: (event) => { event.currentTarget.onerror = null; event.currentTarget.src = photoUrl(e.photo_path); }
+          })
         : h('div', { class: 'card__noimg', text: '👻' }),
       e.is_mine
         ? h('span', { class: 'badge badge--mine', text: 'Your costume' })
