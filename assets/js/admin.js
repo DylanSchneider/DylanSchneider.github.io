@@ -4,7 +4,7 @@
    here is read-only for anyone without it.
    ===================================================================== */
 
-import { api, photoUrl, IS_LIVE, PARTY_ID } from './store.js?v=20261005-10';
+import { api, IS_LIVE, PARTY_ID } from './store.js?v=20261005-10';
 import { messageFor } from './messages.js?v=20261005-10';
 
 const CFG = window.PARTY_CONFIG || {};
@@ -28,7 +28,7 @@ function h(tag, attrs, ...kids) {
   return n;
 }
 
-const state = { pin: '', data: null, guests: [], partyPhotos: [], editingGuest: null, skew: 0, closesAt: null, lastCloseSeen: null };
+const state = { pin: '', data: null, guests: [], editingGuest: null, skew: 0, closesAt: null, lastCloseSeen: null };
 const serverNow = () => new Date(Date.now() + state.skew);
 
 function show(id) {
@@ -89,7 +89,6 @@ async function enter(pin) {
   $('reset-control').hidden = !RESET_ENABLED;
   show('v-admin');
   loadGuests();
-  loadPartyPhotos();
   paintAll();
 }
 
@@ -115,7 +114,6 @@ async function refresh(quiet) {
   try {
     adopt(await api.results(state.pin));
     paintAll();
-    loadPartyPhotos();
   } catch (err) {
     if (!quiet) toast(messageFor(err), 'bad');
   } finally {
@@ -127,11 +125,9 @@ async function loadGuests() {
   try {
     const rows = await api.adminGuests(state.pin);
     state.guests = Array.isArray(rows) ? rows : [];
-    paintGuests();
+    paintGuestMatches();
   } catch (err) {
-    $('guest-rows').replaceChildren(
-      h('tr', {}, h('td', { colspan: '7', class: 'wrap-cell', text: messageFor(err) }))
-    );
+    toast(messageFor(err), 'bad');
   }
 }
 
@@ -222,8 +218,19 @@ function paintRank() {
   const top = Math.max(1, ...list.map((e) => e.votes));
   let pos = 0, last = null;
 
-  box.replaceChildren(...list.map((e, i) => {
+  // Positions are worked out over every costume, then only the ones with 2+ votes are listed.
+  const ranked = list.map((e, i) => {
     if (e.votes !== last) { pos = i + 1; last = e.votes; }
+    return { e, pos };
+  }).filter(({ e }) => e.votes > 1);
+
+  if (!ranked.length) {
+    box.replaceChildren();
+    $('rank-empty').replaceChildren(h('p', { class: 'hint', text: 'No costume has more than one vote yet.' }));
+    return;
+  }
+
+  box.replaceChildren(...ranked.map(({ e, pos }) => {
     const medal = pos <= 3 && e.votes > 0 ? ['🥇', '🥈', '🥉'][pos - 1] : String(pos);
     const who = rosterText(e);
 
@@ -233,7 +240,10 @@ function paintRank() {
         h('div', { class: 'rank__title', text: e.title }),
         h('div', { class: 'rank__sub', text: who }),
         e.voters && e.voters.length
-          ? h('div', { class: 'rank__sub', text: 'Voted by: ' + e.voters.join(', ') })
+          ? h('details', { class: 'rank__more' },
+              h('summary', { text: `Voters (${e.voters.length})` }),
+              h('div', { class: 'rank__sub', text: e.voters.join(', ') })
+            )
           : null
       ),
       h('div', { class: 'rank__n', text: String(e.votes) }),
@@ -269,62 +279,31 @@ function paintDelete() {
   ));
 }
 
-function paintGuests() {
-  const rows = state.guests;
-  if (!rows.length) {
-    $('guest-rows').replaceChildren(
-      h('tr', {}, h('td', { colspan: '7', text: 'Nobody has checked in yet.' }))
-    );
+/** The full guest list stays out of view; the host searches for one person to correct. */
+function paintGuestMatches() {
+  const q = $('guest-find').value.trim().toLowerCase();
+  const box = $('guest-matches');
+  if (q.length < 2) { box.replaceChildren(); return; }
+  const matches = state.guests.filter((g) => (g.full_name || '').toLowerCase().includes(q)).slice(0, 5);
+  if (!matches.length) {
+    box.replaceChildren(h('p', { class: 'hint', text: 'No guest with that name.' }));
     return;
   }
-  $('guest-rows').replaceChildren(...rows.map((g) =>
-    h('tr', {},
-      h('td', { class: 'wrap-cell', text: g.full_name }),
-      h('td', { text: prettyPhone(g.phone) }),
-      h('td', { text: (g.years || []).join(', ') }),
-      h('td', { class: 'wrap-cell', text: g.entry || '—' }),
-      h('td', { class: 'wrap-cell', text: (g.costume_name && g.costume_name !== g.entry) ? g.costume_name : '—' }),
-      h('td', { text: g.voted ? '✅' : '—' }),
-      h('td', {}, h('button', {
+  box.replaceChildren(...matches.map((g) =>
+    h('div', { class: 'rank__row' },
+      h('div', { class: 'rank__main' },
+        h('div', { class: 'rank__title', text: g.full_name }),
+        h('div', { class: 'rank__sub', text: g.entry || 'No costume yet' })
+      ),
+      h('button', {
         class: 'btn btn--ghost btn--sm', type: 'button',
         onclick: () => openGuestEditor(g)
-      }, 'Edit'))
+      }, 'Edit')
     )
   ));
 }
 
-async function loadPartyPhotos() {
-  try {
-    const photos = await api.adminPartyPhotos(state.pin);
-    state.partyPhotos = Array.isArray(photos) ? photos : [];
-    paintPartyPhotos();
-  } catch (err) {
-    $('party-photo-admin').replaceChildren(h('p', { class: 'err', text: messageFor(err) }));
-  }
-}
-
-function paintPartyPhotos() {
-  const box = $('party-photo-admin');
-  const count = $('party-photo-count');
-  count.textContent = `${state.partyPhotos.length} photo${state.partyPhotos.length === 1 ? '' : 's'}`;
-  if (!state.partyPhotos.length) {
-    box.replaceChildren(h('p', { class: 'hint', text: 'A curious moment awaits.' }));
-    return;
-  }
-  box.replaceChildren(...state.partyPhotos.map((photo) => {
-    const path = photoUrl(photo.path, 'party-photos');
-    return h('div', { class: 'admin-photo-row' },
-      h('img', { src: path, alt: photo.caption || 'Party photo', loading: 'lazy' }),
-      h('div', { class: 'rank__main' },
-        h('div', { class: 'rank__title', text: photo.caption || 'Party photo' }),
-        h('div', { class: 'rank__sub', text: `📸 ${photo.uploader || 'Guest'}` }),
-        h('div', { class: 'party-photo-tile__actions' },
-          h('a', { class: 'btn btn--ghost btn--sm', href: path, download: `party-${photo.id}.jpg`, target: '_blank', rel: 'noopener' }, 'Save')
-        )
-      )
-    );
-  }));
-}
+$('guest-find').addEventListener('input', paintGuestMatches);
 
 const prettyPhone = (p) => {
   const d = String(p || '').replace(/\D/g, '');
@@ -467,7 +446,6 @@ $('btn-clear-all').addEventListener('click', async (ev) => {
     await api.adminClearAll(state.pin);
     await refresh(true);
     await loadGuests();
-    await loadPartyPhotos();
     toast('All testing data for this party was cleared.', 'good');
   } catch (err) {
     toast(messageFor(err), 'bad');
@@ -507,16 +485,6 @@ $('btn-csv').addEventListener('click', () => {
   setTimeout(() => URL.revokeObjectURL(url), 4000);
 });
 
-// iOS Safari is unreliable about downloading blobs, so offer the clipboard too.
-$('btn-copy').addEventListener('click', async () => {
-  if (!state.guests.length) { toast('No guests to export yet.', 'bad'); return; }
-  try {
-    await navigator.clipboard.writeText(csv());
-    toast('Guest list copied.', 'good');
-  } catch {
-    toast('This browser blocked clipboard access. Use Download CSV instead.', 'bad');
-  }
-});
 
 
 /* ── Timers + boot ───────────────────────────────────────────────────── */
