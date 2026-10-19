@@ -146,7 +146,7 @@ data:
   links to save the temporary party photos to your computer, then remove
   those files from Storage. The party camera closes at the party deadline,
   but the page remains available for costume-photo downloads.
-- **`party_photo_comments`** — short text or emoji replies on party photos.
+- **`party_photo_comments`** — text or emoji replies of up to 100 characters on party photos.
   Replies remain available after uploads close and are removed automatically
   when the photo record is deleted. On an existing database, run
   `supabase/photo-replies.sql` in Supabase's SQL Editor to enable replies.

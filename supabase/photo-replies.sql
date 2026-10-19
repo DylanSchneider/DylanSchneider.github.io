@@ -3,9 +3,16 @@ create table if not exists public.party_photo_comments (
   id            uuid        primary key default gen_random_uuid(),
   photo_id      uuid        not null references public.party_photos(id) on delete cascade,
   guest_id      uuid        not null references public.guests(id) on delete cascade,
-  body          text        not null check (char_length(btrim(body)) between 1 and 280),
+  body          text        not null check (char_length(btrim(body)) between 1 and 100),
   created_at    timestamptz not null default now()
 );
+
+-- Update existing installations too. Older replies are kept as written;
+-- the new limit is enforced on every new or updated reply.
+alter table public.party_photo_comments
+  drop constraint if exists party_photo_comments_body_check,
+  add constraint party_photo_comments_body_check
+    check (char_length(btrim(body)) between 1 and 100) not valid;
 
 create index if not exists party_photo_comments_photo_idx on public.party_photo_comments (photo_id, created_at, id);
 
@@ -43,8 +50,8 @@ begin
   if not exists (select 1 from public.party_photos where id = p_photo and party_id = p_party) then
     raise exception 'That party photo is no longer available.';
   end if;
-  if char_length(v_body) not between 1 and 280 then
-    raise exception 'Write a comment or emoji, up to 280 characters.';
+  if char_length(v_body) not between 1 and 100 then
+    raise exception 'Write a comment or emoji, up to 100 characters.';
   end if;
   insert into public.party_photo_comments (photo_id, guest_id, body)
   values (p_photo, p_guest, v_body) returning * into v_comment;

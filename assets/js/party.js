@@ -1,6 +1,6 @@
 /* Party camera: temporary candid photos, separate from costume entries. */
-import { api, session, photoUrl, shrinkPhoto, IS_LIVE } from './store.js?v=20261018-4';
-import { messageFor } from './messages.js?v=20261018-4';
+import { api, session, photoUrl, shrinkPhoto, IS_LIVE } from './store.js?v=20261018-5';
+import { messageFor } from './messages.js?v=20261018-5';
 
 const CFG = window.PARTY_CONFIG || {};
 const $ = (id) => document.getElementById(id);
@@ -112,7 +112,7 @@ function partyPhotoCard(photo) {
   card.loadStatus = h('p', { class: 'hint', 'aria-live': 'polite', text: 'Loading replies…' });
   card.error = h('p', { class: 'err', 'aria-live': 'polite', id: `reply-error-${photo.id}` });
   const input = h('input', {
-    class: 'input', type: 'text', maxlength: '280', enterkeyhint: 'send',
+    class: 'input', type: 'text', maxlength: '100', enterkeyhint: 'send',
     placeholder: 'Add a comment or emoji…', 'aria-label': 'Add a comment or emoji',
     'aria-describedby': card.error.id
   });

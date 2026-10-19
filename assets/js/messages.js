@@ -10,7 +10,7 @@ const messages = [
   [/results are hidden/i, 'The crown will be revealed when voting closes.'],
   [/party photo wall is closed/i, 'The camera has retired for the night.'],
   [/party photo is no longer/i, 'That photo is no longer available. Refresh the album.'],
-  [/write a comment or emoji/i, 'Write a comment or emoji, up to 280 characters.'],
+  [/write a comment or emoji/i, 'Write a comment or emoji, up to 100 characters.'],
   [/reply is no longer available/i, 'That reply is no longer available or belongs to another guest.'],
   [/cannot vote for your own/i, 'Choose someone else’s costume.'],
   [/already have a costume/i, 'Your costume is already entered. Choose Edit your costume.'],

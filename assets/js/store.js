@@ -510,7 +510,7 @@ const demo = {
     if (!guest) throw new Error('Check in with your name first.');
     if (!(db.party_photos || []).some((photo) => photo.id === photoId)) throw new Error('That party photo is no longer available.');
     const text = cleanText(body);
-    if (!text || Array.from(text).length > 280) throw new Error('Write a comment or emoji, up to 280 characters.');
+    if (!text || Array.from(text).length > 100) throw new Error('Write a comment or emoji, up to 100 characters.');
     const comment = { id: uid(), photo_id: photoId, guest_id: guestId, body: text, created_at: new Date().toISOString() };
     db.party_photo_comments ||= [];
     db.party_photo_comments.push(comment);
