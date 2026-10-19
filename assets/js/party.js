@@ -255,7 +255,6 @@ function showViewer(index) {
   $('viewer-image').alt = caption;
   $('viewer-caption').textContent = caption;
   $('viewer-author').textContent = author;
-  $('viewer-save').href = src;
   $('viewer-count').textContent = `${viewerIndex + 1} of ${list.length}`;
   $('viewer-prev').hidden = $('viewer-next').hidden = list.length < 2;
   $('viewer-replies').replaceChildren(...(panel ? [panel] : []));
