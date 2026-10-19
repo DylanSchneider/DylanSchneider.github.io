@@ -574,6 +574,10 @@ function renderGroupForm(slot) {
   slot.replaceChildren(
     h('p', { class: 'eyebrow', style: 'margin-top:0' }, 'Group costume'),
     h('p', { class: 'hint' }, GROUP_RULE),
+    h('div', { class: 'note' },
+      h('b', { text: 'Everyone needs to sign up' }),
+      'After creating your group, ask everyone in it to sign up on their own phone and join your group so they can add their costume and cast their own vote.'
+    ),
     h('div', { class: 'panel', style: 'margin-top:8px' },
       field('Group costume name', groupName, errG, 'e.g. Alice in Wonderland'),
       field('Your costume in the group', yourRole, errR, 'e.g. Mad Hatter'),
