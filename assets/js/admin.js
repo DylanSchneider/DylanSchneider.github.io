@@ -125,7 +125,7 @@ async function loadGuests() {
   try {
     const rows = await api.adminGuests(state.pin);
     state.guests = Array.isArray(rows) ? rows : [];
-    paintGuestMatches();
+    paintManage();
   } catch (err) {
     toast(messageFor(err), 'bad');
   }
@@ -146,7 +146,7 @@ function paintAll() {
   paintClock();
   paintRank();
   paintReveal();
-  paintDelete();
+  paintManage();
 
   // Only refill the deadline picker when the server's value actually changed,
   // so a background refresh never wipes out a time the host is mid-way through
@@ -218,15 +218,15 @@ function paintRank() {
   const top = Math.max(1, ...list.map((e) => e.votes));
   let pos = 0, last = null;
 
-  // Positions are worked out over every costume, then only the ones with 2+ votes are listed.
+  // Positions are worked out over every costume, then only the ones with a vote are listed.
   const ranked = list.map((e, i) => {
     if (e.votes !== last) { pos = i + 1; last = e.votes; }
     return { e, pos };
-  }).filter(({ e }) => e.votes > 1);
+  }).filter(({ e }) => e.votes > 0);
 
   if (!ranked.length) {
     box.replaceChildren();
-    $('rank-empty').replaceChildren(h('p', { class: 'hint', text: 'No costume has more than one vote yet.' }));
+    $('rank-empty').replaceChildren(h('p', { class: 'hint', text: 'No votes yet.' }));
     return;
   }
 
@@ -263,47 +263,47 @@ function paintReveal() {
   btn.className = 'btn btn--block btn--sm ' + (on ? 'btn--danger' : 'btn--primary');
 }
 
-function paintDelete() {
-  $('del-rows').replaceChildren(...state.data.entries.map((e) =>
-    h('div', { class: 'rank__row' },
-      h('div', { class: 'rank__pos', text: '🗑' }),
+/** Every costume, with Edit (its people) and Delete. */
+function paintManage() {
+  $('manage-rows').replaceChildren(...state.data.entries.map((e) => {
+    // The results data has no guest ids, so people are matched to their costume by title.
+    const people = state.guests.filter((g) => g.entry === e.title);
+    const panel = h('div', { class: 'rank__people', hidden: true },
+      people.map((g) => h('div', { class: 'rank__person' },
+        h('div', { class: 'rank__main' },
+          h('div', { class: 'rank__title', text: g.full_name }),
+          h('div', { class: 'rank__sub', text: (g.costume_name && g.costume_name !== g.entry) ? g.costume_name : '—' })
+        ),
+        h('button', {
+          class: 'btn btn--ghost btn--sm', type: 'button', onclick: () => openGuestEditor(g)
+        }, 'Edit')
+      ))
+    );
+    const edit = h('button', {
+      class: 'btn btn--ghost btn--sm', type: 'button',
+      onclick: () => {
+        if (!people.length) { toast('Guest details are still loading. Try again in a moment.', 'bad'); return; }
+        if (people.length === 1) { openGuestEditor(people[0]); return; }
+        panel.hidden = !panel.hidden;
+      }
+    }, 'Edit');
+    return h('div', { class: 'rank__row' },
+      h('div', { class: 'rank__pos', text: '🎭' }),
       h('div', { class: 'rank__main' },
         h('div', { class: 'rank__title', text: e.title }),
         h('div', { class: 'rank__sub', text: `${rosterText(e)} · ${e.votes} ${e.votes === 1 ? 'vote' : 'votes'}` })
       ),
-      h('button', {
-        class: 'btn btn--danger btn--sm', type: 'button',
-        onclick: (ev) => removeEntry(e, ev.currentTarget)
-      }, 'Delete')
-    )
-  ));
-}
-
-/** The full guest list stays out of view; the host searches for one person to correct. */
-function paintGuestMatches() {
-  const q = $('guest-find').value.trim().toLowerCase();
-  const box = $('guest-matches');
-  if (q.length < 2) { box.replaceChildren(); return; }
-  const matches = state.guests.filter((g) => (g.full_name || '').toLowerCase().includes(q)).slice(0, 5);
-  if (!matches.length) {
-    box.replaceChildren(h('p', { class: 'hint', text: 'No guest with that name.' }));
-    return;
-  }
-  box.replaceChildren(...matches.map((g) =>
-    h('div', { class: 'rank__row' },
-      h('div', { class: 'rank__main' },
-        h('div', { class: 'rank__title', text: g.full_name }),
-        h('div', { class: 'rank__sub', text: g.entry || 'No costume yet' })
+      h('div', { class: 'rank__actions' },
+        edit,
+        h('button', {
+          class: 'btn btn--danger btn--sm', type: 'button',
+          onclick: (ev) => removeEntry(e, ev.currentTarget)
+        }, 'Delete')
       ),
-      h('button', {
-        class: 'btn btn--ghost btn--sm', type: 'button',
-        onclick: () => openGuestEditor(g)
-      }, 'Edit')
-    )
-  ));
+      panel
+    );
+  }));
 }
-
-$('guest-find').addEventListener('input', paintGuestMatches);
 
 const prettyPhone = (p) => {
   const d = String(p || '').replace(/\D/g, '');

@@ -638,7 +638,8 @@ h1, h2, h3 { margin: 0; line-height: 1.15; font-weight: 800; }
   margin-top: 10px;
 }
 .clock__unit {
-  min-width: 62px;
+  flex: 0 1 62px;
+  min-width: 0;
   padding: 9px 4px 7px;
   background: rgba(0, 0, 0, .38);
   border: 1px solid var(--line);
@@ -934,24 +935,26 @@ h1, h2, h3 { margin: 0; line-height: 1.15; font-weight: 800; }
 
 .kpis {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 9px;
   margin-bottom: 14px;
 }
 .kpi {
-  padding: 13px 10px;
+  padding: 13px 6px;
   text-align: center;
   border: 1px solid var(--line);
   border-radius: var(--r);
   background: var(--surface);
 }
 .kpi b { display: block; font-size: 25px; font-weight: 900; font-variant-numeric: tabular-nums; }
-.kpi span { font-size: 11px; letter-spacing: .7px; text-transform: uppercase; color: var(--muted-2); }
+.kpi span { display: block; font-size: 10.5px; letter-spacing: .4px; text-transform: uppercase; color: var(--muted-2); }
+/* iOS gives date pickers their own width, which can poke out of the card. */
+.input[type="datetime-local"] { min-width: 0; max-width: 100%; -webkit-appearance: none; appearance: none; text-align: left; }
 
 .rank { display: grid; gap: 9px; }
 .rank__row {
   display: grid;
-  grid-template-columns: 34px 1fr auto;
+  grid-template-columns: 34px minmax(0, 1fr) auto;
   align-items: center;
   gap: 11px;
   padding: 12px 13px;
@@ -959,6 +962,18 @@ h1, h2, h3 { margin: 0; line-height: 1.15; font-weight: 800; }
   border-radius: var(--r);
   background: var(--surface);
 }
+/* Manage-entries rows: buttons and the people list sit on their own full-width lines. */
+.rank__actions { grid-column: 1 / -1; display: flex; gap: 8px; }
+.rank__actions .btn { flex: 1; }
+.rank__people {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 10px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+.rank__people[hidden] { display: none; }
+.rank__person { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 10px; }
 .rank__pos { font-size: 18px; font-weight: 900; text-align: center; color: var(--muted-2); }
 .rank__row:first-child .rank__pos { color: var(--gold); }
 .rank__main { min-width: 0; }
