@@ -12,8 +12,8 @@ document.body.classList.add('homepage-v2');
 const stage = document.createElement('div');
 stage.className = 'v2-tunnel-stage';
 stage.innerHTML = `
-  <div class="v2-tunnel-stage__topline">THE WAY IS DOWN <span>SCROLL TO CONTINUE</span></div>
-  <div class="v2-tunnel-stage__title">Scroll down<small>to choose your costume</small></div>
+  <div class="v2-tunnel-stage__topline">THE WAY IS DOWN</div>
+  <div class="v2-tunnel-stage__title">Keep falling<small>the rabbit is waiting</small></div>
 `;
 stage.append(canvas);
 tunnel.replaceChildren(stage);
