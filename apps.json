@@ -1,0 +1,11 @@
+[
+  {
+    "slug": "halloween-party",
+    "name": "Halloween party app",
+    "description": "Costumes, voting, and photos. A new theme each Halloween.",
+    "edition": "2026 · Alice in Wonderland",
+    "published": false,
+    "archive_tag": "2026_AliceInWonderland",
+    "files": ["index.html", "party.html", "admin.html", "config.js", "assets"]
+  }
+]

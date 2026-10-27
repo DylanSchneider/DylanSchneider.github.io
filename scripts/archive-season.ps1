@@ -1,57 +1,53 @@
 <#
 .SYNOPSIS
-  Tag the current commit as a snapshot of one year's Halloween party site.
-
-.DESCRIPTION
-  This repo doesn't use per-year branches for deployment (GitHub Pages for
-  a user site only serves one branch), so instead each year's exact code
-  is preserved as a lightweight git tag: party-<year>. Ongoing development
-  keeps happening on master; tags just mark "this is what guests used."
-
-.PARAMETER Year
-  The year to tag, e.g. 2026. Defaults to the current year.
-
-.PARAMETER Push
-  Push the new tag to origin immediately. If omitted, you'll be asked.
-
+  Preserve a committed Halloween release as an annotated <year>_<theme> tag.
 .EXAMPLE
-  ./scripts/archive-season.ps1 2026
+  ./scripts/archive-season.ps1 -Year 2027 -Theme 'NextTheme' -Push
 #>
+[CmdletBinding()]
 param(
   [Parameter(Position = 0)]
+  [ValidateRange(2000, 9999)]
   [int]$Year = (Get-Date).Year,
+
+  [Parameter(Mandatory = $true, Position = 1)]
+  [ValidatePattern('^[A-Za-z0-9][A-Za-z0-9_-]*$')]
+  [string]$Theme,
 
   [switch]$Push
 )
 
 $ErrorActionPreference = 'Stop'
+Push-Location (Join-Path $PSScriptRoot '..')
+try {
+  $tag = "${Year}_$Theme"
+  $status = git status --porcelain
+  if ($LASTEXITCODE -ne 0) { throw 'Could not read Git status.' }
+  if ($status) { throw 'Commit or stash changes first. A tag only preserves committed files.' }
 
-$tag = "party-$Year"
+  $existing = git tag --list $tag
+  if ($LASTEXITCODE -ne 0) { throw 'Could not read Git tags.' }
+  if ($existing) { throw "Tag '$tag' already exists. Annual archives must not be overwritten." }
 
-$existing = git tag --list $tag
-if ($existing) {
-  Write-Error "Tag '$tag' already exists (commit $(git rev-list -n 1 $tag)). Delete it first if you really want to re-tag: git tag -d $tag"
-  exit 1
-}
+  if ($Push) {
+    $remoteTag = git ls-remote --tags origin "refs/tags/$tag"
+    if ($LASTEXITCODE -ne 0) { throw 'Could not check origin for the archive tag.' }
+    if ($remoteTag) { throw "Tag '$tag' already exists on origin. Fetch it instead of overwriting it." }
+  }
 
-$status = git status --porcelain
-if ($status) {
-  Write-Warning "Working tree has uncommitted changes. Tagging HEAD anyway (uncommitted changes are NOT included in the tag)."
-}
+  $sha = git rev-parse HEAD
+  if ($LASTEXITCODE -ne 0) { throw 'Could not resolve HEAD.' }
+  git tag -a $tag -m "Halloween $Year - $Theme; archived party release" $sha
+  if ($LASTEXITCODE -ne 0) { throw "Could not create tag '$tag'." }
+  Write-Host "Archived $sha as '$tag'."
 
-$sha = git rev-parse --short HEAD
-$msg = "Halloween $Year - snapshot of the site as deployed for the party"
-git tag -a $tag -m $msg
-Write-Host "Tagged $sha as '$tag'." -ForegroundColor Green
-
-if (-not $Push) {
-  $answer = Read-Host "Push tag '$tag' to origin now? [Y/n]"
-  $Push = ($answer -eq '' -or $answer -match '^[Yy]')
-}
-
-if ($Push) {
-  git push origin $tag
-  Write-Host "Pushed '$tag' to origin." -ForegroundColor Green
-} else {
-  Write-Host "Not pushed. Push later with: git push origin $tag"
+  if ($Push) {
+    git push origin "refs/tags/$tag"
+    if ($LASTEXITCODE -ne 0) { throw "Tag exists locally, but push failed. Retry: git push origin refs/tags/$tag" }
+    Write-Host "Pushed '$tag' to origin."
+  } else {
+    Write-Host "Push when ready: git push origin refs/tags/$tag"
+  }
+} finally {
+  Pop-Location
 }

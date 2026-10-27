@@ -9,3 +9,7 @@ secrets.local.md
 
 # Local experiments, prototypes, SQL migrations, and test seeds
 /r-and-d/
+
+# Generated website and local Python caches
+/_site/
+__pycache__/

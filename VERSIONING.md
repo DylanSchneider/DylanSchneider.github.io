@@ -1,241 +1,81 @@
-# Version Control Strategy
+# Apps and annual releases
 
-This document describes how this repository handles versions, branches, and releases across multiple party years.
+`master` holds the current source for every app. Each app lives in
+`apps/<slug>/`; [`apps.json`](apps.json) decides which ones are published.
+There are no year-specific app folders or permanent branches. Reuse the
+Halloween folder each year, and use tags for frozen annual versions.
 
-## One Deployed Branch: `master`
+## 2026 archive
 
-This project uses **GitHub Pages for a personal user site**, which only serves a single branch. There's no separate `deploy` or `staging` branch — `master` is both the development and production branch.
+| Item | Value |
+| --- | --- |
+| App | `apps/halloween-party/` |
+| Theme | Alice in Wonderland |
+| Annotated tag | `2026_AliceInWonderland` |
+| Deployed commit | `6918ec5d054fd89e25a38643452121dd90bd11b6` |
+| Hosting status | Archived; excluded from the website |
 
-**Benefit:** Simpler workflow. Commit → push → deployed in seconds.  
-**Responsibility:** Test thoroughly before pushing to `master`.
+The tag was created before moving the files, so the historical app lives at
+the repository root in that version. Current app files live in the folder
+above. A tag snapshots the entire repo, including any other apps present at
+that commit. It does not snapshot Supabase data or uploaded photos.
 
-## No Year-Specific Branches
-
-Unlike many projects, we don't create `halloween-2026`, `halloween-2027`, etc. branches. Why?
-
-1. **Database is already keyed by year.** The `party_id` in the database is the real year separator. The code itself doesn't change between years — only config and database state change.
-2. **Code evolves forward.** New features, bug fixes, and improvements accumulate on `master` where everyone sees them. You don't need to backport.
-3. **History is simpler.** One continuous timeline from 2022 → 2026 → 2027 is easier to navigate than many parallel branches.
-
-## Tagging Each Year's Snapshot
-
-Instead of branches, **each year gets a git tag**: `party-2026`, `party-2027`, etc.
-
-A tag is a **frozen pointer** to the exact commit that was live when guests used the app that night. Tags live forever and take up almost no space.
-
-### Creating a Tag (After the Party)
-
-Once the party is done and you've recorded the winner, archive that year's code:
+Inspect the old version without switching your working tree:
 
 ```powershell
-./scripts/archive-season.ps1 2026
+git show 2026_AliceInWonderland
+git show 2026_AliceInWonderland:config.js
+git ls-tree -r --name-only 2026_AliceInWonderland
 ```
 
-This creates a lightweight annotated tag `party-2026` pointing to `HEAD` with a message, and pushes it to origin. You can also create it manually:
+To create a separate checkout inside the ignored experiments folder:
 
-```bash
-git tag -a party-2026 -m "Halloween 2026 - snapshot of the site as deployed for the party"
-git push origin party-2026
+```powershell
+git worktree add --detach r-and-d/halloween-2026 2026_AliceInWonderland
 ```
 
-### Using a Tag Later
+## Next year
 
-To see exactly what code was live in 2026:
+1. Develop in `apps/halloween-party/`, on a feature branch if useful. Change
+   the theme and functionality there; leave the 2026 tag untouched.
+2. Test against demo mode or a separate test backend while developing.
+3. Insert a new `parties` row in Supabase for the new year. Preserve existing
+   guests and all 2026 records and photos. See the app README for an example.
+4. Update `PARTY_ID`, `PARTY_YEAR`, `PARTY_TITLE`, and the fallback deadline in
+   `apps/halloween-party/config.js`. Disable the frontend test reset and the
+   database's `testing_reset_enabled` flag before the event.
+5. Update the app's `edition` in `apps.json`, set `published: true`, and test
+   `_site/apps/halloween-party/`. Push to `master` to deploy. The prior
+   `archive_tag` may remain until the new event is archived; it isn't shown
+   while the app is published.
+6. After the party, confirm the intended commit deployed successfully and
+   tag it **before** changing the app or taking it offline:
 
-```bash
-git show party-2026              # view commit info
-git checkout party-2026          # check out that version (read-only state)
-git log party-2026 --oneline    # see all commits up to that point
+   ```powershell
+   ./scripts/archive-season.ps1 -Year 2027 -Theme 'NextTheme' -Push
+   ```
+
+7. Set `published: false`, update `archive_tag` to `2027_NextTheme`, and push
+   those changes to take the app offline again.
+
+## Tagging safely
+
+`archive-season.ps1` creates an annotated `<year>_<theme>` tag. It refuses
+uncommitted changes, existing tags, and failed Git operations. Without
+`-Push`, it only creates a local tag and prints the command to push it later.
+It never commits files or resets data. Do not move or overwrite annual tags.
+
+```powershell
+./scripts/archive-season.ps1 -Year 2027 -Theme 'NextTheme'
+git push origin refs/tags/2027_NextTheme
 ```
 
-To compare 2026 vs 2027:
+## Hosting and data
 
-```bash
-git diff party-2026 party-2027  # what changed between years
-```
+The publishing workflow builds the homepage plus apps explicitly marked
+`published: true`. Tags are historical references and never trigger a
+deployment. A push to `master` deploys the whole selected collection.
 
-## Commit Message Style
-
-Keep commits **clear and focused**. Each commit should be one logical change:
-
-- `Fix card float animation on hover` — good, specific.
-- `Update colors` — vague; should be `Reskin from Halloween to Alice in Wonderland theme`.
-- `Stuff` — never acceptable.
-
-Use imperative mood: "Add X" not "Added X". Format:
-
-```
-One-line summary under 70 chars
-
-Optional longer explanation if the change is non-obvious.
-Reference issue numbers or prior commits if relevant.
-```
-
-Example:
-
-```
-Refactor group costume joining to use entry_members table
-
-Replaced the old member_names text array with a proper relational
-model so each guest has their own row describing their costume/role
-within a group, not just free text names. This also doubles as the
-persistent costume history for next year's invite list.
-
-See: commit f8ba9ff for the schema migration.
-```
-
-## Keeping Personal Config Out of Git
-
-Never commit:
-
-- `secrets.local.md` (real Supabase credentials) — **gitignored**
-- `.env` or `.env.local` — **gitignored**
-- Database passwords in any form
-
-These are in `.gitignore` for a reason. If you accidentally commit a credential, **rotate it immediately** from Supabase → Project Settings → Database → Reset password.
-
-## Multi-Year Data Model
-
-The **database is designed to remember everything**:
-
-- **`guests`**: never deleted. Persists across parties. Use for invite lists next year.
-- **`entries` + `entry_members`**: costume history. "What did Dylan wear in 2025?" is one SQL query.
-- **`attendance`**: who showed up each year.
-- **`votes`**: **optional to keep**. These can be purged after results are recorded (see README for the cleanup query).
-
-The **code, however, evolves forward**. Don't keep branches per year; just tag the exact version that was live.
-
-## Workflow Summary
-
-1. **During development** (months before the party):
-   - Branch off `master` for large features: `git checkout -b feature/group-costumes`
-   - Push to origin to share/backup
-   - Open a pull request when ready for review
-   - Merge back to `master` when done
-
-2. **Before the party**:
-   - Make sure `master` is tested and stable
-   - Push to deploy
-
-3. **After the party**:
-   - Run `./scripts/archive-season.ps1 2026` to tag this year's exact code
-   - Optionally clean up votes if you don't want a permanent record: `delete from public.votes where party_id = '2026'`
-
-4. **Next year**:
-   - Development continues on `master` (new features, bug fixes, etc.)
-   - Update `PARTY_ID` in `config.js` to `'2027'`
-   - Supabase: insert a new row into the `parties` table for 2027
-   - Push and deploy
-   - After the party, tag again: `party-2027`
-
-## Force Push? Never (Usually)
-
-`git push --force` is dangerous on a shared or deployed branch. If you need to rewrite history:
-
-1. Check that no one else is pulling from it
-2. Use `--force-with-lease` instead: it fails if someone pushed in the meantime
-3. Strongly prefer creating a new commit instead
-
-For this project, force-pushing `master` is never necessary. If you commit something wrong, just commit a fix on top.
-
-## Branch Protection (GitHub Setting)
-
-Consider enabling branch protection on `master`:
-
-- Require pull request reviews before merge
-- Require status checks (CI, tests) to pass
-- Dismiss stale reviews when new commits are pushed
-- Allow force pushes: **No** (you don't need them)
-
-This prevents accidents and keeps the main branch stable.
-
-## Squash vs. Merge
-
-When merging a feature branch back to `master`:
-
-- **Merge commit** (`git merge --no-ff`): Preserves branch history. Clearer if the feature is large or took many commits.
-- **Squash** (`git merge --squash`): Collapses all commits into one. Cleaner history if the branch was just iterative work.
-- **Rebase and merge** (`git rebase master && git merge --ff-only`): Linear history. Good for small focused features.
-
-For this project, **merge commits** are fine. They show which commits were part of a feature and when it landed.
-
-## Recording the Winner
-
-After the countdown ends and results are live, the database still has all the votes. To **permanently record** who won:
-
-### Via SQL Editor (easiest)
-
-In Supabase → SQL Editor, run:
-
-```sql
-with top_entry as (
-  select e.id, count(*) as c from public.entries e
-  left join public.votes v on v.entry_id = e.id
-  where e.party_id = '2026' group by e.id order by c desc limit 1
-)
-insert into public.winners (party_id, entry_id, vote_count, notes)
-select '2026', id, c, 'Mad Hatter group - 14 votes' from top_entry
-on conflict (party_id) do update set entry_id = excluded.entry_id, vote_count = excluded.vote_count, recorded_at = now();
-```
-
-This finds the top entry by vote count and inserts it into the `winners` table (one row per year, strictly). If you accidentally run it twice, the second run just updates the record.
-
-### Manual entry
-
-If you know the winner by heart:
-
-```sql
-insert into public.winners (party_id, entry_id, vote_count, notes)
-values ('2026', '<uuid-of-winning-entry>', 14, 'Mad Hatter group')
-on conflict (party_id) do update set entry_id = excluded.entry_id;
-```
-
-## Example: Full Year Workflow
-
-```bash
-# Create a feature branch
-git checkout -b feature/add-cheshire-cat-easter-egg
-git commit -m "Add Cheshire Cat to card animations"
-git commit -m "Update colors to match grin emoji"
-git push origin feature/add-cheshire-cat-easter-egg
-
-# Open PR, get reviewed, merge on GitHub
-
-# Back on master (pull the merge)
-git pull origin master
-
-# Party happens, voting closes, results show
-# Visit admin.html, note the winner, and record it in the database:
-#   - Either run the SQL query above
-#   - Or manually insert the winner via SQL Editor
-
-# Now freeze this version:
-./scripts/archive-season.ps1 2026
-
-# Later, start work on 2027
-git checkout -b feature/accessibility-improvements
-# ... continue development
-```
-
-## Reading Old Commits
-
-Want to know what changed in that one commit?
-
-```bash
-git show f8ba9ff               # view full commit + diff
-git show f8ba9ff --stat       # just the file stats
-git log -p f8ba9ff^..f8ba9ff # same thing
-```
-
-Want to see who changed a specific line?
-
-```bash
-git blame assets/js/app.js   # every line with its author + commit
-git blame -L 200,220 assets/js/app.js  # just lines 200-220
-```
-
-## References
-
-- [Git Basics Docs](https://git-scm.com/book/en/v2/Git-Basics-Getting-a-Git-Repository)
-- [GitHub Branch Protection](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches)
-- [Conventional Commits](https://www.conventionalcommits.org/) (optional but good style guide)
+Keep secrets, private exports, and downloaded party photos outside the public
+repository. The code archive leaves the live Supabase database and Storage
+untouched. Take separate private backups if you want an event-data snapshot.
